@@ -31,9 +31,17 @@ export function StepResume() {
   const anonymousTitle = watch("anonymousTitle");
   const skills = watch("verifiedSkills");
   const taglines = watch("suggestedTaglines");
+  const seekerTosAgreed = watch("seekerTosAgreed");
 
   const uploadResume = useCallback(
     async (file: File) => {
+      if (!seekerTosAgreed) {
+        setStatus("error");
+        setErrorMessage(
+          "Agree to the Job Seeker Terms of Service before uploading a résumé."
+        );
+        return;
+      }
       setStatus("extracting");
       setErrorMessage(null);
       setValue("resumeFileName", file.name, { shouldValidate: true });
@@ -70,7 +78,7 @@ export function StepResume() {
         setValue("suggestedTaglines", [], { shouldValidate: true });
       }
     },
-    [setValue]
+    [setValue, seekerTosAgreed]
   );
 
   function onFileChange(fileList: FileList | null) {

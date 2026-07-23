@@ -69,7 +69,8 @@ Requires `GROQ_API_KEY` in `.env.local`.
 ## Landing & onboarding
 
 - `/` — hero, featured candidate carousel (timezone / work-hour overlap), seeker + hirer CTAs, hirer waitlist modal
-- `/onboarding` — 4-step seeker wizard (LinkedIn + Incognito → resume sanitize → global prefs + taglines → references)
+- `/onboarding` — 4-step seeker wizard (Terms of Service → LinkedIn + Incognito → resume sanitize → global prefs + taglines → references)
+- `/legal/seekers` — Job Seeker Terms of Service (PDF + readable page; required before account creation)
 - `/reference/[token]` — mobile reference verification (identity → 7 superpowers → ratings → endorsement)
 - `/dashboard/seeker` — anonymous employer card, availability toggle, reference tracker + Resend, edit/delete
 

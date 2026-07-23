@@ -19,6 +19,7 @@ export async function POST(request: Request) {
 
     // Phase 1: validate + acknowledge. Persist to candidate_profiles in a later slice.
     console.info("[onboarding/complete]", {
+      seekerTosAgreed: parsed.data.seekerTosAgreed,
       title: parsed.data.anonymousTitle,
       city: parsed.data.globalCity,
       tagline: parsed.data.selectedTagline,

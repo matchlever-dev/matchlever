@@ -9,7 +9,8 @@ export const ONBOARDING_STEPS = [
 
 export type OnboardingStepId = (typeof ONBOARDING_STEPS)[number]["id"];
 
-export const onboardingFormSchema = z.object({
+export const onboardingFormObjectSchema = z.object({
+  seekerTosAgreed: z.boolean(),
   linkedInConnected: z.boolean(),
   incognitoAgreed: z.boolean(),
   resumeFileName: z.string(),
@@ -37,9 +38,22 @@ export const onboardingFormSchema = z.object({
     .length(3),
 });
 
-export type OnboardingFormValues = z.infer<typeof onboardingFormSchema>;
+export const onboardingFormSchema = onboardingFormObjectSchema.superRefine(
+  (data, ctx) => {
+    if (!data.seekerTosAgreed) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Agree to the Job Seeker Terms of Service to continue",
+        path: ["seekerTosAgreed"],
+      });
+    }
+  }
+);
+
+export type OnboardingFormValues = z.infer<typeof onboardingFormObjectSchema>;
 
 export const defaultOnboardingValues: OnboardingFormValues = {
+  seekerTosAgreed: false,
   linkedInConnected: false,
   incognitoAgreed: false,
   resumeFileName: "",
@@ -69,10 +83,18 @@ export function getStepSchema(step: OnboardingStepId) {
     case 1:
       return z
         .object({
+          seekerTosAgreed: z.boolean(),
           linkedInConnected: z.boolean(),
           incognitoAgreed: z.boolean(),
         })
         .superRefine((data, ctx) => {
+          if (!data.seekerTosAgreed) {
+            ctx.addIssue({
+              code: "custom",
+              message: "Agree to the Job Seeker Terms of Service to continue",
+              path: ["seekerTosAgreed"],
+            });
+          }
           if (!data.linkedInConnected) {
             ctx.addIssue({
               code: "custom",
@@ -111,7 +133,7 @@ export function getStepSchema(step: OnboardingStepId) {
           }
         });
     case 3:
-      return onboardingFormSchema.pick({
+      return onboardingFormObjectSchema.pick({
         locationMode: true,
         globalCity: true,
         globalCountry: true,
@@ -123,7 +145,7 @@ export function getStepSchema(step: OnboardingStepId) {
         selectedTagline: true,
       });
     case 4:
-      return onboardingFormSchema.pick({
+      return onboardingFormObjectSchema.pick({
         references: true,
       });
   }
