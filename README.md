@@ -45,6 +45,27 @@ supabase db push
 
 Session refresh runs in `src/middleware.ts`.
 
+## Resume sanitize API
+
+`POST /api/candidate/sanitize` accepts multipart form field `resume` (PDF or DOCX), strips PII via Groq, and returns:
+
+```json
+{
+  "anonymous_title": "Senior Backend Engineer",
+  "sanitized_summary": "...",
+  "verified_skills": ["TypeScript", "PostgreSQL"],
+  "years_experience": 8,
+  "suggested_taglines": ["...", "...", "..."]
+}
+```
+
+```bash
+curl -X POST http://localhost:3000/api/candidate/sanitize \
+  -F "resume=@./path/to/resume.pdf"
+```
+
+Requires `GROQ_API_KEY` in `.env.local`.
+
 ## Schema (Phase 1)
 
 - `user_profiles` — `is_admin`, `is_superuser`
