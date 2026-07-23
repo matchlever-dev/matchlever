@@ -70,11 +70,25 @@ Requires `GROQ_API_KEY` in `.env.local`.
 
 - `/` — hero, featured candidate carousel (timezone / work-hour overlap), seeker + hirer CTAs, hirer waitlist modal
 - `/onboarding` — 4-step seeker wizard (LinkedIn + Incognito → resume sanitize → global prefs + taglines → references)
+- `/reference/[token]` — mobile reference verification (identity → 7 superpowers → ratings → endorsement)
+- `/dashboard/seeker` — anonymous employer card, availability toggle, reference tracker + Resend, edit/delete
+
+## Seeker dashboard
+
+`/dashboard/seeker` shows the employer-facing anonymous card (initials, AI tagline, verified skills, location/timezone, reference progress), an **Actively Looking / On Hold** toggle (writes `candidate_profiles.status`), Resend-powered **Resend Link** for pending references, plus Edit Profile and Delete Account.
+
+Env for invite email:
+
+- `RESEND_API_KEY`
+- `RESEND_FROM_EMAIL` (e.g. `MatchLever <onboarding@resend.dev>`)
+- `NEXT_PUBLIC_APP_URL`
+
+Without Supabase auth configured, the page runs in demo mode with sample data.
 
 ## Schema (Phase 1)
 
 - `user_profiles` — `is_admin`, `is_superuser`
-- `candidate_profiles` — location, timezone, work hours, `suggested_taglines` JSONB
+- `candidate_profiles` — location, timezone, work hours, `suggested_taglines` JSONB, `status`, `selected_tagline`, `verified_skills`
 - `candidate_references` — email, LinkedIn, authenticity score/flags
 - Helpers: `is_admin()`, `is_superuser()`
 - RLS: candidate profiles editable by owner **or** `is_admin = true`

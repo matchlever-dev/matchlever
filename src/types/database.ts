@@ -1,6 +1,5 @@
 /**
- * Shared Database types aligned with
- * supabase/migrations/20260723000000_phase1_profiles_rls.sql
+ * Shared Database types aligned with Phase 1 migrations.
  */
 
 export type Json =
@@ -59,6 +58,10 @@ export type Database = {
           work_hours_start: string | null;
           work_hours_end: string | null;
           suggested_taglines: Json;
+          verified_superpowers: Json;
+          status: string;
+          selected_tagline: string | null;
+          verified_skills: Json;
           created_at: string;
           updated_at: string;
         };
@@ -73,6 +76,10 @@ export type Database = {
           work_hours_start?: string | null;
           work_hours_end?: string | null;
           suggested_taglines?: Json;
+          verified_superpowers?: Json;
+          status?: string;
+          selected_tagline?: string | null;
+          verified_skills?: Json;
           created_at?: string;
           updated_at?: string;
         };
@@ -87,6 +94,10 @@ export type Database = {
           work_hours_start?: string | null;
           work_hours_end?: string | null;
           suggested_taglines?: Json;
+          verified_superpowers?: Json;
+          status?: string;
+          selected_tagline?: string | null;
+          verified_skills?: Json;
           created_at?: string;
           updated_at?: string;
         };
@@ -110,6 +121,14 @@ export type Database = {
           relationship: string | null;
           authenticity_score: number | null;
           authenticity_flags: Json;
+          verification_token: string;
+          status: string;
+          superpowers: Json;
+          reliability_score: number | null;
+          technical_quality_score: number | null;
+          rehire_intent_score: number | null;
+          endorsement: string | null;
+          verified_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -122,6 +141,14 @@ export type Database = {
           relationship?: string | null;
           authenticity_score?: number | null;
           authenticity_flags?: Json;
+          verification_token?: string;
+          status?: string;
+          superpowers?: Json;
+          reliability_score?: number | null;
+          technical_quality_score?: number | null;
+          rehire_intent_score?: number | null;
+          endorsement?: string | null;
+          verified_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -134,6 +161,14 @@ export type Database = {
           relationship?: string | null;
           authenticity_score?: number | null;
           authenticity_flags?: Json;
+          verification_token?: string;
+          status?: string;
+          superpowers?: Json;
+          reliability_score?: number | null;
+          technical_quality_score?: number | null;
+          rehire_intent_score?: number | null;
+          endorsement?: string | null;
+          verified_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -157,6 +192,17 @@ export type Database = {
       is_superuser: {
         Args: Record<string, never>;
         Returns: boolean;
+      };
+      get_reference_invite: {
+        Args: { p_token: string };
+        Returns: {
+          token: string;
+          status: string;
+          relationship: string | null;
+          reference_name: string | null;
+          candidate_title: string;
+          candidate_tagline: string;
+        }[];
       };
     };
     Enums: Record<string, never>;
