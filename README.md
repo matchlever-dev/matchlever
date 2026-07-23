@@ -66,6 +66,11 @@ curl -X POST http://localhost:3000/api/candidate/sanitize \
 
 Requires `GROQ_API_KEY` in `.env.local`.
 
+## Landing & onboarding
+
+- `/` — hero, featured candidate carousel (timezone / work-hour overlap), seeker + hirer CTAs, hirer waitlist modal
+- `/onboarding` — 4-step seeker wizard (LinkedIn + Incognito → resume sanitize → global prefs + taglines → references)
+
 ## Schema (Phase 1)
 
 - `user_profiles` — `is_admin`, `is_superuser`
