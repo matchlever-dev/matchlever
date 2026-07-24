@@ -3,71 +3,85 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 
+import { BrandMark, BrandWordmark } from "@/components/brand/brand-mark";
+
 export function LandingHero() {
   return (
-    <section className="relative isolate min-h-[100svh] overflow-hidden">
+    <section className="relative isolate min-h-[100svh] overflow-hidden bg-[#F7F6F3]">
       <div
         aria-hidden
-        className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_20%,#2B5B84_0%,transparent_55%),radial-gradient(ellipse_at_80%_10%,#E87A5D55_0%,transparent_45%),linear-gradient(160deg,#F8F9FA_0%,#e8eef4_45%,#d7e3ee_100%)]"
+        className="absolute inset-0 bg-[radial-gradient(ellipse_at_15%_20%,rgba(43,91,132,0.12),transparent_50%),radial-gradient(ellipse_at_85%_15%,rgba(232,122,93,0.14),transparent_45%),linear-gradient(180deg,#F7F6F3_0%,#F3F1EC_100%)]"
       />
       <div
         aria-hidden
-        className="absolute inset-0 opacity-[0.35]"
+        className="pointer-events-none absolute inset-0 opacity-30 mix-blend-multiply"
         style={{
           backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%232B5B84' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
+            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E\")",
         }}
       />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-y-0 right-0 w-full max-w-2xl bg-[linear-gradient(120deg,transparent_0%,#2B5B8422_40%,#E87A5D33_100%)]"
-      />
 
-      <div className="relative mx-auto flex min-h-[100svh] max-w-6xl flex-col justify-center px-6 py-20 sm:px-8">
-        <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="font-display text-5xl font-semibold tracking-tight text-[#2B5B84] sm:text-7xl md:text-8xl"
-        >
-          MatchLever
-        </motion.p>
-        <motion.h1
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, delay: 0.08 }}
-          className="mt-6 max-w-2xl text-2xl font-medium leading-tight text-[#2A2D34] sm:text-3xl md:text-4xl"
-        >
-          Enterprise software talent, anonymized until the fit is real.
-        </motion.h1>
-        <motion.p
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, delay: 0.16 }}
-          className="mt-4 max-w-xl text-base text-[#2A2D34]/75 sm:text-lg"
-        >
-          Seekers stay incognito. Hirers see signal—skills, overlap hours, and
-          verified references—not résumés stuffed with noise.
-        </motion.p>
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, delay: 0.24 }}
-          className="mt-10 flex flex-wrap gap-3"
-        >
-          <Link
-            href="/onboarding"
-            className="inline-flex h-11 items-center justify-center rounded-lg bg-[#2B5B84] px-5 text-sm font-medium text-white transition hover:bg-[#244e71]"
+      <svg
+        aria-hidden
+        className="pointer-events-none absolute -right-[30%] top-[8%] hidden h-[78%] w-[78%] text-[#2B5B84] opacity-[0.08] sm:block"
+        viewBox="0 0 800 600"
+        fill="none"
+      >
+        <path
+          d="M40 440 C 240 360, 380 210, 560 150 C 660 115, 730 85, 790 40"
+          stroke="currentColor"
+          strokeWidth="64"
+          strokeLinecap="round"
+        />
+        <path
+          d="M90 500 C 280 430, 420 280, 590 220 C 690 185, 750 145, 800 100"
+          stroke="#E87A5D"
+          strokeWidth="28"
+          strokeLinecap="round"
+        />
+      </svg>
+
+      <div className="relative mx-auto flex min-h-[100svh] w-full max-w-6xl flex-col justify-center px-5 py-20 sm:px-8 sm:py-24">
+        <div className="flex flex-col items-start gap-6 sm:gap-8">
+          <motion.div
+            initial={false}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-start gap-4 sm:flex-row sm:items-end sm:gap-6"
           >
-            Start as a Seeker
-          </Link>
-          <a
-            href="#featured"
-            className="inline-flex h-11 items-center justify-center rounded-lg border border-[#2B5B84]/30 bg-white/50 px-5 text-sm font-medium text-[#2B5B84] backdrop-blur transition hover:bg-white"
-          >
-            Browse featured talent
-          </a>
-        </motion.div>
+            <BrandMark
+              priority
+              className="h-20 w-auto sm:h-28 md:h-32"
+            />
+            <BrandWordmark className="pb-0.5 sm:pb-1" />
+          </motion.div>
+
+          <div className="h-px w-16 bg-gradient-to-r from-[#2B5B84] to-[#E87A5D] sm:w-24" />
+
+          <h1 className="max-w-[22ch] font-display text-[1.85rem] font-semibold leading-[1.15] tracking-tight text-[#2A2D34] sm:max-w-2xl sm:text-4xl md:text-[2.75rem]">
+            No names. No bias.
+            <br />
+            Just the right match.
+          </h1>
+
+          <p className="max-w-lg text-base leading-relaxed text-[#5B616B] sm:text-xl">
+            Connect with vetted talents at no cost until a match is made.
+          </p>
+
+          <div className="flex w-full flex-col gap-3 pt-2 sm:w-auto sm:flex-row sm:flex-wrap">
+            <Link
+              href="/onboarding"
+              className="inline-flex h-12 w-full items-center justify-center rounded-md bg-[#2B5B84] px-6 font-display text-xs font-semibold tracking-[0.14em] text-white uppercase transition hover:bg-[#244e71] sm:w-auto"
+            >
+              Start as a Seeker
+            </Link>
+            <a
+              href="#featured"
+              className="inline-flex h-12 w-full items-center justify-center rounded-md border border-[#2B5B84]/25 bg-transparent px-6 font-display text-xs font-semibold tracking-[0.14em] text-[#2B5B84] uppercase transition hover:border-[#E87A5D] hover:text-[#E87A5D] sm:w-auto"
+            >
+              Browse Talent
+            </a>
+          </div>
+        </div>
       </div>
     </section>
   );

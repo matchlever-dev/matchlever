@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useFormContext } from "react-hook-form";
 import { FileText } from "lucide-react";
@@ -35,6 +35,7 @@ export function StepAuth() {
   const seekerTosAgreed = watch("seekerTosAgreed");
   const linkedInConnected = watch("linkedInConnected");
   const incognitoAgreed = watch("incognitoAgreed");
+  const [oauthError, setOauthError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -61,23 +62,35 @@ export function StepAuth() {
       return;
     }
 
+    setOauthError(null);
+
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "linkedin_oidc",
         options: {
           redirectTo: `${window.location.origin}/onboarding`,
+          skipBrowserRedirect: false,
         },
       });
+
       if (error) {
-        // Dev/demo fallback when LinkedIn provider is not configured yet.
         console.warn("[linkedin oauth]", error.message);
-        setValue("linkedInConnected", true, { shouldValidate: true });
+        setOauthError(formatOauthError(error.message));
         return;
+      }
+
+      // If Supabase returned a URL but the browser didn't navigate (rare), go there.
+      if (data?.url) {
+        window.location.assign(data.url);
       }
     } catch (err) {
       console.warn("[linkedin oauth]", err);
-      setValue("linkedInConnected", true, { shouldValidate: true });
+      setOauthError(
+        err instanceof Error
+          ? formatOauthError(err.message)
+          : "Unable to start LinkedIn sign-in."
+      );
     }
   }
 
@@ -175,6 +188,9 @@ export function StepAuth() {
             Accept the Terms of Service to unlock LinkedIn account creation.
           </p>
         )}
+        {oauthError && (
+          <p className="text-xs text-destructive">{oauthError}</p>
+        )}
         {errors.linkedInConnected && (
           <p className="text-xs text-destructive">
             {errors.linkedInConnected.message}
@@ -216,4 +232,11 @@ export function StepAuth() {
       </div>
     </div>
   );
+}
+
+function formatOauthError(message: string) {
+  if (/provider is not enabled|unsupported provider/i.test(message)) {
+    return "LinkedIn (OIDC) is not enabled in Supabase Auth yet. Enable it under Authentication → Providers, add your LinkedIn Client ID/Secret, then try again.";
+  }
+  return message;
 }

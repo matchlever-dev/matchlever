@@ -1,22 +1,17 @@
 import type { Metadata } from "next";
-import { Outfit, Source_Sans_3 } from "next/font/google";
+import { Montserrat } from "next/font/google";
 import "./globals.css";
 
-const outfit = Outfit({
-  variable: "--font-outfit",
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
-});
-
-const sourceSans = Source_Sans_3({
-  variable: "--font-source",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
   title: "MatchLever",
-  description: "Enterprise Software Talent Exchange",
+  description:
+    "No names. No bias. Just the right match. Connect with vetted talents at no cost until a match is made.",
 };
 
 export default function RootLayout({
@@ -26,9 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${outfit.variable} ${sourceSans.variable} font-sans antialiased`}
-      >
+      <body className={`${montserrat.variable} font-sans antialiased`}>
         {children}
       </body>
     </html>

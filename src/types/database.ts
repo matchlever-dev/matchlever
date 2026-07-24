@@ -21,6 +21,7 @@ export type Database = {
           avatar_url: string | null;
           is_admin: boolean;
           is_superuser: boolean;
+          role: string;
           created_at: string;
           updated_at: string;
         };
@@ -31,6 +32,7 @@ export type Database = {
           avatar_url?: string | null;
           is_admin?: boolean;
           is_superuser?: boolean;
+          role?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -41,6 +43,7 @@ export type Database = {
           avatar_url?: string | null;
           is_admin?: boolean;
           is_superuser?: boolean;
+          role?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -62,6 +65,8 @@ export type Database = {
           status: string;
           selected_tagline: string | null;
           verified_skills: Json;
+          raw_resume_text: string | null;
+          sanitized_summary: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -80,6 +85,8 @@ export type Database = {
           status?: string;
           selected_tagline?: string | null;
           verified_skills?: Json;
+          raw_resume_text?: string | null;
+          sanitized_summary?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -98,6 +105,8 @@ export type Database = {
           status?: string;
           selected_tagline?: string | null;
           verified_skills?: Json;
+          raw_resume_text?: string | null;
+          sanitized_summary?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -175,6 +184,142 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "candidate_references_candidate_profile_id_fkey";
+            columns: ["candidate_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "candidate_profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      hirer_profiles: {
+        Row: {
+          id: string;
+          user_id: string;
+          company_name: string;
+          title: string | null;
+          global_city: string | null;
+          global_country: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          company_name: string;
+          title?: string | null;
+          global_city?: string | null;
+          global_country?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          company_name?: string;
+          title?: string | null;
+          global_city?: string | null;
+          global_country?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "hirer_profiles_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
+            referencedRelation: "user_profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      job_postings: {
+        Row: {
+          id: string;
+          hirer_profile_id: string;
+          title: string;
+          company_name: string | null;
+          description: string | null;
+          status: string;
+          kanban_columns: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          hirer_profile_id: string;
+          title: string;
+          company_name?: string | null;
+          description?: string | null;
+          status?: string;
+          kanban_columns?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          hirer_profile_id?: string;
+          title?: string;
+          company_name?: string | null;
+          description?: string | null;
+          status?: string;
+          kanban_columns?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "job_postings_hirer_profile_id_fkey";
+            columns: ["hirer_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "hirer_profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      match_handshakes: {
+        Row: {
+          id: string;
+          job_posting_id: string;
+          candidate_profile_id: string;
+          kanban_column: string;
+          is_manual_match: boolean;
+          matched_by: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          job_posting_id: string;
+          candidate_profile_id: string;
+          kanban_column?: string;
+          is_manual_match?: boolean;
+          matched_by?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          job_posting_id?: string;
+          candidate_profile_id?: string;
+          kanban_column?: string;
+          is_manual_match?: boolean;
+          matched_by?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "match_handshakes_job_posting_id_fkey";
+            columns: ["job_posting_id"];
+            isOneToOne: false;
+            referencedRelation: "job_postings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "match_handshakes_candidate_profile_id_fkey";
             columns: ["candidate_profile_id"];
             isOneToOne: false;
             referencedRelation: "candidate_profiles";

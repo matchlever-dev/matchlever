@@ -10,8 +10,8 @@ import {
 const DEFAULT_MODEL = "llama-3.3-70b-versatile";
 
 export function getGroqClient() {
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) {
+  const apiKey = process.env.GROQ_API_KEY?.trim();
+  if (!apiKey || apiKey.includes("your-") || apiKey.length < 20) {
     throw new Error(
       "Missing GROQ_API_KEY. Add it to .env.local (https://console.groq.com/keys)."
     );

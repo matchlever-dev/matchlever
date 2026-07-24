@@ -86,10 +86,27 @@ Env for invite email:
 
 Without Supabase auth configured, the page runs in demo mode with sample data.
 
+## Admin & Superuser portals
+
+Middleware gates:
+
+- `/admin/*` requires `user_profiles.is_admin = true` (superusers also pass)
+- `/superuser/*` requires `user_profiles.is_superuser = true`
+
+Routes:
+
+- `/admin/users` — toggle `is_admin` / `is_superuser` switches
+- `/admin/candidates` — resume vs sanitized tabs, location/hours, reference authenticity audit, status override / delete
+- `/superuser/directory` — searchable Seekers + Hirers directory
+- `/superuser/manual-match` — Concierge Match into a job Kanban (`match_handshakes.is_manual_match = true`)
+
+Apply `supabase/migrations/20260723030000_admin_superuser_portals.sql` for hirers, jobs, handshakes, and resume audit fields. Without Supabase, portals run in demo mode.
+
 ## Schema (Phase 1)
 
-- `user_profiles` — `is_admin`, `is_superuser`
-- `candidate_profiles` — location, timezone, work hours, `suggested_taglines` JSONB, `status`, `selected_tagline`, `verified_skills`
+- `user_profiles` — `is_admin`, `is_superuser`, `role`
+- `candidate_profiles` — location, timezone, work hours, `suggested_taglines` JSONB, `status`, `selected_tagline`, `verified_skills`, `raw_resume_text`, `sanitized_summary`
 - `candidate_references` — email, LinkedIn, authenticity score/flags
+- `hirer_profiles`, `job_postings`, `match_handshakes` (`is_manual_match`)
 - Helpers: `is_admin()`, `is_superuser()`
 - RLS: candidate profiles editable by owner **or** `is_admin = true`

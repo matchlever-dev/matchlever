@@ -4,7 +4,7 @@ import { LandingHero } from "@/components/landing/landing-hero";
 
 export default function HomePage() {
   return (
-    <main className="bg-brand-canvas text-brand-charcoal">
+    <main className="bg-[#F7F6F3] text-[#2A2D34]">
       <LandingHero />
       <FeaturedCarousel />
       <CtaSplit />
