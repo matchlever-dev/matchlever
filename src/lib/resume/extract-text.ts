@@ -34,9 +34,10 @@ export async function extractResumeText(file: File): Promise<string> {
 }
 
 async function extractPdfText(buffer: Buffer): Promise<string> {
-  // Dynamic import keeps the API route module loadable if pdf-parse fails at boot on serverless.
+  // pdf-parse/worker must load first so @napi-rs/canvas polyfills DOMMatrix for pdfjs.
+  const { CanvasFactory } = await import("pdf-parse/worker");
   const { PDFParse } = await import("pdf-parse");
-  const parser = new PDFParse({ data: buffer });
+  const parser = new PDFParse({ data: buffer, CanvasFactory });
   try {
     const result = await parser.getText();
     const text = result.text?.trim() ?? "";
