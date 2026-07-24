@@ -34,19 +34,15 @@ export async function extractResumeText(file: File): Promise<string> {
 }
 
 async function extractPdfText(buffer: Buffer): Promise<string> {
-  // Dynamic import keeps the API route module loadable if pdf-parse fails at boot on serverless.
-  const { PDFParse } = await import("pdf-parse");
-  const parser = new PDFParse({ data: buffer });
-  try {
-    const result = await parser.getText();
-    const text = result.text?.trim() ?? "";
-    if (!text) {
-      throw new Error("Could not extract text from PDF. Try a text-based PDF.");
-    }
-    return text;
-  } finally {
-    await parser.destroy();
+  // unpdf ships a serverless PDF.js build — no DOMMatrix / canvas native deps.
+  const { extractText, getDocumentProxy } = await import("unpdf");
+  const pdf = await getDocumentProxy(new Uint8Array(buffer));
+  const { text } = await extractText(pdf, { mergePages: true });
+  const merged = text.trim();
+  if (!merged) {
+    throw new Error("Could not extract text from PDF. Try a text-based PDF.");
   }
+  return merged;
 }
 
 async function extractDocxText(buffer: Buffer): Promise<string> {
