@@ -1,6 +1,3 @@
-import mammoth from "mammoth";
-import { PDFParse } from "pdf-parse";
-
 const ACCEPTED_MIME_TYPES = new Set([
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -33,12 +30,12 @@ export async function extractResumeText(file: File): Promise<string> {
     return extractDocxText(buffer);
   }
 
-  throw new Error(
-    "Unsupported file type. Upload a PDF or DOCX resume."
-  );
+  throw new Error("Unsupported file type. Upload a PDF or DOCX resume.");
 }
 
 async function extractPdfText(buffer: Buffer): Promise<string> {
+  // Dynamic import keeps the API route module loadable if pdf-parse fails at boot on serverless.
+  const { PDFParse } = await import("pdf-parse");
   const parser = new PDFParse({ data: buffer });
   try {
     const result = await parser.getText();
@@ -53,6 +50,7 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
 }
 
 async function extractDocxText(buffer: Buffer): Promise<string> {
+  const mammoth = await import("mammoth");
   const result = await mammoth.extractRawText({ buffer });
   const text = result.value?.trim() ?? "";
   if (!text) {

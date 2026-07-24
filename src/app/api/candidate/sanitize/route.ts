@@ -11,9 +11,30 @@ export const dynamic = "force-dynamic";
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
 
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    endpoint: "/api/candidate/sanitize",
+    accepts: ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+    groqConfigured: Boolean(
+      process.env.GROQ_API_KEY?.trim() &&
+        !process.env.GROQ_API_KEY.includes("your-")
+    ),
+  });
+}
+
 export async function POST(request: Request) {
   try {
-    const formData = await request.formData();
+    let formData: FormData;
+    try {
+      formData = await request.formData();
+    } catch {
+      return NextResponse.json(
+        { error: "Expected multipart form upload with field \"resume\"." },
+        { status: 400 }
+      );
+    }
+
     const file = getResumeFile(formData);
 
     if (!file) {
@@ -69,8 +90,10 @@ export async function POST(request: Request) {
         : 502;
 
     const clientMessage = invalidKey
-      ? "Invalid GROQ_API_KEY. Create a new key at https://console.groq.com/keys, set it in .env.local, and restart the dev server."
-      : message;
+      ? "Invalid GROQ_API_KEY. Create a new key at https://console.groq.com/keys and set it in Vercel Environment Variables, then redeploy."
+      : missingKey
+        ? "Missing GROQ_API_KEY on the server. Add it in Vercel Environment Variables and redeploy."
+        : message;
 
     console.error("[/api/candidate/sanitize]", message);
     return NextResponse.json({ error: clientMessage }, { status });

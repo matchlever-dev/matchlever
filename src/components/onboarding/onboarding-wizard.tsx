@@ -72,10 +72,10 @@ export function OnboardingWizard() {
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        const data = (await res.json()) as { error?: string };
+        const data = (await res.json()) as { error?: string; warning?: string };
         throw new Error(data.error || "Could not complete onboarding");
       }
-      router.push("/?onboarding=complete");
+      router.push("/dashboard/seeker?onboarding=complete");
     } catch (err) {
       setSubmitError(
         err instanceof Error ? err.message : "Could not complete onboarding"

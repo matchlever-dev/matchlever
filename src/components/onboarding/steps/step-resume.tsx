@@ -38,7 +38,7 @@ export function StepResume() {
       if (!seekerTosAgreed) {
         setStatus("error");
         setErrorMessage(
-          "Agree to the Job Seeker Terms of Service before uploading a résumé."
+          "Agree to the Job Seeker Terms of Service before uploading a resume."
         );
         return;
       }
@@ -54,7 +54,17 @@ export function StepResume() {
           method: "POST",
           body,
         });
-        const data = (await res.json()) as SanitizeResponse;
+        const raw = await res.text();
+        let data: SanitizeResponse;
+        try {
+          data = JSON.parse(raw) as SanitizeResponse;
+        } catch {
+          throw new Error(
+            res.ok
+              ? "Resume API returned an unexpected response."
+              : `Resume sanitize failed (${res.status}). Check GROQ_API_KEY is set in Vercel and redeploy.`
+          );
+        }
         if (!res.ok) {
           throw new Error(data.error || "Sanitize failed");
         }
@@ -91,7 +101,7 @@ export function StepResume() {
     <div className="space-y-8">
       <div>
         <h2 className="font-display text-2xl font-semibold text-[#2B5B84] sm:text-3xl">
-          Sanitize your résumé
+          Sanitize your resume
         </h2>
         <p className="mt-2 text-sm text-[#2A2D34]/70 sm:text-base">
           Drop a PDF or DOCX. We extract signal, strip PII, and draft three
@@ -125,7 +135,7 @@ export function StepResume() {
         <FileUp className="size-8 text-[#2B5B84]" />
         <div>
           <p className="text-sm font-medium text-[#2A2D34]">
-            {fileName || "Drop résumé here, or click to browse"}
+            {fileName || "Drop resume here, or click to browse"}
           </p>
           <p className="mt-1 text-xs text-[#2A2D34]/55">PDF or DOCX · max 10MB</p>
         </div>

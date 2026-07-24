@@ -67,6 +67,11 @@ export type Database = {
           verified_skills: Json;
           raw_resume_text: string | null;
           sanitized_summary: string | null;
+          location_mode: string;
+          min_salary: number | null;
+          visa_status: string | null;
+          years_experience: number | null;
+          seeker_tos_accepted_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -87,6 +92,11 @@ export type Database = {
           verified_skills?: Json;
           raw_resume_text?: string | null;
           sanitized_summary?: string | null;
+          location_mode?: string;
+          min_salary?: number | null;
+          visa_status?: string | null;
+          years_experience?: number | null;
+          seeker_tos_accepted_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -107,6 +117,11 @@ export type Database = {
           verified_skills?: Json;
           raw_resume_text?: string | null;
           sanitized_summary?: string | null;
+          location_mode?: string;
+          min_salary?: number | null;
+          visa_status?: string | null;
+          years_experience?: number | null;
+          seeker_tos_accepted_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };

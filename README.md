@@ -86,6 +86,8 @@ Env for invite email:
 
 Without Supabase auth configured, the page runs in demo mode with sample data.
 
+Onboarding completion (`POST /api/onboarding/complete`) requires a signed-in user, upserts `candidate_profiles`, creates 3 `candidate_references` with tokens, and emails invite links via Resend.
+
 ## Admin & Superuser portals
 
 Middleware gates:

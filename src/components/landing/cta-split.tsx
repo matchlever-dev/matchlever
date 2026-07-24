@@ -38,7 +38,7 @@ export function CtaSplit() {
               I&apos;m Looking for Opportunities
             </p>
             <p className="mt-3 max-w-md text-sm leading-relaxed text-white/75 sm:mt-4 sm:text-base">
-              Join incognito, sanitize your résumé, and publish the signal hirers
+              Join incognito, sanitize your resume, and publish the signal hirers
               actually use.
             </p>
           </div>

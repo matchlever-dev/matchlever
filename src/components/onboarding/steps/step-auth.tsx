@@ -101,7 +101,7 @@ export function StepAuth() {
           Sign in privately
         </h2>
         <p className="mt-2 text-sm text-[#2A2D34]/70 sm:text-base">
-          Before you create an account or upload a résumé, review and agree to
+          Before you create an account or upload a resume, review and agree to
           the Job Seeker Terms of Service.
         </p>
       </div>
@@ -116,7 +116,7 @@ export function StepAuth() {
             <p className="mt-1 text-sm text-[#2A2D34]/65">
               Effective {SEEKER_TOS.effectiveDate}. Operated by{" "}
               {SEEKER_TOS.owner}. You must accept these Terms before LinkedIn
-              sign-in, account creation, or résumé upload.
+              sign-in, account creation, or resume upload.
             </p>
             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm">
               <Link
@@ -210,7 +210,7 @@ export function StepAuth() {
               Incognito Privacy Mode
             </Label>
             <p className="mt-1 text-sm text-[#2A2D34]/65">
-              I agree that MatchLever will strip PII from my résumé, keep my
+              I agree that MatchLever will strip PII from my resume, keep my
               identity anonymous to hirers by default, and only share contact
               details after mutual interest.
             </p>
