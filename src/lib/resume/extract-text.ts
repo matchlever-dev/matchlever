@@ -38,7 +38,7 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
   const { extractText, getDocumentProxy } = await import("unpdf");
   const pdf = await getDocumentProxy(new Uint8Array(buffer));
   const { text } = await extractText(pdf, { mergePages: true });
-  const merged = (typeof text === "string" ? text : text.join("\n")).trim();
+  const merged = text.trim();
   if (!merged) {
     throw new Error("Could not extract text from PDF. Try a text-based PDF.");
   }
