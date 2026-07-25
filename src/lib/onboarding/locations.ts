@@ -701,6 +701,9 @@ export const COUNTRY_OPTIONS: CountryOption[] = [
 export const OTHER_CITY_VALUE = "__other__";
 
 export function citiesForCountry(country: string): string[] {
-  return CITIES_BY_COUNTRY[country] ?? [];
+  const cities = CITIES_BY_COUNTRY[country] ?? [];
+  return [...cities].sort((a, b) =>
+    a.localeCompare(b, undefined, { sensitivity: "base" })
+  );
 }
 
