@@ -2,7 +2,7 @@ import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 
 import { sendReferenceInviteEmail } from "@/lib/email/resend";
-import { onboardingFormSchema } from "@/lib/onboarding/form-schema";
+import { onboardingFormSchema, resolveOnboardingCity } from "@/lib/onboarding/form-schema";
 import { TIMEZONE_OPTIONS } from "@/lib/onboarding/schema";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
@@ -143,19 +143,29 @@ export async function POST(request: Request) {
       }
     }
 
+    const orderedModes = (["remote", "hybrid", "onsite"] as const).filter(
+      (mode) => data.locationModes.includes(mode)
+    );
+    const needsLocal =
+      orderedModes.includes("hybrid") || orderedModes.includes("onsite");
+    const resolvedCity = resolveOnboardingCity(data);
+
     const candidatePayload = {
       user_id: user.id,
       headline: data.anonymousTitle?.trim() || "MatchLever Candidate",
       sanitized_summary: data.sanitizedSummary?.trim() || null,
       verified_skills: data.verifiedSkills,
-      suggested_taglines: data.suggestedTaglines,
-      selected_tagline: data.selectedTagline,
-      global_city: data.globalCity,
+      suggested_taglines: data.suggestedTaglines.map((t) => t.trim()),
+      selected_tagline: data.selectedTagline.trim(),
+      global_city: resolvedCity,
       global_country: data.globalCountry,
       timezone_offset: timezoneOffsetMinutes(data.timezone),
       work_hours_start: normalizeTime(data.workHoursStart),
       work_hours_end: normalizeTime(data.workHoursEnd),
-      location_mode: data.locationMode,
+      location_modes: orderedModes,
+      location_mode: orderedModes[0],
+      max_commute_miles: needsLocal ? data.maxCommuteMiles : null,
+      open_to_relocation: needsLocal ? data.openToRelocation : null,
       min_salary: data.minSalary,
       visa_status: data.visaStatus,
       years_experience: data.yearsExperience ?? null,
