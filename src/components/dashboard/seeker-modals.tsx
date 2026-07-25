@@ -121,7 +121,7 @@ export function EditProfileModal({
             <Textarea id="selectedTagline" rows={3} {...register("selectedTagline")} />
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="City" id="globalCity">
+            <Field label="Closest city" id="globalCity">
               <Input id="globalCity" {...register("globalCity")} />
             </Field>
             <Field label="Country" id="globalCountry">

@@ -68,6 +68,9 @@ export type Database = {
           raw_resume_text: string | null;
           sanitized_summary: string | null;
           location_mode: string;
+          location_modes: string[];
+          max_commute_miles: number | null;
+          open_to_relocation: boolean | null;
           min_salary: number | null;
           visa_status: string | null;
           years_experience: number | null;
@@ -93,6 +96,9 @@ export type Database = {
           raw_resume_text?: string | null;
           sanitized_summary?: string | null;
           location_mode?: string;
+          location_modes?: string[];
+          max_commute_miles?: number | null;
+          open_to_relocation?: boolean | null;
           min_salary?: number | null;
           visa_status?: string | null;
           years_experience?: number | null;
@@ -118,6 +124,9 @@ export type Database = {
           raw_resume_text?: string | null;
           sanitized_summary?: string | null;
           location_mode?: string;
+          location_modes?: string[];
+          max_commute_miles?: number | null;
+          open_to_relocation?: boolean | null;
           min_salary?: number | null;
           visa_status?: string | null;
           years_experience?: number | null;
