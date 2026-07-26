@@ -29,10 +29,7 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({
-        ...DEMO_SEEKER_DASHBOARD,
-        demo: true,
-      } satisfies SeekerDashboardData);
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { data: profile, error } = await supabase
@@ -53,7 +50,11 @@ export async function GET() {
 
     if (!profile) {
       return NextResponse.json(
-        { error: "Candidate profile not found" },
+        {
+          error: "Candidate profile not found",
+          code: "PROFILE_MISSING",
+          redirectTo: "/onboarding",
+        },
         { status: 404 }
       );
     }

@@ -45,6 +45,16 @@ export async function resolvePostLoginPath(
       safe.startsWith("/onboarding") ||
       safe === "/")
   ) {
+    // Returning seekers who already finished onboarding should land on the
+    // dashboard even when OAuth used next=/onboarding.
+    if (safe.startsWith("/onboarding")) {
+      const { data: candidate } = await supabase
+        .from("candidate_profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (candidate) return "/dashboard/seeker";
+    }
     return safe;
   }
 

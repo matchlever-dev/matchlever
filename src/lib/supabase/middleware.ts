@@ -6,7 +6,7 @@ import { getSupabaseEnv } from "@/lib/supabase/env";
 
 /**
  * Refreshes the Auth session on each matched request.
- * Gates /admin (is_admin) and /superuser (is_superuser) portals.
+ * Gates /dashboard (signed-in seeker), /admin (is_admin), and /superuser (is_superuser).
  */
 function redirectToLogin(request: NextRequest, nextPath: string) {
   const url = request.nextUrl.clone();
@@ -22,8 +22,10 @@ export async function updateSession(request: NextRequest) {
   });
 
   const pathname = request.nextUrl.pathname;
+  const needsSeeker = pathname.startsWith("/dashboard");
   const needsAdmin = pathname.startsWith("/admin");
   const needsSuperuser = pathname.startsWith("/superuser");
+  const needsAuth = needsSeeker || needsAdmin || needsSuperuser;
 
   const env = getSupabaseEnv();
   if (!env) {
@@ -60,18 +62,22 @@ export async function updateSession(request: NextRequest) {
     console.warn("[supabase middleware] session refresh skipped:", error);
   }
 
+  if (!needsAuth) {
+    return supabaseResponse;
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return redirectToLogin(
+      request,
+      `${pathname}${request.nextUrl.search}`
+    );
+  }
+
   if (needsAdmin || needsSuperuser) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return redirectToLogin(
-        request,
-        `${pathname}${request.nextUrl.search}`
-      );
-    }
-
     const { data: profile } = await supabase
       .from("user_profiles")
       .select("is_admin, is_superuser")
