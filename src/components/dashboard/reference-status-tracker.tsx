@@ -98,7 +98,7 @@ export function ReferenceStatusTracker({
         })}
         {references.length === 0 && (
           <li className="text-sm text-[#5B616B]">
-            No references yet. Complete onboarding to invite managers/peers.
+            No references yet. Complete onboarding to invite managers or peers.
           </li>
         )}
       </ul>

@@ -8,6 +8,14 @@ import { getSupabaseEnv } from "@/lib/supabase/env";
  * Refreshes the Auth session on each matched request.
  * Gates /admin (is_admin) and /superuser (is_superuser) portals.
  */
+function redirectToLogin(request: NextRequest, nextPath: string) {
+  const url = request.nextUrl.clone();
+  url.pathname = "/login";
+  url.search = "";
+  url.searchParams.set("next", nextPath);
+  return NextResponse.redirect(url);
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -58,7 +66,10 @@ export async function updateSession(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return redirectHome(request);
+      return redirectToLogin(
+        request,
+        `${pathname}${request.nextUrl.search}`
+      );
     }
 
     const { data: profile } = await supabase
@@ -71,19 +82,12 @@ export async function updateSession(request: NextRequest) {
     const isSuperuser = Boolean(profile?.is_superuser);
 
     if (needsSuperuser && !isSuperuser) {
-      return redirectHome(request);
+      return redirectToLogin(request, "/superuser");
     }
     if (needsAdmin && !isAdmin) {
-      return redirectHome(request);
+      return redirectToLogin(request, "/admin");
     }
   }
 
   return supabaseResponse;
-}
-
-function redirectHome(request: NextRequest) {
-  const url = request.nextUrl.clone();
-  url.pathname = "/";
-  url.searchParams.set("error", "unauthorized");
-  return NextResponse.redirect(url);
 }

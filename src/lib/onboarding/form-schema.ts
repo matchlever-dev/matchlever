@@ -154,7 +154,7 @@ export const defaultOnboardingValues: OnboardingFormValues = {
   references: [
     { email: "", relationship: "manager" },
     { email: "", relationship: "manager" },
-    { email: "", relationship: "peer" },
+    { email: "", relationship: "manager" },
   ],
 };
 
