@@ -14,9 +14,9 @@ import {
 } from "@/components/ui/select";
 
 const REFERENCE_SLOTS = [
-  { index: 0, title: "Former manager" },
-  { index: 1, title: "Former manager or skip-level" },
-  { index: 2, title: "Peer collaborator" },
+  { index: 0 },
+  { index: 1 },
+  { index: 2 },
 ] as const;
 
 export function StepReferences() {
@@ -33,8 +33,10 @@ export function StepReferences() {
           Reference intake
         </h2>
         <p className="mt-2 text-sm text-[#2A2D34]/70 sm:text-base">
-          Add three former managers or peers. Any valid email works—personal or
-          work—so references can reply from wherever they prefer.
+          Add three references — any mix of former managers or peers is fine
+          (all managers, all peers, or a combination). Any valid email
+          works—personal or work—so references can reply from wherever they
+          prefer.
         </p>
       </div>
 
@@ -45,7 +47,7 @@ export function StepReferences() {
             className="grid gap-3 rounded-xl border border-[#2B5B84]/15 bg-white p-4 sm:p-5"
           >
             <p className="text-xs font-semibold tracking-wide text-[#E87A5D] uppercase">
-              Reference {slot.index + 1} · {slot.title}
+              Reference {slot.index + 1}
             </p>
             <div className="grid gap-2">
               <Label htmlFor={`ref-email-${slot.index}`}>Email address</Label>

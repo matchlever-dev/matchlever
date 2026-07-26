@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import {
   DEMO_SEEKER_DASHBOARD,
@@ -17,30 +18,50 @@ import {
 } from "@/components/dashboard/seeker-modals";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/client";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 export function SeekerDashboard() {
+  const router = useRouter();
   const [data, setData] = useState<SeekerDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusBusy, setStatusBusy] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setNeedsOnboarding(false);
     try {
       const res = await fetch("/api/dashboard/seeker");
       const json = await res.json();
+      if (res.status === 401) {
+        router.replace("/login?next=/dashboard/seeker");
+        return;
+      }
+      if (res.status === 404 && json.code === "PROFILE_MISSING") {
+        setNeedsOnboarding(true);
+        setData(null);
+        setError(json.error || "Complete onboarding to open your dashboard.");
+        return;
+      }
       if (!res.ok) throw new Error(json.error || "Failed to load dashboard");
       setData(json as SeekerDashboardData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load dashboard");
-      setData(DEMO_SEEKER_DASHBOARD);
+      // Demo fixtures only when Supabase itself is not configured.
+      if (!isSupabaseConfigured()) {
+        setData(DEMO_SEEKER_DASHBOARD);
+      } else {
+        setData(null);
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     void load();
@@ -72,6 +93,16 @@ export function SeekerDashboard() {
     }
   }
 
+  async function signOut() {
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    } catch {
+      // Ignore when Supabase is unconfigured.
+    }
+    router.replace("/login");
+  }
+
   if (loading && !data) {
     return (
       <div className="flex min-h-[60svh] items-center justify-center text-sm text-[#5B616B]">
@@ -80,10 +111,35 @@ export function SeekerDashboard() {
     );
   }
 
+  if (needsOnboarding) {
+    return (
+      <div className="flex min-h-[60svh] flex-col items-center justify-center gap-4 px-5 text-center">
+        <p className="max-w-md text-sm text-[#5B616B]">
+          {error ||
+            "Finish seeker onboarding to create your anonymous profile and invite references."}
+        </p>
+        <Link
+          href="/onboarding"
+          className="inline-flex h-11 items-center justify-center rounded-md bg-[#2B5B84] px-5 font-display text-xs font-semibold tracking-[0.14em] text-white uppercase"
+        >
+          Continue onboarding
+        </Link>
+      </div>
+    );
+  }
+
   if (!data) {
     return (
-      <div className="flex min-h-[60svh] items-center justify-center text-sm text-destructive">
-        {error || "Unable to load dashboard"}
+      <div className="flex min-h-[60svh] flex-col items-center justify-center gap-4 px-5 text-center">
+        <p className="text-sm text-destructive">
+          {error || "Unable to load dashboard"}
+        </p>
+        <Link
+          href="/login?next=/dashboard/seeker"
+          className="text-sm font-medium text-[#2B5B84] underline underline-offset-2"
+        >
+          Log in again
+        </Link>
       </div>
     );
   }
@@ -100,12 +156,21 @@ export function SeekerDashboard() {
               Seeker Dashboard
             </span>
           </Link>
-          <Link
-            href="/onboarding"
-            className="text-xs font-medium text-[#2B5B84] hover:underline"
-          >
-            Onboarding
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/onboarding"
+              className="text-xs font-medium text-[#2B5B84] hover:underline"
+            >
+              Update prefs
+            </Link>
+            <button
+              type="button"
+              onClick={() => void signOut()}
+              className="text-xs font-medium text-[#5B616B] hover:text-[#2B5B84] hover:underline"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
       </header>
 

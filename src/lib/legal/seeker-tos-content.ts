@@ -34,7 +34,7 @@ export const SEEKER_TOS_SECTIONS = [
     intro:
       "MatchLever utilizes a peer-validated reference system to enhance profile trust.",
     bullets: [
-      "Reference Submission: You must provide email addresses for three former managers or peers.",
+      "Reference Submission: You must provide email addresses for three references. Each may be a former manager or a peer — any mix of the two is accepted.",
       "LinkedIn URL Verification: References are required to submit their full LinkedIn Profile URL when providing feedback.",
       "AI Authenticity Scoring: MatchLever runs a Multi-Signal AI Authenticity Scoring Matrix on all reference LinkedIn profiles. This system checks for bot-farm patterns, evaluates profile completeness against candidate claims, and checks connection counts and account maturity.",
       'Manual Review Flags: Any reference scoring below a 60% authenticity threshold will be flagged in the Admin portal with a "Low Authenticity / Potential Fake LinkedIn" warning for manual review. Arise Solutions LLC reserves the right to disqualify flagged references.',

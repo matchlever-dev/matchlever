@@ -33,16 +33,22 @@ export function PortalShell({
           </div>
           <nav className="flex flex-wrap items-center gap-1">
             {links.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={cn(
-                  "px-3 py-1.5 font-display text-xs font-semibold tracking-wide text-[#2B5B84] uppercase transition-colors hover:bg-[#2B5B84]/8"
-                )}
-              >
-                {link.label}
-              </Link>
+            <Link
+              key={link.href}
+              href={link.href}
+              className={cn(
+                "px-3 py-1.5 font-display text-xs font-semibold tracking-wide text-[#2B5B84] uppercase transition-colors hover:bg-[#2B5B84]/8"
+              )}
+            >
+              {link.label}
+            </Link>
             ))}
+            <Link
+              href="/"
+              className="px-3 py-1.5 font-display text-xs font-semibold tracking-wide text-[#5B616B] uppercase transition-colors hover:bg-[#2B5B84]/8"
+            >
+              Home
+            </Link>
           </nav>
         </div>
       </header>

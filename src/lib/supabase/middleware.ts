@@ -6,16 +6,26 @@ import { getSupabaseEnv } from "@/lib/supabase/env";
 
 /**
  * Refreshes the Auth session on each matched request.
- * Gates /admin (is_admin) and /superuser (is_superuser) portals.
+ * Gates /dashboard (signed-in seeker), /admin (is_admin), and /superuser (is_superuser).
  */
+function redirectToLogin(request: NextRequest, nextPath: string) {
+  const url = request.nextUrl.clone();
+  url.pathname = "/login";
+  url.search = "";
+  url.searchParams.set("next", nextPath);
+  return NextResponse.redirect(url);
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   });
 
   const pathname = request.nextUrl.pathname;
+  const needsSeeker = pathname.startsWith("/dashboard");
   const needsAdmin = pathname.startsWith("/admin");
   const needsSuperuser = pathname.startsWith("/superuser");
+  const needsAuth = needsSeeker || needsAdmin || needsSuperuser;
 
   const env = getSupabaseEnv();
   if (!env) {
@@ -52,15 +62,22 @@ export async function updateSession(request: NextRequest) {
     console.warn("[supabase middleware] session refresh skipped:", error);
   }
 
+  if (!needsAuth) {
+    return supabaseResponse;
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return redirectToLogin(
+      request,
+      `${pathname}${request.nextUrl.search}`
+    );
+  }
+
   if (needsAdmin || needsSuperuser) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return redirectHome(request);
-    }
-
     const { data: profile } = await supabase
       .from("user_profiles")
       .select("is_admin, is_superuser")
@@ -71,19 +88,12 @@ export async function updateSession(request: NextRequest) {
     const isSuperuser = Boolean(profile?.is_superuser);
 
     if (needsSuperuser && !isSuperuser) {
-      return redirectHome(request);
+      return redirectToLogin(request, "/superuser");
     }
     if (needsAdmin && !isAdmin) {
-      return redirectHome(request);
+      return redirectToLogin(request, "/admin");
     }
   }
 
   return supabaseResponse;
-}
-
-function redirectHome(request: NextRequest) {
-  const url = request.nextUrl.clone();
-  url.pathname = "/";
-  url.searchParams.set("error", "unauthorized");
-  return NextResponse.redirect(url);
 }

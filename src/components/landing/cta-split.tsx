@@ -26,10 +26,7 @@ export function CtaSplit() {
       </svg>
 
       <div className="relative mx-auto grid max-w-6xl gap-6 px-5 sm:gap-10 sm:px-8 lg:grid-cols-2 lg:gap-16">
-        <Link
-          href="/onboarding"
-          className="group flex min-h-[220px] flex-col justify-between border border-white/20 p-6 transition hover:border-[#E87A5D] sm:min-h-0 sm:p-10"
-        >
+        <div className="group flex min-h-[220px] flex-col justify-between border border-white/20 p-6 transition hover:border-[#E87A5D] sm:min-h-0 sm:p-10">
           <div>
             <p className="font-display text-[11px] font-semibold tracking-[0.28em] text-[#E87A5D] uppercase">
               Seekers
@@ -42,11 +39,22 @@ export function CtaSplit() {
               actually use.
             </p>
           </div>
-          <span className="mt-8 inline-flex items-center gap-2 font-display text-xs font-semibold tracking-[0.16em] uppercase sm:mt-12">
-            Begin onboarding
-            <ArrowRight className="size-4 transition group-hover:translate-x-1" />
-          </span>
-        </Link>
+          <div className="mt-8 flex flex-col gap-3 sm:mt-12">
+            <Link
+              href="/onboarding"
+              className="inline-flex items-center gap-2 font-display text-xs font-semibold tracking-[0.16em] uppercase"
+            >
+              Begin onboarding
+              <ArrowRight className="size-4 transition group-hover:translate-x-1" />
+            </Link>
+            <Link
+              href="/login?next=/dashboard/seeker"
+              className="font-display text-[11px] font-medium tracking-wide text-white/70 underline underline-offset-2 transition hover:text-white"
+            >
+              Already a seeker? Log in
+            </Link>
+          </div>
+        </div>
 
         <div className="relative flex min-h-[220px] flex-col justify-between border border-white/15 bg-white/5 p-6 sm:min-h-0 sm:p-10">
           <span className="absolute top-5 right-5 bg-[#E87A5D] px-2.5 py-1 font-display text-[10px] font-bold tracking-[0.2em] text-white uppercase sm:top-6 sm:right-6">

@@ -66,10 +66,13 @@ export function StepAuth() {
 
     try {
       const supabase = createClient();
+      const redirectTo = new URL("/auth/callback", window.location.origin);
+      redirectTo.searchParams.set("next", "/onboarding");
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "linkedin_oidc",
         options: {
-          redirectTo: `${window.location.origin}/onboarding`,
+          redirectTo: redirectTo.toString(),
           skipBrowserRedirect: false,
         },
       });
