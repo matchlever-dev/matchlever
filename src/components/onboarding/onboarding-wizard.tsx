@@ -71,9 +71,19 @@ export function OnboardingWizard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+      const data = (await res.json()) as {
+        error?: string;
+        warning?: string;
+      };
       if (!res.ok) {
-        const data = (await res.json()) as { error?: string; warning?: string };
         throw new Error(data.error || "Could not complete onboarding");
+      }
+      if (data.warning) {
+        // Keep a soft signal in the URL so the dashboard can surface it.
+        router.push(
+          `/dashboard/seeker?onboarding=complete&warning=${encodeURIComponent(data.warning)}`
+        );
+        return;
       }
       router.push("/dashboard/seeker?onboarding=complete");
     } catch (err) {

@@ -280,28 +280,22 @@ export async function POST(request: Request) {
     }
 
     const failedEmails = emailResults.filter((r) => r.error);
-    if (failedEmails.length === insertedRefs.length) {
-      return NextResponse.json(
-        {
-          error:
-            "Profile saved, but reference emails failed to send. Check RESEND_API_KEY / domain.",
-          candidateId,
-          emailResults,
-        },
-        { status: 502 }
-      );
-    }
+    const firstError = failedEmails[0]?.error;
+    const warning =
+      failedEmails.length === 0
+        ? undefined
+        : failedEmails.length === insertedRefs.length
+          ? `Reference emails failed to send${firstError ? `: ${firstError}` : ""}. You can resend from the dashboard. Check RESEND_FROM_EMAIL uses a verified Resend domain.`
+          : "Some reference emails failed — you can resend from the dashboard.";
 
+    // Profile + invites are already saved; never block onboarding completion on email delivery.
     return NextResponse.json({
       ok: true,
       candidateId,
       referencesCreated: insertedRefs.length,
       emailsSent: emailResults.filter((r) => !r.error).length,
       emailResults,
-      warning:
-        failedEmails.length > 0
-          ? "Some reference emails failed — you can resend from the dashboard."
-          : undefined,
+      warning,
     });
   } catch (error) {
     const message =
