@@ -4,7 +4,9 @@ import { z } from "zod";
 import {
   DEMO_SEEKER_DASHBOARD,
   formatTimezoneOffset,
+  hasCompleteReferences,
   initialsFromName,
+  REQUIRED_VERIFIED_REFERENCES,
   type SeekerDashboardData,
   type SeekerReferenceRow,
 } from "@/lib/dashboard/seeker";
@@ -88,6 +90,20 @@ export async function GET() {
         : null) ||
       user.email;
 
+    const refs = (references ?? []) as SeekerReferenceRow[];
+    const refsComplete = hasCompleteReferences(refs);
+    let status: SeekerDashboardData["status"] =
+      profile.status === "on_hold" ? "on_hold" : "actively_looking";
+
+    // Never surface as actively looking until all references are verified.
+    if (status === "actively_looking" && !refsComplete) {
+      status = "on_hold";
+      void supabase
+        .from("candidate_profiles")
+        .update({ status: "on_hold" })
+        .eq("id", profile.id);
+    }
+
     const payload: SeekerDashboardData = {
       demo: false,
       profileId: profile.id,
@@ -102,8 +118,8 @@ export async function GET() {
       globalCountry: profile.global_country || "Global",
       timezoneOffset: profile.timezone_offset,
       timezoneLabel: formatTimezoneOffset(profile.timezone_offset),
-      status: profile.status === "on_hold" ? "on_hold" : "actively_looking",
-      references: (references ?? []) as SeekerReferenceRow[],
+      status,
+      references: refs,
     };
 
     return NextResponse.json(payload);
@@ -147,10 +163,47 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { data: profile, error: profileError } = await supabase
+      .from("candidate_profiles")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (profileError || !profile) {
+      return NextResponse.json(
+        { error: "Candidate profile not found" },
+        { status: 404 }
+      );
+    }
+
+    if (parsed.data.status === "actively_looking") {
+      const { data: references, error: refError } = await supabase
+        .from("candidate_references")
+        .select("status")
+        .eq("candidate_profile_id", profile.id);
+
+      if (refError) {
+        console.error("[seeker status refs]", refError.message);
+        return NextResponse.json(
+          { error: "Unable to verify references" },
+          { status: 500 }
+        );
+      }
+
+      if (!hasCompleteReferences(references ?? [])) {
+        return NextResponse.json(
+          {
+            error: `Complete all ${REQUIRED_VERIFIED_REFERENCES} references before turning Actively Looking on.`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     const { error } = await supabase
       .from("candidate_profiles")
       .update({ status: parsed.data.status })
-      .eq("user_id", user.id);
+      .eq("id", profile.id);
 
     if (error) {
       console.error("[seeker status]", error.message);

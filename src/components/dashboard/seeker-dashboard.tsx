@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 
 import {
   DEMO_SEEKER_DASHBOARD,
+  hasCompleteReferences,
+  REQUIRED_VERIFIED_REFERENCES,
   type SeekerAvailability,
   type SeekerDashboardData,
 } from "@/lib/dashboard/seeker";
@@ -72,7 +74,17 @@ export function SeekerDashboard() {
     const nextStatus: SeekerAvailability = nextChecked
       ? "actively_looking"
       : "on_hold";
+    if (
+      nextStatus === "actively_looking" &&
+      !hasCompleteReferences(data.references)
+    ) {
+      setError(
+        `Complete all ${REQUIRED_VERIFIED_REFERENCES} references before turning Actively Looking on.`
+      );
+      return;
+    }
     const previous = data.status;
+    setError(null);
     setData({ ...data, status: nextStatus });
     setStatusBusy(true);
     try {
@@ -144,7 +156,10 @@ export function SeekerDashboard() {
     );
   }
 
-  const activelyLooking = data.status === "actively_looking";
+  const referencesComplete = hasCompleteReferences(data.references);
+  const activelyLooking =
+    data.status === "actively_looking" && referencesComplete;
+  const canGoActive = referencesComplete;
 
   return (
     <div className="min-h-[100svh] bg-[#F7F6F3] text-[#2A2D34]">
@@ -186,33 +201,40 @@ export function SeekerDashboard() {
               Status
             </h2>
             <p className="mt-2 max-w-lg text-sm text-[#5B616B]">
-              {activelyLooking
-                ? "Your anonymous card is visible to matched hirers."
-                : "Your profile is hidden from all searches until you turn looking back on."}
+              {!canGoActive
+                ? `Your profile stays hidden until all ${REQUIRED_VERIFIED_REFERENCES} references are verified — then you can turn Actively Looking on.`
+                : activelyLooking
+                  ? "Your anonymous card is visible to matched hirers."
+                  : "Your profile is hidden from all searches until you turn looking back on."}
             </p>
+            {error && (
+              <p className="mt-2 text-sm text-destructive" role="alert">
+                {error}
+              </p>
+            )}
 
             <div className="mt-5 flex flex-col gap-4 rounded-lg border border-[#2B5B84]/15 bg-[#F7F6F3] p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
-                <span
-                  className={`font-display text-sm font-semibold ${
-                    activelyLooking ? "text-[#2B5B84]" : "text-[#5B616B]"
-                  }`}
-                >
-                  Actively Looking
-                </span>
-                <Switch
-                  checked={activelyLooking}
-                  disabled={statusBusy}
-                  onCheckedChange={(checked) => void toggleStatus(checked)}
-                  aria-label="Toggle actively looking versus on hold"
-                  className="data-checked:bg-[#2B5B84] data-unchecked:bg-[#E87A5D]"
-                />
                 <span
                   className={`font-display text-sm font-semibold ${
                     !activelyLooking ? "text-[#E87A5D]" : "text-[#5B616B]"
                   }`}
                 >
                   On Hold (Snoozed)
+                </span>
+                <Switch
+                  checked={activelyLooking}
+                  disabled={statusBusy || (!canGoActive && !activelyLooking)}
+                  onCheckedChange={(checked) => void toggleStatus(checked)}
+                  aria-label="Toggle on hold versus actively looking"
+                  className="data-checked:bg-[#2B5B84] data-unchecked:bg-[#E87A5D]"
+                />
+                <span
+                  className={`font-display text-sm font-semibold ${
+                    activelyLooking ? "text-[#2B5B84]" : "text-[#5B616B]"
+                  }`}
+                >
+                  Actively Looking
                 </span>
               </div>
               {!activelyLooking && (

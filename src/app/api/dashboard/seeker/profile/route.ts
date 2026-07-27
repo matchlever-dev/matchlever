@@ -4,6 +4,10 @@ import { z } from "zod";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { Database } from "@/types/database";
+
+type CandidateProfileUpdate =
+  Database["public"]["Tables"]["candidate_profiles"]["Update"];
 
 const editSchema = z.object({
   headline: z.string().trim().min(2).max(120),
@@ -12,6 +16,9 @@ const editSchema = z.object({
   globalCountry: z.string().trim().min(1).max(80),
   timezoneOffset: z.number().int().min(-720).max(840).nullable(),
   verifiedSkills: z.array(z.string().trim().min(1)).max(20),
+  suggestedTaglines: z.array(z.string().trim().min(8).max(200)).max(5).optional(),
+  sanitizedSummary: z.string().trim().max(4000).nullable().optional(),
+  yearsExperience: z.number().int().min(0).max(60).nullable().optional(),
 });
 
 export async function PATCH(request: Request) {
@@ -36,16 +43,27 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const update: CandidateProfileUpdate = {
+      headline: parsed.data.headline,
+      selected_tagline: parsed.data.selectedTagline,
+      global_city: parsed.data.globalCity,
+      global_country: parsed.data.globalCountry,
+      timezone_offset: parsed.data.timezoneOffset,
+      verified_skills: parsed.data.verifiedSkills,
+      ...(parsed.data.suggestedTaglines
+        ? { suggested_taglines: parsed.data.suggestedTaglines }
+        : {}),
+      ...(parsed.data.sanitizedSummary !== undefined
+        ? { sanitized_summary: parsed.data.sanitizedSummary }
+        : {}),
+      ...(parsed.data.yearsExperience !== undefined
+        ? { years_experience: parsed.data.yearsExperience }
+        : {}),
+    };
+
     const { error } = await supabase
       .from("candidate_profiles")
-      .update({
-        headline: parsed.data.headline,
-        selected_tagline: parsed.data.selectedTagline,
-        global_city: parsed.data.globalCity,
-        global_country: parsed.data.globalCountry,
-        timezone_offset: parsed.data.timezoneOffset,
-        verified_skills: parsed.data.verifiedSkills,
-      })
+      .update(update)
       .eq("user_id", user.id);
 
     if (error) {
