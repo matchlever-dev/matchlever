@@ -170,7 +170,8 @@ export async function POST(request: Request) {
       visa_status: data.visaStatus,
       years_experience: data.yearsExperience ?? null,
       seeker_tos_accepted_at: new Date().toISOString(),
-      status: "actively_looking",
+      // Hidden until all three references are verified.
+      status: "on_hold",
     };
 
     const { data: existingCandidate } = await supabase
