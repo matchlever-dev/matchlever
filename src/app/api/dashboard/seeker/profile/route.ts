@@ -4,6 +4,10 @@ import { z } from "zod";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { Database } from "@/types/database";
+
+type CandidateProfileUpdate =
+  Database["public"]["Tables"]["candidate_profiles"]["Update"];
 
 const editSchema = z.object({
   headline: z.string().trim().min(2).max(120),
@@ -39,23 +43,23 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const update: Record<string, unknown> = {
+    const update: CandidateProfileUpdate = {
       headline: parsed.data.headline,
       selected_tagline: parsed.data.selectedTagline,
       global_city: parsed.data.globalCity,
       global_country: parsed.data.globalCountry,
       timezone_offset: parsed.data.timezoneOffset,
       verified_skills: parsed.data.verifiedSkills,
+      ...(parsed.data.suggestedTaglines
+        ? { suggested_taglines: parsed.data.suggestedTaglines }
+        : {}),
+      ...(parsed.data.sanitizedSummary !== undefined
+        ? { sanitized_summary: parsed.data.sanitizedSummary }
+        : {}),
+      ...(parsed.data.yearsExperience !== undefined
+        ? { years_experience: parsed.data.yearsExperience }
+        : {}),
     };
-    if (parsed.data.suggestedTaglines) {
-      update.suggested_taglines = parsed.data.suggestedTaglines;
-    }
-    if (parsed.data.sanitizedSummary !== undefined) {
-      update.sanitized_summary = parsed.data.sanitizedSummary;
-    }
-    if (parsed.data.yearsExperience !== undefined) {
-      update.years_experience = parsed.data.yearsExperience;
-    }
 
     const { error } = await supabase
       .from("candidate_profiles")
