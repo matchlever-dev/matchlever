@@ -42,15 +42,6 @@ export function LandingHero() {
       </svg>
 
       <div className="relative mx-auto flex min-h-[100svh] w-full max-w-6xl flex-col justify-center px-5 py-20 sm:px-8 sm:py-24">
-        <div className="absolute top-5 right-5 sm:top-8 sm:right-8">
-          <Link
-            href="/login"
-            className="font-display text-xs font-semibold tracking-[0.14em] text-[#2B5B84] uppercase transition hover:text-[#E87A5D]"
-          >
-            Log in
-          </Link>
-        </div>
-
         <div className="flex flex-col items-start gap-6 sm:gap-8">
           <motion.div
             initial={false}

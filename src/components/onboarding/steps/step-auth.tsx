@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useFormContext } from "react-hook-form";
 import { FileText } from "lucide-react";
 
+import { setStaySignedInPreference } from "@/lib/auth/stay-signed-in";
 import type { OnboardingFormValues } from "@/lib/onboarding/form-schema";
 import { SEEKER_TOS } from "@/lib/legal/seeker-tos";
 import { createClient } from "@/lib/supabase/client";
@@ -65,6 +66,8 @@ export function StepAuth() {
     setOauthError(null);
 
     try {
+      // Default onboarding sessions to a 60-minute stay-signed-in window.
+      setStaySignedInPreference(true);
       const supabase = createClient();
       const redirectTo = new URL("/auth/callback", window.location.origin);
       redirectTo.searchParams.set("next", "/onboarding");

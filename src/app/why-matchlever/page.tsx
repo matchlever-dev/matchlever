@@ -23,12 +23,6 @@ export default function WhyMatchLeverPage() {
           </Link>
           <div className="flex items-center gap-4 text-xs font-medium">
             <Link
-              href="/login"
-              className="text-[#2B5B84] hover:underline"
-            >
-              Log in
-            </Link>
-            <Link
               href="/onboarding"
               className="text-[#E87A5D] hover:underline"
             >

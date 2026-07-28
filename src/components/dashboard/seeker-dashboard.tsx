@@ -179,12 +179,6 @@ export function SeekerDashboard() {
             </span>
           </Link>
           <div className="flex items-center gap-4">
-            <Link
-              href="/onboarding"
-              className="text-xs font-medium text-[#2B5B84] hover:underline"
-            >
-              Update prefs
-            </Link>
             <button
               type="button"
               onClick={() => void signOut()}
