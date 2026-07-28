@@ -11,6 +11,7 @@ import {
   type ReferenceFormValues,
 } from "@/lib/reference/schema";
 import { BrandMark } from "@/components/brand/brand-mark";
+import { ReferrerSeekerCta } from "@/components/reference/referrer-seeker-cta";
 import { Progress } from "@/components/ui/progress";
 import {
   StepEndorsement,
@@ -24,6 +25,7 @@ type Invite = {
   status: string;
   relationship: string | null;
   reference_name: string | null;
+  reference_linkedin_url: string | null;
   candidate_title: string;
   candidate_tagline: string;
   demo?: boolean;
@@ -76,6 +78,9 @@ export function ReferenceVerificationWizard({ token }: { token: string }) {
         }
         if (data.reference_name) {
           form.setValue("managerName", data.reference_name);
+        }
+        if (data.reference_linkedin_url) {
+          form.setValue("linkedInUrl", data.reference_linkedin_url);
         }
         if (data.status === "verified") {
           setDone({ authenticity_score: 100 });
@@ -207,19 +212,22 @@ export function ReferenceVerificationWizard({ token }: { token: string }) {
 
   if (done) {
     return (
-      <div className="flex min-h-[100svh] items-center justify-center bg-[#F7F6F3] px-5">
-        <div className="max-w-sm text-center">
-          <BrandMark className="mx-auto h-14 w-auto" />
-          <p className="mt-4 font-display text-2xl font-semibold text-[#2B5B84]">
-            Thank you
-          </p>
-          <p className="mt-2 text-sm leading-relaxed text-[#5B616B]">
-            Your verification is in. Authenticity score recorded:{" "}
-            <span className="font-semibold text-[#E87A5D]">
-              {Math.round(done.authenticity_score)}
-            </span>
-            /100.
-          </p>
+      <div className="flex min-h-[100svh] items-center justify-center bg-[#F7F6F3] px-5 py-10">
+        <div className="w-full max-w-sm">
+          <div className="text-center">
+            <BrandMark className="mx-auto h-14 w-auto" />
+            <p className="mt-4 font-display text-2xl font-semibold text-[#2B5B84]">
+              Thank you
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-[#5B616B]">
+              Your verification is in. Authenticity score recorded:{" "}
+              <span className="font-semibold text-[#E87A5D]">
+                {Math.round(done.authenticity_score)}
+              </span>
+              /100.
+            </p>
+          </div>
+          <ReferrerSeekerCta className="mt-8 text-left" />
         </div>
       </div>
     );
@@ -262,7 +270,10 @@ export function ReferenceVerificationWizard({ token }: { token: string }) {
               transition={{ duration: 0.2 }}
             >
               {step === 1 && (
-                <StepIdentity candidateTitle={invite?.candidate_title} />
+                <StepIdentity
+                  candidateTitle={invite?.candidate_title}
+                  lockedLinkedInUrl={invite?.reference_linkedin_url}
+                />
               )}
               {step === 2 && <StepSuperpowers />}
               {step === 3 && <StepRatings />}

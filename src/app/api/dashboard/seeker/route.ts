@@ -64,7 +64,7 @@ export async function GET() {
     const { data: references, error: refError } = await supabase
       .from("candidate_references")
       .select(
-        "id, reference_email, reference_name, relationship, status, verification_token"
+        "id, reference_email, reference_linkedin_url, reference_name, relationship, status, verification_token"
       )
       .eq("candidate_profile_id", profile.id)
       .order("created_at", { ascending: true });

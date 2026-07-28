@@ -6,6 +6,7 @@ export const REQUIRED_VERIFIED_REFERENCES = 3;
 export type SeekerReferenceRow = {
   id: string;
   reference_email: string;
+  reference_linkedin_url: string | null;
   reference_name: string | null;
   relationship: string | null;
   status: string;
@@ -95,6 +96,7 @@ export const DEMO_SEEKER_DASHBOARD: SeekerDashboardData = {
     {
       id: "ref-1",
       reference_email: "manager.one@example.com",
+      reference_linkedin_url: "https://www.linkedin.com/in/jordan-lee",
       reference_name: "Jordan Lee",
       relationship: "manager",
       status: "verified",
@@ -103,6 +105,7 @@ export const DEMO_SEEKER_DASHBOARD: SeekerDashboardData = {
     {
       id: "ref-2",
       reference_email: "peer.two@example.com",
+      reference_linkedin_url: "https://www.linkedin.com/in/peer-two",
       reference_name: null,
       relationship: "peer",
       status: "verified",
@@ -111,6 +114,7 @@ export const DEMO_SEEKER_DASHBOARD: SeekerDashboardData = {
     {
       id: "ref-3",
       reference_email: "director@example.com",
+      reference_linkedin_url: "https://www.linkedin.com/in/director-example",
       reference_name: null,
       relationship: "skip_level",
       status: "pending",

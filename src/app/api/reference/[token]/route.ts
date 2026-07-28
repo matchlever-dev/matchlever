@@ -22,6 +22,7 @@ export async function GET(_request: Request, context: RouteContext) {
       status: "pending",
       relationship: "manager",
       reference_name: null,
+      reference_linkedin_url: "https://www.linkedin.com/in/demo-manager",
       candidate_title: "Staff Platform Engineer",
       candidate_tagline: "Cut p99 latency 62% on a multi-region event bus",
       demo: true,

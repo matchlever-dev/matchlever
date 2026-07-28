@@ -84,9 +84,25 @@ function getDeepSeekClient() {
   });
 }
 
+function structuralFallback(
+  signals: LinkedInStructureSignals,
+  reason: string
+): AuthenticityResult & { signals: LinkedInStructureSignals } {
+  return {
+    authenticity_score: signals.structuralScore,
+    authenticity_flags: [
+      "deepseek_unavailable",
+      signals.slugLooksHuman ? "slug_looks_human" : "slug_weak",
+      `connections_band:${signals.estimatedConnectionsBand}`,
+    ],
+    rationale: reason,
+    signals,
+  };
+}
+
 /**
  * Scores LinkedIn authenticity via DeepSeek V3 using URL structure + heuristic signals.
- * Falls back to structural score when DeepSeek is not configured.
+ * Falls back to structural score when DeepSeek is missing or fails (e.g. billing).
  */
 export async function scoreLinkedInAuthenticity(
   linkedInUrl: string,
@@ -96,28 +112,23 @@ export async function scoreLinkedInAuthenticity(
   const client = getDeepSeekClient();
 
   if (!client) {
-    return {
-      authenticity_score: signals.structuralScore,
-      authenticity_flags: [
-        "deepseek_unavailable",
-        signals.slugLooksHuman ? "slug_looks_human" : "slug_weak",
-        `connections_band:${signals.estimatedConnectionsBand}`,
-      ],
-      rationale: "Scored from LinkedIn URL structure heuristics only.",
+    return structuralFallback(
       signals,
-    };
+      "Scored from LinkedIn URL structure heuristics only."
+    );
   }
 
   const model = process.env.DEEPSEEK_MODEL?.trim() || "deepseek-chat";
 
-  const completion = await client.chat.completions.create({
-    model,
-    temperature: 0.1,
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "system",
-        content: `You are MatchLever's reference authenticity engine.
+  try {
+    const completion = await client.chat.completions.create({
+      model,
+      temperature: 0.1,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content: `You are MatchLever's reference authenticity engine.
 Analyze LinkedIn profile URL STRUCTURE and provided account-age / connection INDICATORS.
 Do NOT invent private profile facts. Score authenticity from 0-100.
 Return ONLY JSON:
@@ -127,34 +138,43 @@ Return ONLY JSON:
   "rationale": string
 }
 Flag examples: valid_url_structure, human_slug, weak_slug, young_account_signal, strong_connection_band, suspicious_pattern.`,
-      },
-      {
-        role: "user",
-        content: JSON.stringify({
-          managerName: context.managerName,
-          relationship: context.relationship,
-          signals,
-        }),
-      },
-    ],
-  });
+        },
+        {
+          role: "user",
+          content: JSON.stringify({
+            managerName: context.managerName,
+            relationship: context.relationship,
+            signals,
+          }),
+        },
+      ],
+    });
 
-  const content = completion.choices[0]?.message?.content;
-  if (!content) {
-    throw new Error("DeepSeek returned an empty authenticity response.");
+    const content = completion.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error("DeepSeek returned an empty authenticity response.");
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      throw new Error("DeepSeek returned non-JSON authenticity content.");
+    }
+
+    const result = authenticityResultSchema.safeParse(parsed);
+    if (!result.success) {
+      throw new Error("DeepSeek authenticity payload failed validation.");
+    }
+
+    return { ...result.data, signals };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "DeepSeek authenticity failed";
+    console.error("[authenticity deepseek]", message);
+    return structuralFallback(
+      signals,
+      `DeepSeek unavailable (${message}); scored from LinkedIn URL structure heuristics only.`
+    );
   }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(content);
-  } catch {
-    throw new Error("DeepSeek returned non-JSON authenticity content.");
-  }
-
-  const result = authenticityResultSchema.safeParse(parsed);
-  if (!result.success) {
-    throw new Error("DeepSeek authenticity payload failed validation.");
-  }
-
-  return { ...result.data, signals };
 }

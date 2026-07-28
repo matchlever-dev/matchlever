@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { OTHER_CITY_VALUE } from "@/lib/onboarding/locations";
+import { linkedInUrlSchema } from "@/lib/reference/schema";
 
 export const ONBOARDING_STEPS = [
   { id: 1, key: "auth", title: "Identity", description: "Sign in privately" },
@@ -48,10 +49,42 @@ export const onboardingFormObjectSchema = z.object({
     .array(
       z.object({
         email: z.string().email("Enter a valid email address"),
+        linkedInUrl: linkedInUrlSchema,
         relationship: z.enum(["manager", "peer"]),
       })
     )
-    .length(3),
+    .length(3)
+    .superRefine((refs, ctx) => {
+      const seenLinkedIn = new Set<string>();
+      const seenEmail = new Set<string>();
+      refs.forEach((ref, index) => {
+        const email = ref.email.trim().toLowerCase();
+        if (email && seenEmail.has(email)) {
+          ctx.addIssue({
+            code: "custom",
+            message: "Each reference needs a unique email",
+            path: [index, "email"],
+          });
+        }
+        seenEmail.add(email);
+
+        try {
+          const key = new URL(ref.linkedInUrl.trim()).pathname
+            .replace(/\/+$/, "")
+            .toLowerCase();
+          if (key && seenLinkedIn.has(key)) {
+            ctx.addIssue({
+              code: "custom",
+              message: "Each reference needs a unique LinkedIn profile",
+              path: [index, "linkedInUrl"],
+            });
+          }
+          seenLinkedIn.add(key);
+        } catch {
+          // linkedInUrlSchema already validates format
+        }
+      });
+    }),
 });
 
 function refinePreferences(
@@ -152,9 +185,9 @@ export const defaultOnboardingValues: OnboardingFormValues = {
   visaStatus: "none",
   selectedTagline: "",
   references: [
-    { email: "", relationship: "manager" },
-    { email: "", relationship: "manager" },
-    { email: "", relationship: "manager" },
+    { email: "", linkedInUrl: "", relationship: "manager" },
+    { email: "", linkedInUrl: "", relationship: "manager" },
+    { email: "", linkedInUrl: "", relationship: "manager" },
   ],
 };
 

@@ -33,10 +33,9 @@ export function StepReferences() {
           Reference intake
         </h2>
         <p className="mt-2 text-sm text-[#2A2D34]/70 sm:text-base">
-          Add three references — any mix of former managers or peers is fine
-          (all managers, all peers, or a combination). Any valid email
-          works—personal or work—so references can reply from wherever they
-          prefer.
+          Add three references — any mix of former managers or peers is fine.
+          Include each person&apos;s email and LinkedIn profile URL so we can
+          verify they&apos;re real professionals before invites go out.
         </p>
       </div>
 
@@ -60,6 +59,22 @@ export function StepReferences() {
               {errors.references?.[slot.index]?.email && (
                 <p className="text-xs text-destructive">
                   {errors.references[slot.index]?.email?.message}
+                </p>
+              )}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor={`ref-linkedin-${slot.index}`}>
+                LinkedIn profile URL
+              </Label>
+              <Input
+                id={`ref-linkedin-${slot.index}`}
+                type="url"
+                placeholder="https://www.linkedin.com/in/their-profile"
+                {...register(`references.${slot.index}.linkedInUrl`)}
+              />
+              {errors.references?.[slot.index]?.linkedInUrl && (
+                <p className="text-xs text-destructive">
+                  {errors.references[slot.index]?.linkedInUrl?.message}
                 </p>
               )}
             </div>

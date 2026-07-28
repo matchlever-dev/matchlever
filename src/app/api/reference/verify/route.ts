@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { scoreLinkedInAuthenticity } from "@/lib/reference/authenticity";
+import {
+  linkedInUrlsMatch,
+  REFERRER_LINKEDIN_INVALID_MESSAGE,
+} from "@/lib/reference/linkedin-validation";
 import { referenceVerifySchema } from "@/lib/reference/schema";
 import { SUPERPOWER_TAXONOMY } from "@/lib/reference/taxonomy";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -37,13 +41,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const authenticity = await scoreLinkedInAuthenticity(input.linkedInUrl, {
-      managerName: input.managerName,
-      relationship: input.relationship,
-    });
-
     const admin = createAdminClient();
     if (!admin) {
+      const authenticity = await scoreLinkedInAuthenticity(input.linkedInUrl, {
+        managerName: input.managerName,
+        relationship: input.relationship,
+      });
       return NextResponse.json({
         ok: true,
         demo: true,
@@ -57,7 +60,7 @@ export async function POST(request: Request) {
 
     const { data: reference, error: refError } = await admin
       .from("candidate_references")
-      .select("id, candidate_profile_id, status")
+      .select("id, candidate_profile_id, status, reference_linkedin_url")
       .eq("verification_token", input.token)
       .maybeSingle();
 
@@ -79,6 +82,25 @@ export async function POST(request: Request) {
         { status: 409 }
       );
     }
+
+    if (
+      reference.reference_linkedin_url &&
+      !linkedInUrlsMatch(reference.reference_linkedin_url, input.linkedInUrl)
+    ) {
+      console.info("[reference verify] linkedin mismatch", {
+        expected: reference.reference_linkedin_url,
+        received: input.linkedInUrl,
+      });
+      return NextResponse.json(
+        { error: REFERRER_LINKEDIN_INVALID_MESSAGE },
+        { status: 400 }
+      );
+    }
+
+    const authenticity = await scoreLinkedInAuthenticity(input.linkedInUrl, {
+      managerName: input.managerName,
+      relationship: input.relationship,
+    });
 
     const superpowersPayload = selected.map((item) => ({
       id: item.id,

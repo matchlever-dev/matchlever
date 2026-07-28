@@ -1,6 +1,10 @@
 import { createBrowserClient } from "@supabase/ssr";
 
 import type { Database } from "@/types/database";
+import {
+  isStaySignedInEnabled,
+  withStaySignedInCookieOptions,
+} from "@/lib/auth/stay-signed-in";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 
 /**
@@ -15,5 +19,11 @@ export function createClient() {
     );
   }
 
-  return createBrowserClient<Database>(env.url, env.anonKey);
+  const staySignedIn =
+    typeof document !== "undefined" &&
+    isStaySignedInEnabled(document.cookie);
+
+  return createBrowserClient<Database>(env.url, env.anonKey, {
+    cookieOptions: withStaySignedInCookieOptions(staySignedIn),
+  });
 }

@@ -2,6 +2,12 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import type { Database } from "@/types/database";
+import {
+  isStaySignedInEnabled,
+  STAY_SIGNED_IN_COOKIE,
+  staySignedInCookieWriteOptions,
+  withStaySignedInCookieOptions,
+} from "@/lib/auth/stay-signed-in";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 
 /**
@@ -33,6 +39,10 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  const staySignedIn = isStaySignedInEnabled({
+    get: (name) => request.cookies.get(name),
+  });
+
   const supabase = createServerClient<Database>(env.url, env.anonKey, {
     cookies: {
       getAll() {
@@ -46,7 +56,11 @@ export async function updateSession(request: NextRequest) {
           request,
         });
         cookiesToSet.forEach(({ name, value, options }) =>
-          supabaseResponse.cookies.set(name, value, options)
+          supabaseResponse.cookies.set(
+            name,
+            value,
+            withStaySignedInCookieOptions(staySignedIn, options)
+          )
         );
         Object.entries(headers).forEach(([key, value]) =>
           supabaseResponse.headers.set(key, value)
@@ -74,6 +88,14 @@ export async function updateSession(request: NextRequest) {
     return redirectToLogin(
       request,
       `${pathname}${request.nextUrl.search}`
+    );
+  }
+
+  if (staySignedIn) {
+    supabaseResponse.cookies.set(
+      STAY_SIGNED_IN_COOKIE,
+      "1",
+      staySignedInCookieWriteOptions()
     );
   }
 

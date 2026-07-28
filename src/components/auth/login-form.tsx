@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { BrandMark, BrandWordmark } from "@/components/brand/brand-mark";
 import { Button } from "@/components/ui/button";
 import { sanitizeNextPath } from "@/lib/auth/post-login-redirect";
+import { setStaySignedInPreference } from "@/lib/auth/stay-signed-in";
 import { createClient } from "@/lib/supabase/client";
 
 function LinkedInIcon({ className }: { className?: string }) {
@@ -28,6 +29,7 @@ export function LoginForm() {
   const queryError = searchParams.get("error");
   const [oauthError, setOauthError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [staySignedIn, setStaySignedIn] = useState(true);
 
   const audienceHint = useMemo(() => {
     if (next?.startsWith("/admin")) return "Admin portal access";
@@ -40,6 +42,7 @@ export function LoginForm() {
     setOauthError(null);
     setBusy(true);
     try {
+      setStaySignedInPreference(staySignedIn);
       const supabase = createClient();
       const redirectTo = new URL("/auth/callback", window.location.origin);
       if (next) redirectTo.searchParams.set("next", next);
@@ -86,6 +89,22 @@ export function LoginForm() {
           </p>
         </div>
       </div>
+
+      <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-[#2B5B84]/15 bg-[#F7F6F3] px-3 py-3 text-sm text-[#2A2D34]">
+        <input
+          type="checkbox"
+          checked={staySignedIn}
+          onChange={(e) => setStaySignedIn(e.target.checked)}
+          className="mt-0.5 size-4 accent-[#2B5B84]"
+        />
+        <span>
+          <span className="font-medium text-[#2B5B84]">Stay signed in</span>
+          <span className="mt-0.5 block text-xs text-[#5B616B]">
+            Keep this browser signed in for 60 minutes so you won&apos;t need to
+            authenticate again during that window.
+          </span>
+        </span>
+      </label>
 
       <Button
         type="button"

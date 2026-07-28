@@ -84,9 +84,16 @@ Env for invite email:
 - `RESEND_FROM_EMAIL` (e.g. `MatchLever <onboarding@resend.dev>`)
 - `NEXT_PUBLIC_APP_URL`
 
+Optional LinkedIn enrichment (full connection / job / photo / activity checks):
+
+- `LINKEDIN_ENRICHMENT_URL`
+- `LINKEDIN_ENRICHMENT_API_KEY`
+
+Without an enrichment provider, referrer LinkedIn checks use public probes plus structural gates. Failures always surface as the opaque message **Referrer LinkedIn profile invalid**. At verification time, the referrer’s LinkedIn must also match the URL the seeker provided.
+
 Without Supabase auth configured, the page runs in demo mode with sample data.
 
-Onboarding completion (`POST /api/onboarding/complete`) requires a signed-in user, upserts `candidate_profiles`, creates 3 `candidate_references` with tokens, and emails invite links via Resend.
+Onboarding completion (`POST /api/onboarding/complete`) requires a signed-in user, upserts `candidate_profiles`, creates 3 `candidate_references` with email + LinkedIn URL + tokens, validates LinkedIn profiles, and emails invite links via Resend.
 
 ## Admin & Superuser portals
 

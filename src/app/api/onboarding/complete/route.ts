@@ -4,6 +4,10 @@ import { NextResponse } from "next/server";
 import { sendReferenceInviteEmail } from "@/lib/email/resend";
 import { onboardingFormSchema, resolveOnboardingCity } from "@/lib/onboarding/form-schema";
 import { TIMEZONE_OPTIONS } from "@/lib/onboarding/schema";
+import {
+  REFERRER_LINKEDIN_INVALID_MESSAGE,
+  validateReferrerLinkedIn,
+} from "@/lib/reference/linkedin-validation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
@@ -51,11 +55,51 @@ export async function POST(request: Request) {
       );
     }
 
+    const validatedRefs: {
+      email: string;
+      linkedInUrl: string;
+      relationship: "manager" | "peer";
+      flags: string[];
+    }[] = [];
+
+    for (const [index, ref] of data.references.entries()) {
+      const validation = await validateReferrerLinkedIn(ref.linkedInUrl);
+      if (!validation.valid) {
+        console.info("[onboarding linkedin invalid]", {
+          index,
+          email: ref.email,
+          mode: validation.mode,
+          checks: validation.checks,
+          flags: validation.flags,
+        });
+        return NextResponse.json(
+          {
+            error: REFERRER_LINKEDIN_INVALID_MESSAGE,
+            referenceIndex: index,
+          },
+          { status: 400 }
+        );
+      }
+      validatedRefs.push({
+        email: ref.email.trim().toLowerCase(),
+        linkedInUrl: validation.normalizedUrl,
+        relationship: ref.relationship,
+        flags: [
+          "seeker_provided_linkedin",
+          `validation_mode:${validation.mode}`,
+          ...validation.flags,
+        ],
+      });
+    }
+
     if (!isSupabaseConfigured()) {
       console.info("[onboarding/complete demo]", {
         title: data.anonymousTitle,
         city: data.globalCity,
-        references: data.references.map((r) => r.email),
+        references: validatedRefs.map((r) => ({
+          email: r.email,
+          linkedInUrl: r.linkedInUrl,
+        })),
       });
       return NextResponse.json({
         ok: true,
@@ -224,12 +268,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const referenceRows = data.references.map((ref) => ({
+    const referenceRows = validatedRefs.map((ref) => ({
       candidate_profile_id: candidateId!,
-      reference_email: ref.email.trim().toLowerCase(),
+      reference_email: ref.email,
+      reference_linkedin_url: ref.linkedInUrl,
       relationship: ref.relationship,
       status: "pending",
       verification_token: newVerificationToken(),
+      authenticity_flags: ref.flags,
     }));
 
     const { data: insertedRefs, error: insertRefsError } = await supabase
@@ -281,20 +327,23 @@ export async function POST(request: Request) {
     }
 
     const failedEmails = emailResults.filter((r) => r.error);
+    const demoEmails = emailResults.filter((r) => r.demo && !r.error);
     const firstError = failedEmails[0]?.error;
     const warning =
-      failedEmails.length === 0
-        ? undefined
-        : failedEmails.length === insertedRefs.length
+      failedEmails.length > 0
+        ? failedEmails.length === insertedRefs.length
           ? `Reference emails failed to send${firstError ? `: ${firstError}` : ""}. You can resend from the dashboard. Check RESEND_FROM_EMAIL uses a verified Resend domain.`
-          : "Some reference emails failed — you can resend from the dashboard.";
+          : "Some reference emails failed — you can resend from the dashboard."
+        : demoEmails.length > 0
+          ? "Reference invites were saved but not emailed — RESEND_API_KEY is missing. Add it and use Resend Link on the dashboard."
+          : undefined;
 
     // Profile + invites are already saved; never block onboarding completion on email delivery.
     return NextResponse.json({
       ok: true,
       candidateId,
       referencesCreated: insertedRefs.length,
-      emailsSent: emailResults.filter((r) => !r.error).length,
+      emailsSent: emailResults.filter((r) => !r.error && !r.demo).length,
       emailResults,
       warning,
     });
