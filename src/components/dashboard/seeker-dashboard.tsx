@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import {
   DEMO_SEEKER_DASHBOARD,
@@ -25,6 +25,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 export function SeekerDashboard() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [data, setData] = useState<SeekerDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +33,12 @@ export function SeekerDashboard() {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const [inviteWarning, setInviteWarning] = useState<string | null>(null);
+
+  useEffect(() => {
+    const warning = searchParams.get("warning");
+    if (warning) setInviteWarning(warning);
+  }, [searchParams]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -247,6 +254,14 @@ export function SeekerDashboard() {
         </div>
 
         <div className="space-y-6">
+          {inviteWarning && (
+            <div
+              role="alert"
+              className="border border-[#E87A5D]/40 bg-[#E87A5D]/10 px-4 py-3 text-sm text-[#2A2D34]"
+            >
+              {inviteWarning}
+            </div>
+          )}
           <ReferenceStatusTracker
             references={data.references}
             onChanged={() => void load()}

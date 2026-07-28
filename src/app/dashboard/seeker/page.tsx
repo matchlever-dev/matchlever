@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { SeekerDashboard } from "@/components/dashboard/seeker-dashboard";
 
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function SeekerDashboardPage() {
-  return <SeekerDashboard />;
+  return (
+    <Suspense fallback={null}>
+      <SeekerDashboard />
+    </Suspense>
+  );
 }
