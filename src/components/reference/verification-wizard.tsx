@@ -25,6 +25,7 @@ type Invite = {
   status: string;
   relationship: string | null;
   reference_name: string | null;
+  reference_linkedin_url: string | null;
   candidate_title: string;
   candidate_tagline: string;
   demo?: boolean;
@@ -77,6 +78,9 @@ export function ReferenceVerificationWizard({ token }: { token: string }) {
         }
         if (data.reference_name) {
           form.setValue("managerName", data.reference_name);
+        }
+        if (data.reference_linkedin_url) {
+          form.setValue("linkedInUrl", data.reference_linkedin_url);
         }
         if (data.status === "verified") {
           setDone({ authenticity_score: 100 });
@@ -266,7 +270,10 @@ export function ReferenceVerificationWizard({ token }: { token: string }) {
               transition={{ duration: 0.2 }}
             >
               {step === 1 && (
-                <StepIdentity candidateTitle={invite?.candidate_title} />
+                <StepIdentity
+                  candidateTitle={invite?.candidate_title}
+                  lockedLinkedInUrl={invite?.reference_linkedin_url}
+                />
               )}
               {step === 2 && <StepSuperpowers />}
               {step === 3 && <StepRatings />}

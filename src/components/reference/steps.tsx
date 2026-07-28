@@ -24,7 +24,13 @@ const RELATIONSHIP_OPTIONS = [
   { value: "other", label: "Other" },
 ] as const;
 
-export function StepIdentity({ candidateTitle }: { candidateTitle?: string }) {
+export function StepIdentity({
+  candidateTitle,
+  lockedLinkedInUrl,
+}: {
+  candidateTitle?: string;
+  lockedLinkedInUrl?: string | null;
+}) {
   const {
     register,
     control,
@@ -45,7 +51,7 @@ export function StepIdentity({ candidateTitle }: { candidateTitle?: string }) {
           <span className="font-medium text-[#2A2D34]">
             {candidateTitle || "a MatchLever candidate"}
           </span>
-          . Add your name, relationship, and LinkedIn profile URL.
+          . LinkedIn must match the profile the candidate provided.
         </p>
       </div>
 
@@ -103,10 +109,13 @@ export function StepIdentity({ candidateTitle }: { candidateTitle?: string }) {
           autoCorrect="off"
           placeholder="https://linkedin.com/in/your-profile"
           className="h-12 text-base"
+          readOnly={Boolean(lockedLinkedInUrl)}
           {...register("linkedInUrl")}
         />
         <p className="text-xs text-[#5B616B]">
-          Must be a profile URL like https://linkedin.com/in/...
+          {lockedLinkedInUrl
+            ? "Locked to the LinkedIn URL the candidate submitted for you."
+            : "Must be a profile URL like https://linkedin.com/in/..."}
         </p>
         {errors.linkedInUrl && (
           <p className="text-xs text-destructive">{errors.linkedInUrl.message}</p>
