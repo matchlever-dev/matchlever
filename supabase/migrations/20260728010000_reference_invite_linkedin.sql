@@ -1,7 +1,10 @@
 -- Expose seeker-provided LinkedIn URL on reference invite load so the
 -- referrer can confirm the same profile (mismatch = opaque invalid).
+-- Return type adds reference_linkedin_url; must drop before recreate.
 
-create or replace function public.get_reference_invite(p_token text)
+drop function if exists public.get_reference_invite(text);
+
+create function public.get_reference_invite(p_token text)
 returns table (
   token text,
   status text,
