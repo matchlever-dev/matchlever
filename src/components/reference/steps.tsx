@@ -4,6 +4,7 @@ import { Controller, useFormContext } from "react-hook-form";
 
 import type { ReferenceFormValues } from "@/lib/reference/schema";
 import { groupSuperpowersByCategory } from "@/lib/reference/taxonomy";
+import { ReferrerSeekerCta } from "@/components/reference/referrer-seeker-cta";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -306,6 +307,8 @@ export function StepEndorsement() {
           <p className="text-xs text-destructive">{errors.endorsement.message}</p>
         )}
       </div>
+
+      <ReferrerSeekerCta />
     </div>
   );
 }
