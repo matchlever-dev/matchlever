@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 const ADMIN_LINKS = [
   { href: "/admin/users", label: "Users" },
   { href: "/admin/candidates", label: "Candidates" },
+  { href: "/admin/contact", label: "Contact" },
 ];
 
 export function AdminUsersPage() {

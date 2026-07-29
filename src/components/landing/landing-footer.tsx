@@ -20,6 +20,12 @@ export function LandingFooter() {
             Why MatchLever
           </Link>
           <Link
+            href="/contact"
+            className="text-[#5B616B] transition hover:text-[#2B5B84]"
+          >
+            Contact
+          </Link>
+          <Link
             href="/login"
             className="text-[#5B616B] transition hover:text-[#2B5B84]"
           >

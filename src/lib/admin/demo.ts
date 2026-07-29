@@ -259,3 +259,57 @@ export const DEMO_ACTIVE_CANDIDATES: ActiveCandidateOption[] =
       status: c.status,
     })
   );
+
+export type DemoContactRequest = {
+  id: string;
+  email: string;
+  topic: string;
+  message: string;
+  attachment_url: string | null;
+  attachment_download_url: string | null;
+  admin_notes: string | null;
+  status: "New" | "Active" | "Closed";
+  created_at: string;
+  updated_at: string;
+};
+
+export const DEMO_CONTACT_REQUESTS: DemoContactRequest[] = [
+  {
+    id: "contact-1",
+    email: "jane@example.com",
+    topic: "Report an issue",
+    message:
+      "I can't finish onboarding — the references step keeps spinning after I hit send.",
+    attachment_url: "contact-1/screenshot.png",
+    attachment_download_url: null,
+    admin_notes: null,
+    status: "New",
+    created_at: "2026-07-27T18:22:00.000Z",
+    updated_at: "2026-07-27T18:22:00.000Z",
+  },
+  {
+    id: "contact-2",
+    email: "ops@acme.io",
+    topic: "Partnership",
+    message:
+      "We're a 40-person hiring team interested in early hirer access this quarter.",
+    attachment_url: null,
+    attachment_download_url: null,
+    admin_notes: "Forwarded to partnerships — waiting on calendar hold.",
+    status: "Active",
+    created_at: "2026-07-25T11:05:00.000Z",
+    updated_at: "2026-07-26T09:40:00.000Z",
+  },
+  {
+    id: "contact-3",
+    email: "sam.seeker@example.com",
+    topic: "Account help",
+    message: "Please confirm whether deleting my seeker profile also removes references.",
+    attachment_url: null,
+    attachment_download_url: null,
+    admin_notes: "Replied with privacy FAQ link.",
+    status: "Closed",
+    created_at: "2026-07-20T14:12:00.000Z",
+    updated_at: "2026-07-21T08:00:00.000Z",
+  },
+];

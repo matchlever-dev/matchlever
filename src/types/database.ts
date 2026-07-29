@@ -351,6 +351,42 @@ export type Database = {
           },
         ];
       };
+      contact_requests: {
+        Row: {
+          id: string;
+          email: string;
+          topic: string;
+          message: string;
+          attachment_url: string | null;
+          admin_notes: string | null;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          topic: string;
+          message: string;
+          attachment_url?: string | null;
+          admin_notes?: string | null;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          topic?: string;
+          message?: string;
+          attachment_url?: string | null;
+          admin_notes?: string | null;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
