@@ -2,12 +2,12 @@
 
 import { EyeOff } from "lucide-react";
 
-import type { SeekerDashboardData } from "@/lib/dashboard/seeker";
+import type { CandidateDashboardData } from "@/lib/dashboard/candidate";
 
 export function AnonymousCandidateCard({
   data,
 }: {
-  data: SeekerDashboardData;
+  data: CandidateDashboardData;
 }) {
   const verifiedCount = data.references.filter((r) => r.status === "verified")
     .length;

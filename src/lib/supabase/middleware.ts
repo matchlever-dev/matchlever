@@ -12,7 +12,7 @@ import { getSupabaseEnv } from "@/lib/supabase/env";
 
 /**
  * Refreshes the Auth session on each matched request.
- * Gates /dashboard (signed-in seeker), /admin (is_admin), and /superuser (is_superuser).
+ * Gates /dashboard (signed-in candidate), /admin (is_admin), and /superuser (is_superuser).
  */
 function redirectToLogin(request: NextRequest, nextPath: string) {
   const url = request.nextUrl.clone();
@@ -28,10 +28,10 @@ export async function updateSession(request: NextRequest) {
   });
 
   const pathname = request.nextUrl.pathname;
-  const needsSeeker = pathname.startsWith("/dashboard");
+  const needsCandidate = pathname.startsWith("/dashboard");
   const needsAdmin = pathname.startsWith("/admin");
   const needsSuperuser = pathname.startsWith("/superuser");
-  const needsAuth = needsSeeker || needsAdmin || needsSuperuser;
+  const needsAuth = needsCandidate || needsAdmin || needsSuperuser;
 
   const env = getSupabaseEnv();
   if (!env) {
@@ -106,7 +106,7 @@ export async function updateSession(request: NextRequest) {
       .eq("id", user.id)
       .maybeSingle();
 
-    const isAdmin = Boolean(profile?.is_admin || profile?.is_superuser);
+    const isAdmin = Boolean(profile?.is_admin);
     const isSuperuser = Boolean(profile?.is_superuser);
 
     if (needsSuperuser && !isSuperuser) {

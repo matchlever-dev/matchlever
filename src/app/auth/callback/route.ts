@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * OAuth return handler. Exchanges the auth code for a session, then routes
- * seekers / admins / superusers to the right surface.
+ * candidates / admins / superusers to the right surface.
  */
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -27,7 +27,7 @@ export async function GET(request: Request) {
   }
 
   if (!isSupabaseConfigured()) {
-    return NextResponse.redirect(new URL(next || "/dashboard/seeker", url.origin));
+    return NextResponse.redirect(new URL(next || "/dashboard/candidate", url.origin));
   }
 
   try {

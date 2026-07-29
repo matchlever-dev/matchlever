@@ -1,9 +1,9 @@
-export type SeekerAvailability = "actively_looking" | "on_hold";
+export type CandidateAvailability = "actively_looking" | "on_hold";
 
-/** Seekers must have this many verified references before appearing in searches. */
+/** Candidates must have this many verified references before appearing in searches. */
 export const REQUIRED_VERIFIED_REFERENCES = 3;
 
-export type SeekerReferenceRow = {
+export type CandidateReferenceRow = {
   id: string;
   reference_email: string;
   reference_linkedin_url: string | null;
@@ -14,18 +14,18 @@ export type SeekerReferenceRow = {
 };
 
 export function countVerifiedReferences(
-  references: Pick<SeekerReferenceRow, "status">[]
+  references: Pick<CandidateReferenceRow, "status">[]
 ): number {
   return references.filter((r) => r.status === "verified").length;
 }
 
 export function hasCompleteReferences(
-  references: Pick<SeekerReferenceRow, "status">[]
+  references: Pick<CandidateReferenceRow, "status">[]
 ): boolean {
   return countVerifiedReferences(references) >= REQUIRED_VERIFIED_REFERENCES;
 }
 
-export type SeekerDashboardData = {
+export type CandidateDashboardData = {
   demo: boolean;
   profileId: string;
   initials: string;
@@ -36,8 +36,8 @@ export type SeekerDashboardData = {
   globalCountry: string;
   timezoneOffset: number | null;
   timezoneLabel: string;
-  status: SeekerAvailability;
-  references: SeekerReferenceRow[];
+  status: CandidateAvailability;
+  references: CandidateReferenceRow[];
 };
 
 /** Display offset as UTC±H or UTC±H:MM (never raw minutes). */
@@ -80,7 +80,7 @@ export function initialsFromName(name: string | null | undefined): string {
   return `${parts[0][0] ?? ""}${parts[parts.length - 1][0] ?? ""}`.toUpperCase();
 }
 
-export const DEMO_SEEKER_DASHBOARD: SeekerDashboardData = {
+export const DEMO_CANDIDATE_DASHBOARD: CandidateDashboardData = {
   demo: true,
   profileId: "demo-profile",
   initials: "SP",

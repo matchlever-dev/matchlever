@@ -84,7 +84,7 @@ export function StepPreferences() {
           Work preferences
         </h2>
         <p className="mt-2 text-sm text-[#2A2D34]/70 sm:text-base">
-          Tell hirers where you can work, how far you can commute, and which
+          Tell recruiters where you can work, how far you can commute, and which
           Superpower Tagline leads your card.
         </p>
       </div>

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 
 import type { AdminCandidateRow } from "@/lib/admin/demo";
-import { formatTimezoneOffset } from "@/lib/dashboard/seeker";
+import { formatTimezoneOffset } from "@/lib/dashboard/candidate";
 import { PortalShell } from "@/components/admin/portal-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

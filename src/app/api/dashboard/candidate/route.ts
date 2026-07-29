@@ -2,14 +2,14 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import {
-  DEMO_SEEKER_DASHBOARD,
+  DEMO_CANDIDATE_DASHBOARD,
   formatTimezoneOffset,
   hasCompleteReferences,
   initialsFromName,
   REQUIRED_VERIFIED_REFERENCES,
-  type SeekerDashboardData,
-  type SeekerReferenceRow,
-} from "@/lib/dashboard/seeker";
+  type CandidateDashboardData,
+  type CandidateReferenceRow,
+} from "@/lib/dashboard/candidate";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
@@ -22,7 +22,7 @@ function skillsFromJson(value: Json): string[] {
 export async function GET() {
   try {
     if (!isSupabaseConfigured()) {
-      return NextResponse.json(DEMO_SEEKER_DASHBOARD);
+      return NextResponse.json(DEMO_CANDIDATE_DASHBOARD);
     }
 
     const supabase = await createClient();
@@ -43,9 +43,9 @@ export async function GET() {
       .maybeSingle();
 
     if (error) {
-      console.error("[seeker dashboard]", error.message);
+      console.error("[candidate dashboard]", error.message);
       return NextResponse.json(
-        { error: "Unable to load seeker dashboard" },
+        { error: "Unable to load candidate dashboard" },
         { status: 500 }
       );
     }
@@ -70,7 +70,7 @@ export async function GET() {
       .order("created_at", { ascending: true });
 
     if (refError) {
-      console.error("[seeker dashboard refs]", refError.message);
+      console.error("[candidate dashboard refs]", refError.message);
       return NextResponse.json(
         { error: "Unable to load references" },
         { status: 500 }
@@ -90,9 +90,13 @@ export async function GET() {
         : null) ||
       user.email;
 
-    const refs = (references ?? []) as SeekerReferenceRow[];
+    const refs = ((references ?? []) as CandidateReferenceRow[]).map((ref) => ({
+      ...ref,
+      reference_email: ref.reference_email,
+      reference_linkedin_url: ref.reference_linkedin_url ?? null,
+    }));
     const refsComplete = hasCompleteReferences(refs);
-    let status: SeekerDashboardData["status"] =
+    let status: CandidateDashboardData["status"] =
       profile.status === "on_hold" ? "on_hold" : "actively_looking";
 
     // Never surface as actively looking until all references are verified.
@@ -104,7 +108,7 @@ export async function GET() {
         .eq("id", profile.id);
     }
 
-    const payload: SeekerDashboardData = {
+    const payload: CandidateDashboardData = {
       demo: false,
       profileId: profile.id,
       initials: initialsFromName(fullName),
@@ -127,9 +131,9 @@ export async function GET() {
     const message =
       error instanceof Error ? error.message : "Unable to load dashboard";
     if (message.includes("Supabase is not configured")) {
-      return NextResponse.json(DEMO_SEEKER_DASHBOARD);
+      return NextResponse.json(DEMO_CANDIDATE_DASHBOARD);
     }
-    console.error("[/api/dashboard/seeker]", message);
+    console.error("[/api/dashboard/candidate]", message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -183,7 +187,7 @@ export async function PATCH(request: Request) {
         .eq("candidate_profile_id", profile.id);
 
       if (refError) {
-        console.error("[seeker status refs]", refError.message);
+        console.error("[candidate status refs]", refError.message);
         return NextResponse.json(
           { error: "Unable to verify references" },
           { status: 500 }
@@ -206,7 +210,7 @@ export async function PATCH(request: Request) {
       .eq("id", profile.id);
 
     if (error) {
-      console.error("[seeker status]", error.message);
+      console.error("[candidate status]", error.message);
       return NextResponse.json(
         { error: "Unable to update status" },
         { status: 500 }
@@ -217,7 +221,7 @@ export async function PATCH(request: Request) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to update status";
-    console.error("[/api/dashboard/seeker PATCH]", message);
+    console.error("[/api/dashboard/candidate PATCH]", message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

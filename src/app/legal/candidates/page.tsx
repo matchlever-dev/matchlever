@@ -2,18 +2,19 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { BrandMark } from "@/components/brand/brand-mark";
-import { SEEKER_TOS } from "@/lib/legal/seeker-tos";
-import { SEEKER_TOS_SECTIONS } from "@/lib/legal/seeker-tos-content";
+import { LandingFooter } from "@/components/landing/landing-footer";
+import { CANDIDATE_TOS } from "@/lib/legal/candidate-tos";
+import { CANDIDATE_TOS_SECTIONS } from "@/lib/legal/candidate-tos-content";
 
 export const metadata: Metadata = {
-  title: "Seeker Terms of Service · MatchLever",
+  title: "Candidate Terms of Service · MatchLever",
   description:
-    "Job Seeker Terms of Service for the MatchLever talent exchange.",
+    "Job Candidate Terms of Service for the MatchLever talent exchange.",
 };
 
-export default function SeekerTermsPage() {
+export default function CandidateTermsPage() {
   return (
-    <div className="min-h-[100svh] bg-[#F7F6F3] text-[#2A2D34]">
+    <div className="flex min-h-[100svh] flex-col bg-[#F7F6F3] text-[#2A2D34]">
       <header className="border-b border-[#2B5B84]/10 bg-white/90">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-5 py-4 sm:px-8">
           <Link href="/" className="flex items-center gap-2">
@@ -23,7 +24,7 @@ export default function SeekerTermsPage() {
             </span>
           </Link>
           <a
-            href={SEEKER_TOS.pdfPath}
+            href={CANDIDATE_TOS.pdfPath}
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs font-medium text-[#2B5B84] hover:underline"
@@ -33,15 +34,15 @@ export default function SeekerTermsPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-5 py-10 sm:px-8">
+      <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-10 sm:px-8">
         <p className="font-display text-[11px] font-semibold tracking-[0.22em] text-[#E87A5D] uppercase">
           Arise Solutions LLC
         </p>
         <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-[#2B5B84]">
-          {SEEKER_TOS.title}
+          {CANDIDATE_TOS.title}
         </h1>
         <p className="mt-2 text-sm text-[#5B616B]">
-          Effective Date: {SEEKER_TOS.effectiveDate}
+          Effective Date: {CANDIDATE_TOS.effectiveDate}
         </p>
         <p className="mt-6 text-sm leading-relaxed text-[#2A2D34]/80">
           Welcome to MatchLever. MatchLever is a bias-free enterprise talent
@@ -50,13 +51,13 @@ export default function SeekerTermsPage() {
           and data, is wholly owned and operated by Arise Solutions LLC.
         </p>
         <p className="mt-4 text-sm leading-relaxed text-[#2A2D34]/80">
-          By registering as a &quot;Seeker&quot; and using the MatchLever
-          platform to unlock your potential, you agree to these Job Seeker Terms
+          By registering as a &quot;Candidate&quot; and using the MatchLever
+          platform to unlock your potential, you agree to these Job Candidate Terms
           of Service (&quot;Terms&quot;).
         </p>
 
         <div className="mt-10 space-y-8">
-          {SEEKER_TOS_SECTIONS.map((section) => (
+          {CANDIDATE_TOS_SECTIONS.map((section) => (
             <section key={section.heading}>
               <h2 className="font-display text-lg font-semibold text-[#2B5B84]">
                 {section.heading}
@@ -85,7 +86,7 @@ export default function SeekerTermsPage() {
         <p className="mt-12 text-xs text-[#5B616B]">
           The{" "}
           <a
-            href={SEEKER_TOS.pdfPath}
+            href={CANDIDATE_TOS.pdfPath}
             className="font-medium text-[#2B5B84] underline underline-offset-2"
             target="_blank"
             rel="noopener noreferrer"
@@ -102,6 +103,8 @@ export default function SeekerTermsPage() {
           ← Back to onboarding
         </Link>
       </main>
+
+      <LandingFooter maxWidthClassName="max-w-3xl" />
     </div>
   );
 }

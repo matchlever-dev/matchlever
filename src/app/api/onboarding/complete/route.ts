@@ -148,7 +148,7 @@ export async function POST(request: Request) {
           email: user.email ?? null,
           full_name: fullName,
           avatar_url: avatarUrl,
-          role: "seeker",
+          role: "candidate",
         })
         .eq("id", user.id);
       if (profileUpdateError) {
@@ -176,7 +176,7 @@ export async function POST(request: Request) {
           email: user.email ?? null,
           full_name: fullName,
           avatar_url: avatarUrl,
-          role: "seeker",
+          role: "candidate",
         });
       if (profileInsertError) {
         console.error("[onboarding user_profiles insert]", profileInsertError.message);

@@ -22,7 +22,7 @@ function needsCommuteFields(modes: LocationModeValue[]) {
 }
 
 export const onboardingFormObjectSchema = z.object({
-  seekerTosAgreed: z.boolean(),
+  candidateTosAgreed: z.boolean(),
   linkedInConnected: z.boolean(),
   incognitoAgreed: z.boolean(),
   resumeFileName: z.string(),
@@ -150,11 +150,11 @@ function refinePreferences(
 
 export const onboardingFormSchema = onboardingFormObjectSchema
   .superRefine((data, ctx) => {
-    if (!data.seekerTosAgreed) {
+    if (!data.candidateTosAgreed) {
       ctx.addIssue({
         code: "custom",
-        message: "Agree to the Job Seeker Terms of Service to continue",
-        path: ["seekerTosAgreed"],
+        message: "Agree to the Job Candidate Terms of Service to continue",
+        path: ["candidateTosAgreed"],
       });
     }
     refinePreferences(data, ctx);
@@ -163,7 +163,7 @@ export const onboardingFormSchema = onboardingFormObjectSchema
 export type OnboardingFormValues = z.infer<typeof onboardingFormObjectSchema>;
 
 export const defaultOnboardingValues: OnboardingFormValues = {
-  seekerTosAgreed: false,
+  candidateTosAgreed: false,
   linkedInConnected: false,
   incognitoAgreed: false,
   resumeFileName: "",
@@ -206,16 +206,16 @@ export function getStepSchema(step: OnboardingStepId) {
     case 1:
       return z
         .object({
-          seekerTosAgreed: z.boolean(),
+          candidateTosAgreed: z.boolean(),
           linkedInConnected: z.boolean(),
           incognitoAgreed: z.boolean(),
         })
         .superRefine((data, ctx) => {
-          if (!data.seekerTosAgreed) {
+          if (!data.candidateTosAgreed) {
             ctx.addIssue({
               code: "custom",
-              message: "Agree to the Job Seeker Terms of Service to continue",
-              path: ["seekerTosAgreed"],
+              message: "Agree to the Job Candidate Terms of Service to continue",
+              path: ["candidateTosAgreed"],
             });
           }
           if (!data.linkedInConnected) {

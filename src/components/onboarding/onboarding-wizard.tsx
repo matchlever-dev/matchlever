@@ -16,6 +16,7 @@ import {
 } from "@/lib/onboarding/form-schema";
 import { StepProgress } from "@/components/onboarding/step-progress";
 import { WizardFooter } from "@/components/onboarding/wizard-footer";
+import { SiteNavLinks } from "@/components/brand/site-nav-links";
 import { StepAuth } from "@/components/onboarding/steps/step-auth";
 import { StepResume } from "@/components/onboarding/steps/step-resume";
 import { StepPreferences } from "@/components/onboarding/steps/step-preferences";
@@ -81,11 +82,11 @@ export function OnboardingWizard() {
       if (data.warning) {
         // Keep a soft signal in the URL so the dashboard can surface it.
         router.push(
-          `/dashboard/seeker?onboarding=complete&warning=${encodeURIComponent(data.warning)}`
+          `/dashboard/candidate?onboarding=complete&warning=${encodeURIComponent(data.warning)}`
         );
         return;
       }
-      router.push("/dashboard/seeker?onboarding=complete");
+      router.push("/dashboard/candidate?onboarding=complete");
     } catch (err) {
       setSubmitError(
         err instanceof Error ? err.message : "Could not complete onboarding"
@@ -106,7 +107,7 @@ export function OnboardingWizard() {
     <FormProvider {...form}>
       <div className="min-h-screen bg-[#F8F9FA] text-[#2A2D34]">
         <StepProgress step={step} />
-        <main className="mx-auto max-w-3xl px-6 pb-28 pt-10 sm:px-8">
+        <main className="mx-auto max-w-3xl px-6 pb-36 pt-10 sm:px-8">
           <AnimatePresence mode="wait">
             <motion.div
               key={step}
@@ -124,6 +125,7 @@ export function OnboardingWizard() {
           {submitError && (
             <p className="mt-6 text-sm text-destructive">{submitError}</p>
           )}
+          <SiteNavLinks className="mt-12 justify-center border-t border-[#2B5B84]/10 pt-6 text-xs" />
         </main>
         <WizardFooter
           step={step}

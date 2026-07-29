@@ -67,7 +67,7 @@ export async function PATCH(request: Request) {
       .eq("user_id", user.id);
 
     if (error) {
-      console.error("[seeker edit]", error.message);
+      console.error("[candidate edit]", error.message);
       return NextResponse.json(
         { error: "Unable to update profile" },
         { status: 500 }
@@ -78,7 +78,7 @@ export async function PATCH(request: Request) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to update profile";
-    console.error("[/api/dashboard/seeker/profile PATCH]", message);
+    console.error("[/api/dashboard/candidate/profile PATCH]", message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -108,7 +108,7 @@ export async function DELETE() {
       .eq("user_id", user.id);
 
     if (profileError) {
-      console.error("[seeker delete profile]", profileError.message);
+      console.error("[candidate delete profile]", profileError.message);
       return NextResponse.json(
         { error: "Unable to delete candidate profile" },
         { status: 500 }
@@ -121,7 +121,7 @@ export async function DELETE() {
       .eq("id", user.id);
 
     if (userProfileError) {
-      console.error("[seeker delete user_profile]", userProfileError.message);
+      console.error("[candidate delete user_profile]", userProfileError.message);
     }
 
     // Auth user deletion requires service role.
@@ -129,7 +129,7 @@ export async function DELETE() {
     if (admin) {
       const { error: authError } = await admin.auth.admin.deleteUser(user.id);
       if (authError) {
-        console.error("[seeker delete auth]", authError.message);
+        console.error("[candidate delete auth]", authError.message);
         return NextResponse.json(
           {
             ok: true,
@@ -145,7 +145,7 @@ export async function DELETE() {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to delete account";
-    console.error("[/api/dashboard/seeker/profile DELETE]", message);
+    console.error("[/api/dashboard/candidate/profile DELETE]", message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

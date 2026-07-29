@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
-export function ReferrerSeekerCta({ className = "" }: { className?: string }) {
+export function ReferrerCandidateCta({ className = "" }: { className?: string }) {
   return (
     <aside
       className={`border border-[#2B5B84]/15 bg-white p-5 ${className}`.trim()}
@@ -14,13 +14,13 @@ export function ReferrerSeekerCta({ className = "" }: { className?: string }) {
       </h3>
       <p className="mt-2 text-sm leading-relaxed text-[#5B616B]">
         You just saw how MatchLever works from the reference side. Create your
-        own anonymous seeker profile and let recruiters come to you.
+        own anonymous candidate profile and let recruiters come to you.
       </p>
       <Link
         href="/onboarding"
         className="mt-4 inline-flex items-center gap-2 bg-[#E87A5D] px-4 py-2.5 font-display text-xs font-semibold tracking-[0.14em] text-white uppercase transition hover:bg-[#d96b4f]"
       >
-        Start as an incognito seeker
+        Start as an incognito candidate
         <ArrowRight className="size-3.5" />
       </Link>
     </aside>

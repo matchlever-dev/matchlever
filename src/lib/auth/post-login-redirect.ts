@@ -35,7 +35,7 @@ export async function resolvePostLoginPath(
     .maybeSingle();
 
   const isSuperuser = Boolean(profile?.is_superuser);
-  const isAdmin = Boolean(profile?.is_admin || profile?.is_superuser);
+  const isAdmin = Boolean(profile?.is_admin);
 
   if (safe?.startsWith("/superuser") && isSuperuser) return safe;
   if (safe?.startsWith("/admin") && isAdmin) return safe;
@@ -45,7 +45,7 @@ export async function resolvePostLoginPath(
       safe.startsWith("/onboarding") ||
       safe === "/")
   ) {
-    // Returning seekers who already finished onboarding should land on the
+    // Returning candidates who already finished onboarding should land on the
     // dashboard even when OAuth used next=/onboarding.
     if (safe.startsWith("/onboarding")) {
       const { data: candidate } = await supabase
@@ -53,7 +53,7 @@ export async function resolvePostLoginPath(
         .select("id")
         .eq("user_id", user.id)
         .maybeSingle();
-      if (candidate) return "/dashboard/seeker";
+      if (candidate) return "/dashboard/candidate";
     }
     return safe;
   }
@@ -67,6 +67,6 @@ export async function resolvePostLoginPath(
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (candidate) return "/dashboard/seeker";
+  if (candidate) return "/dashboard/candidate";
   return "/onboarding";
 }

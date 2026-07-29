@@ -246,7 +246,7 @@ export async function PATCH(request: Request) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to update reference";
-    console.error("[/api/dashboard/seeker/references]", message);
+    console.error("[/api/dashboard/candidate/references]", message);
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }

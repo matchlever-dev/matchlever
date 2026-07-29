@@ -4,7 +4,7 @@ import { Controller, useFormContext } from "react-hook-form";
 
 import type { ReferenceFormValues } from "@/lib/reference/schema";
 import { groupSuperpowersByCategory } from "@/lib/reference/taxonomy";
-import { ReferrerSeekerCta } from "@/components/reference/referrer-seeker-cta";
+import { ReferrerCandidateCta } from "@/components/reference/referrer-candidate-cta";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -294,7 +294,7 @@ export function StepEndorsement() {
           One sentence that matters
         </h2>
         <p className="mt-2 text-sm text-[#5B616B]">
-          Write a single high-signal endorsement hirers can trust.
+          Write a single high-signal endorsement recruiters can trust.
         </p>
       </div>
 
@@ -317,7 +317,7 @@ export function StepEndorsement() {
         )}
       </div>
 
-      <ReferrerSeekerCta />
+      <ReferrerCandidateCta />
     </div>
   );
 }

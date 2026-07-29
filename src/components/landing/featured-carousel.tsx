@@ -22,7 +22,7 @@ export function FeaturedCarousel() {
     <section id="featured" className="relative bg-white py-16 sm:py-24 md:py-28">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         <p className="font-display text-[11px] font-semibold tracking-[0.28em] text-[#E87A5D] uppercase">
-          Featured seekers
+          Featured candidates
         </p>
         <h2 className="mt-3 max-w-2xl font-display text-2xl font-semibold tracking-tight text-[#2A2D34] sm:mt-4 sm:text-3xl md:text-4xl">
           Matched to your working hours—not just your job description.

@@ -34,8 +34,8 @@ export function LoginForm() {
   const audienceHint = useMemo(() => {
     if (next?.startsWith("/admin")) return "Admin portal access";
     if (next?.startsWith("/superuser")) return "Superuser portal access";
-    if (next?.startsWith("/dashboard")) return "Seeker dashboard access";
-    return "Seekers, admins, and superusers";
+    if (next?.startsWith("/dashboard")) return "Candidate dashboard access";
+    return "Candidates, admins, and superusers";
   }, [next]);
 
   async function signInWithLinkedIn() {
@@ -125,7 +125,7 @@ export function LoginForm() {
 
       <div className="space-y-2 text-sm text-[#2A2D34]/70">
         <p>
-          New seeker?{" "}
+          New candidate?{" "}
           <Link
             href="/onboarding"
             className="font-semibold text-[#2B5B84] underline underline-offset-2"
