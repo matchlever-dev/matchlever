@@ -48,10 +48,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  const nextAdmin =
-    parsed.data.is_superuser === true
-      ? true
-      : parsed.data.is_admin;
+  const nextAdmin = parsed.data.is_admin;
   const nextSuper = parsed.data.is_superuser;
 
   if (auth.actor.demo) {
@@ -66,10 +63,7 @@ export async function PATCH(request: Request) {
 
   const updates: { is_admin?: boolean; is_superuser?: boolean } = {};
   if (typeof nextAdmin === "boolean") updates.is_admin = nextAdmin;
-  if (typeof nextSuper === "boolean") {
-    updates.is_superuser = nextSuper;
-    if (nextSuper) updates.is_admin = true;
-  }
+  if (typeof nextSuper === "boolean") updates.is_superuser = nextSuper;
 
   // Prefer service role so privilege trigger allows the write.
   const admin = createAdminClient();

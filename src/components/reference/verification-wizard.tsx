@@ -11,7 +11,6 @@ import {
   type ReferenceFormValues,
 } from "@/lib/reference/schema";
 import { BrandMark } from "@/components/brand/brand-mark";
-import { SiteNavLinks } from "@/components/brand/site-nav-links";
 import { ReferrerCandidateCta } from "@/components/reference/referrer-candidate-cta";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -206,7 +205,6 @@ export function ReferenceVerificationWizard({ token }: { token: string }) {
             Invite unavailable
           </p>
           <p className="mt-2 text-sm text-[#5B616B]">{loadError}</p>
-          <SiteNavLinks className="mt-8 justify-center text-xs" />
         </div>
       </div>
     );
@@ -230,7 +228,6 @@ export function ReferenceVerificationWizard({ token }: { token: string }) {
             </p>
           </div>
           <ReferrerCandidateCta className="mt-8 text-left" />
-          <SiteNavLinks className="mt-8 justify-center text-xs" />
         </div>
       </div>
     );
@@ -286,7 +283,6 @@ export function ReferenceVerificationWizard({ token }: { token: string }) {
           {submitError && (
             <p className="mt-4 text-sm text-destructive">{submitError}</p>
           )}
-          <SiteNavLinks className="mt-10 justify-center border-t border-[#2B5B84]/10 pt-6 text-xs" />
         </main>
 
         <footer className="fixed inset-x-0 bottom-0 z-20 border-t border-[#2B5B84]/10 bg-white/95 backdrop-blur">

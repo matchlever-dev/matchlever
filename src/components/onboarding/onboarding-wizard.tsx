@@ -16,7 +16,6 @@ import {
 } from "@/lib/onboarding/form-schema";
 import { StepProgress } from "@/components/onboarding/step-progress";
 import { WizardFooter } from "@/components/onboarding/wizard-footer";
-import { SiteNavLinks } from "@/components/brand/site-nav-links";
 import { StepAuth } from "@/components/onboarding/steps/step-auth";
 import { StepResume } from "@/components/onboarding/steps/step-resume";
 import { StepPreferences } from "@/components/onboarding/steps/step-preferences";
@@ -125,7 +124,6 @@ export function OnboardingWizard() {
           {submitError && (
             <p className="mt-6 text-sm text-destructive">{submitError}</p>
           )}
-          <SiteNavLinks className="mt-12 justify-center border-t border-[#2B5B84]/10 pt-6 text-xs" />
         </main>
         <WizardFooter
           step={step}

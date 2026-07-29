@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { BrandMark } from "@/components/brand/brand-mark";
-import { LandingFooter } from "@/components/landing/landing-footer";
 import { CANDIDATE_TOS } from "@/lib/legal/candidate-tos";
 import { CANDIDATE_TOS_SECTIONS } from "@/lib/legal/candidate-tos-content";
 
@@ -103,8 +102,6 @@ export default function CandidateTermsPage() {
           ← Back to onboarding
         </Link>
       </main>
-
-      <LandingFooter maxWidthClassName="max-w-3xl" />
     </div>
   );
 }

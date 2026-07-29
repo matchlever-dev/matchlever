@@ -12,7 +12,7 @@ const HERO_TAGLINES = [
   "Your Lever into the Tech Industry",
 ] as const;
 
-const TAGLINE_INTERVAL_MS = 2000;
+const TAGLINE_INTERVAL_MS = 3000;
 
 function RotatingHeroTagline() {
   const [index, setIndex] = useState(0);
@@ -30,7 +30,7 @@ function RotatingHeroTagline() {
   }, []);
 
   return (
-    <h1 className="max-w-[22ch] font-display text-[1.85rem] font-semibold leading-[1.15] tracking-tight text-[#2A2D34] sm:max-w-2xl sm:text-4xl md:text-[2.75rem]">
+    <h1 className="max-w-xl font-display text-[1.5rem] font-semibold leading-[1.2] tracking-tight text-[#2A2D34] sm:max-w-2xl sm:text-[1.75rem] md:text-[2rem]">
       <span className="sr-only">{HERO_TAGLINES.join(". ")}</span>
       <AnimatePresence mode="wait" initial={false}>
         <motion.span

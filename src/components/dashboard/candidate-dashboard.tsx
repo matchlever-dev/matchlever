@@ -18,7 +18,6 @@ import {
   DeleteAccountDialog,
   EditProfileModal,
 } from "@/components/dashboard/candidate-modals";
-import { LandingFooter } from "@/components/landing/landing-footer";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
@@ -292,8 +291,6 @@ export function CandidateDashboard() {
           </section>
         </div>
       </main>
-
-      <LandingFooter maxWidthClassName="max-w-5xl" />
 
       <EditProfileModal
         open={editOpen}

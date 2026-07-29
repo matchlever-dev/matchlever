@@ -58,7 +58,7 @@ export function SuperuserDirectoryPage() {
             Platform directory
           </p>
           <h1 className="mt-2 font-display text-2xl font-semibold text-[#2B5B84]">
-            All Seekers & Hirers
+            All Candidates & Hirers
           </h1>
           <p className="mt-2 text-sm text-[#5B616B]">
             Read-only searchable view across the entire exchange.
@@ -102,7 +102,7 @@ export function SuperuserDirectoryPage() {
                       variant={person.kind === "seeker" ? "default" : "secondary"}
                       className="capitalize"
                     >
-                      {person.kind}
+                      {person.kind === "seeker" ? "Candidate" : person.kind}
                     </Badge>
                   </TableCell>
                   <TableCell>
