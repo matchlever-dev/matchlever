@@ -14,7 +14,9 @@ type AppSupabase = SupabaseClient<Database>;
 
 /**
  * Decide where a signed-in user should land.
- * Honors a safe `next` path when the user has access; otherwise role/profile defaults.
+ * Honors a safe `next` path when the user has access; otherwise lands on the
+ * candidate profile (or onboarding). Admin/superuser portals are URL-only —
+ * they are not the default post-login destination.
  */
 export async function resolvePostLoginPath(
   supabase: AppSupabase,
@@ -37,6 +39,7 @@ export async function resolvePostLoginPath(
   const isSuperuser = Boolean(profile?.is_superuser);
   const isAdmin = Boolean(profile?.is_admin);
 
+  // Explicit portal deep-links (e.g. /login?next=/admin) still work for staff.
   if (safe?.startsWith("/superuser") && isSuperuser) return safe;
   if (safe?.startsWith("/admin") && isAdmin) return safe;
   if (
@@ -57,9 +60,6 @@ export async function resolvePostLoginPath(
     }
     return safe;
   }
-
-  if (isSuperuser) return "/superuser";
-  if (isAdmin) return "/admin";
 
   const { data: candidate } = await supabase
     .from("candidate_profiles")
