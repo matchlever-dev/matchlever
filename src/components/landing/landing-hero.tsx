@@ -1,9 +1,53 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
 import { BrandMark, BrandWordmark } from "@/components/brand/brand-mark";
+
+const HERO_TAGLINES = [
+  "Upload your profile, find your match",
+  "Where Tech Talent Meets Tech Innovators",
+  "Your Lever into the Tech Industry",
+] as const;
+
+const TAGLINE_INTERVAL_MS = 3000;
+
+function RotatingHeroTagline() {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (prefersReducedMotion) return;
+
+    const id = window.setInterval(() => {
+      setIndex((current) => (current + 1) % HERO_TAGLINES.length);
+    }, TAGLINE_INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, []);
+
+  return (
+    <h1 className="max-w-xl font-display text-[1.5rem] font-semibold leading-[1.2] tracking-tight text-[#2A2D34] sm:max-w-2xl sm:text-[1.75rem] md:text-[2rem]">
+      <span className="sr-only">{HERO_TAGLINES.join(". ")}</span>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.span
+          key={HERO_TAGLINES[index]}
+          aria-hidden
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          className="block"
+        >
+          {HERO_TAGLINES[index]}
+        </motion.span>
+      </AnimatePresence>
+    </h1>
+  );
+}
 
 export function LandingHero() {
   return (
@@ -41,12 +85,12 @@ export function LandingHero() {
         />
       </svg>
 
-      <div className="relative mx-auto flex min-h-[100svh] w-full max-w-6xl flex-col justify-center px-5 py-20 sm:px-8 sm:py-24">
-        <div className="flex flex-col items-start gap-6 sm:gap-8">
+      <div className="relative mx-auto flex min-h-[100svh] w-full max-w-6xl flex-col justify-start px-5 pb-16 pt-10 sm:px-8 sm:pb-20 sm:pt-14">
+        <div className="flex flex-col items-start gap-5 sm:gap-6">
           <motion.div
             initial={false}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-start gap-4 sm:flex-row sm:items-end sm:gap-6"
+            className="flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:gap-5"
           >
             <BrandMark
               priority
@@ -57,22 +101,18 @@ export function LandingHero() {
 
           <div className="h-px w-16 bg-gradient-to-r from-[#2B5B84] to-[#E87A5D] sm:w-24" />
 
-          <h1 className="max-w-[22ch] font-display text-[1.85rem] font-semibold leading-[1.15] tracking-tight text-[#2A2D34] sm:max-w-2xl sm:text-4xl md:text-[2.75rem]">
-            No names. No bias.
-            <br />
-            Just the right match.
-          </h1>
+          <RotatingHeroTagline />
 
           <p className="max-w-lg text-base leading-relaxed text-[#5B616B] sm:text-xl">
             Connect with vetted talents at no cost until a match is made.
           </p>
 
-          <div className="flex w-full flex-col gap-3 pt-2 sm:w-auto sm:flex-row sm:flex-wrap">
+          <div className="flex w-full flex-col gap-3 pt-1 sm:w-auto sm:flex-row sm:flex-wrap">
             <Link
               href="/onboarding"
               className="inline-flex h-12 w-full items-center justify-center rounded-md bg-[#2B5B84] px-6 font-display text-xs font-semibold tracking-[0.14em] text-white uppercase transition hover:bg-[#244e71] sm:w-auto"
             >
-              Start as a Seeker
+              Start as a Candidate
             </Link>
             <a
               href="#featured"

@@ -10,8 +10,8 @@ import {
   formatTimezoneOffset,
   offsetHoursInputToMinutes,
   offsetMinutesToHoursInput,
-  type SeekerDashboardData,
-} from "@/lib/dashboard/seeker";
+  type CandidateDashboardData,
+} from "@/lib/dashboard/candidate";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -53,8 +53,8 @@ export function EditProfileModal({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  data: SeekerDashboardData;
-  onSaved: (next: Partial<SeekerDashboardData>) => void;
+  data: CandidateDashboardData;
+  onSaved: (next: Partial<CandidateDashboardData>) => void;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [resumeName, setResumeName] = useState<string | null>(null);
@@ -167,7 +167,7 @@ export function EditProfileModal({
       .map((s) => s.trim())
       .filter(Boolean);
 
-    const res = await fetch("/api/dashboard/seeker/profile", {
+    const res = await fetch("/api/dashboard/candidate/profile", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -354,7 +354,7 @@ export function DeleteAccountDialog({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/dashboard/seeker/profile", {
+      const res = await fetch("/api/dashboard/candidate/profile", {
         method: "DELETE",
       });
       const json = await res.json();
@@ -430,7 +430,7 @@ function Field({
   );
 }
 
-function toFormValues(data: SeekerDashboardData): EditValues {
+function toFormValues(data: CandidateDashboardData): EditValues {
   return {
     headline: data.headline,
     selectedTagline: data.selectedTagline,

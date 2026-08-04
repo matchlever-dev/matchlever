@@ -5,28 +5,28 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import {
-  DEMO_SEEKER_DASHBOARD,
+  DEMO_CANDIDATE_DASHBOARD,
   hasCompleteReferences,
   REQUIRED_VERIFIED_REFERENCES,
-  type SeekerAvailability,
-  type SeekerDashboardData,
-} from "@/lib/dashboard/seeker";
+  type CandidateAvailability,
+  type CandidateDashboardData,
+} from "@/lib/dashboard/candidate";
 import { BrandMark } from "@/components/brand/brand-mark";
 import { AnonymousCandidateCard } from "@/components/dashboard/anonymous-candidate-card";
 import { ReferenceStatusTracker } from "@/components/dashboard/reference-status-tracker";
 import {
   DeleteAccountDialog,
   EditProfileModal,
-} from "@/components/dashboard/seeker-modals";
+} from "@/components/dashboard/candidate-modals";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
-export function SeekerDashboard() {
+export function CandidateDashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [data, setData] = useState<SeekerDashboardData | null>(null);
+  const [data, setData] = useState<CandidateDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusBusy, setStatusBusy] = useState(false);
@@ -45,10 +45,10 @@ export function SeekerDashboard() {
     setError(null);
     setNeedsOnboarding(false);
     try {
-      const res = await fetch("/api/dashboard/seeker");
+      const res = await fetch("/api/dashboard/candidate");
       const json = await res.json();
       if (res.status === 401) {
-        router.replace("/login?next=/dashboard/seeker");
+        router.replace("/login?next=/dashboard/candidate");
         return;
       }
       if (res.status === 404 && json.code === "PROFILE_MISSING") {
@@ -58,12 +58,12 @@ export function SeekerDashboard() {
         return;
       }
       if (!res.ok) throw new Error(json.error || "Failed to load dashboard");
-      setData(json as SeekerDashboardData);
+      setData(json as CandidateDashboardData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load dashboard");
       // Demo fixtures only when Supabase itself is not configured.
       if (!isSupabaseConfigured()) {
-        setData(DEMO_SEEKER_DASHBOARD);
+        setData(DEMO_CANDIDATE_DASHBOARD);
       } else {
         setData(null);
       }
@@ -78,7 +78,7 @@ export function SeekerDashboard() {
 
   async function toggleStatus(nextChecked: boolean) {
     if (!data) return;
-    const nextStatus: SeekerAvailability = nextChecked
+    const nextStatus: CandidateAvailability = nextChecked
       ? "actively_looking"
       : "on_hold";
     if (
@@ -95,7 +95,7 @@ export function SeekerDashboard() {
     setData({ ...data, status: nextStatus });
     setStatusBusy(true);
     try {
-      const res = await fetch("/api/dashboard/seeker", {
+      const res = await fetch("/api/dashboard/candidate", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: nextStatus }),
@@ -135,7 +135,7 @@ export function SeekerDashboard() {
       <div className="flex min-h-[60svh] flex-col items-center justify-center gap-4 px-5 text-center">
         <p className="max-w-md text-sm text-[#5B616B]">
           {error ||
-            "Finish seeker onboarding to create your anonymous profile and invite references."}
+            "Finish candidate onboarding to create your anonymous profile and invite references."}
         </p>
         <Link
           href="/onboarding"
@@ -154,7 +154,7 @@ export function SeekerDashboard() {
           {error || "Unable to load dashboard"}
         </p>
         <Link
-          href="/login?next=/dashboard/seeker"
+          href="/login?next=/dashboard/candidate"
           className="text-sm font-medium text-[#2B5B84] underline underline-offset-2"
         >
           Log in again
@@ -169,13 +169,13 @@ export function SeekerDashboard() {
   const canGoActive = referencesComplete;
 
   return (
-    <div className="min-h-[100svh] bg-[#F7F6F3] text-[#2A2D34]">
+    <div className="flex min-h-[100svh] flex-col bg-[#F7F6F3] text-[#2A2D34]">
       <header className="border-b border-[#2B5B84]/10 bg-white/80 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-5 py-4 sm:px-8">
           <Link href="/" className="flex items-center gap-2">
             <BrandMark className="h-8 w-auto" />
             <span className="font-display text-xs font-bold tracking-[0.16em] uppercase">
-              Seeker Dashboard
+              Candidate Dashboard
             </span>
           </Link>
           <div className="flex items-center gap-4">
@@ -190,7 +190,7 @@ export function SeekerDashboard() {
         </div>
       </header>
 
-      <main className="mx-auto grid max-w-5xl gap-6 px-5 py-8 sm:px-8 lg:grid-cols-[1.15fr_0.85fr]">
+      <main className="mx-auto grid w-full max-w-5xl flex-1 gap-6 px-5 py-8 sm:px-8 lg:grid-cols-[1.15fr_0.85fr]">
         <div className="space-y-6">
           <AnonymousCandidateCard data={data} />
 
@@ -205,7 +205,7 @@ export function SeekerDashboard() {
               {!canGoActive
                 ? `Your profile stays hidden until all ${REQUIRED_VERIFIED_REFERENCES} references are verified — then you can turn Actively Looking on.`
                 : activelyLooking
-                  ? "Your anonymous card is visible to matched hirers."
+                  ? "Your anonymous card is visible to matched recruiters."
                   : "Your profile is hidden from all searches until you turn looking back on."}
             </p>
             {error && (

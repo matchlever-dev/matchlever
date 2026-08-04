@@ -1,9 +1,9 @@
-/** Human-readable Seeker Terms for in-app display. Authoritative copy is the PDF. */
+/** Human-readable Candidate Terms for in-app display. Authoritative copy is the PDF. */
 
-export const SEEKER_TOS_SECTIONS = [
+export const CANDIDATE_TOS_SECTIONS = [
   {
     heading: "1. Acceptance of Terms & Services Overview",
-    body: `By completing the Seeker Onboarding Wizard, you agree to be bound by these Terms. MatchLever operates as a dual-sided marketplace designed to generate precise matches with zero search fatigue. While the platform charges hiring organizations fees for interviewing candidates, use of the platform is strictly governed by the rules outlined below.`,
+    body: `By completing the Candidate Onboarding Wizard, you agree to be bound by these Terms. MatchLever operates as a dual-sided marketplace designed to generate precise matches with zero search fatigue. While the platform charges hiring organizations fees for interviewing candidates, use of the platform is strictly governed by the rules outlined below.`,
   },
   {
     heading: "2. Intellectual Property & Right to Refuse Service",

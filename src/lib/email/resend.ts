@@ -17,7 +17,7 @@ export function getReferenceInviteUrl(token: string) {
   return `${getAppBaseUrl()}/reference/${token}`;
 }
 
-export function getSeekerOnboardingUrl() {
+export function getCandidateOnboardingUrl() {
   return `${getAppBaseUrl()}/onboarding`;
 }
 
@@ -28,7 +28,7 @@ export async function sendReferenceInviteEmail(args: {
 }) {
   const resend = getResendClient();
   const inviteUrl = getReferenceInviteUrl(args.token);
-  const onboardingUrl = getSeekerOnboardingUrl();
+  const onboardingUrl = getCandidateOnboardingUrl();
   const from =
     process.env.RESEND_FROM_EMAIL?.trim() || "MatchLever <onboarding@resend.dev>";
 
@@ -63,10 +63,10 @@ export async function sendReferenceInviteEmail(args: {
             Go incognito and get matched with openings from recruiters who are already looking.
           </p>
           <p style="margin:0 0 14px;font-size:13px;color:#5B616B;line-height:1.5">
-            Join MatchLever as a job seeker — stay anonymous, publish verified signal, and let eager recruiters find you.
+            Join MatchLever as a job candidate — stay anonymous, publish verified signal, and let eager recruiters find you.
           </p>
           <a href="${onboardingUrl}" style="background:#E87A5D;color:#fff;padding:10px 16px;text-decoration:none;border-radius:6px;display:inline-block;font-weight:600">
-            Start as an incognito seeker
+            Start as an incognito candidate
           </a>
         </div>
       </div>

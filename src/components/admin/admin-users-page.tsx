@@ -57,11 +57,7 @@ export function AdminUsersPage() {
     const nextUsers = users.map((u) => {
       if (u.id !== user.id) return u;
       if (field === "is_superuser") {
-        return {
-          ...u,
-          is_superuser: value,
-          is_admin: value ? true : u.is_admin,
-        };
+        return { ...u, is_superuser: value };
       }
       return { ...u, is_admin: value, is_superuser: value ? u.is_superuser : false };
     });
@@ -71,7 +67,7 @@ export function AdminUsersPage() {
     try {
       const body =
         field === "is_superuser"
-          ? { userId: user.id, is_superuser: value, is_admin: value || user.is_admin }
+          ? { userId: user.id, is_superuser: value }
           : {
               userId: user.id,
               is_admin: value,

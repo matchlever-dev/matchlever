@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
 import "./globals.css";
 
+import { LandingFooter } from "@/components/landing/landing-footer";
+
 const montserrat = Montserrat({
   variable: "--font-montserrat",
   subsets: ["latin"],
@@ -29,7 +31,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${montserrat.variable} font-sans antialiased`}>
-        {children}
+        <div className="flex min-h-[100svh] flex-col">
+          <div className="flex-1">{children}</div>
+          <LandingFooter />
+        </div>
       </body>
     </html>
   );

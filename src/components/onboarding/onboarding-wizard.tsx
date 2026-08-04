@@ -81,11 +81,11 @@ export function OnboardingWizard() {
       if (data.warning) {
         // Keep a soft signal in the URL so the dashboard can surface it.
         router.push(
-          `/dashboard/seeker?onboarding=complete&warning=${encodeURIComponent(data.warning)}`
+          `/dashboard/candidate?onboarding=complete&warning=${encodeURIComponent(data.warning)}`
         );
         return;
       }
-      router.push("/dashboard/seeker?onboarding=complete");
+      router.push("/dashboard/candidate?onboarding=complete");
     } catch (err) {
       setSubmitError(
         err instanceof Error ? err.message : "Could not complete onboarding"
@@ -106,7 +106,7 @@ export function OnboardingWizard() {
     <FormProvider {...form}>
       <div className="min-h-screen bg-[#F8F9FA] text-[#2A2D34]">
         <StepProgress step={step} />
-        <main className="mx-auto max-w-3xl px-6 pb-28 pt-10 sm:px-8">
+        <main className="mx-auto max-w-3xl px-6 pb-36 pt-10 sm:px-8">
           <AnimatePresence mode="wait">
             <motion.div
               key={step}

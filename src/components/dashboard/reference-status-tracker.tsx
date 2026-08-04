@@ -3,83 +3,133 @@
 import { useState } from "react";
 import { CheckCircle2, Clock3, Pencil, Send, X } from "lucide-react";
 
-import type { SeekerReferenceRow } from "@/lib/dashboard/seeker";
+import type { CandidateReferenceRow } from "@/lib/dashboard/candidate";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export function ReferenceStatusTracker({
-  references,
-  onChanged,
+function EditReferenceForm({
+  reference,
+  busy,
+  onCancel,
+  onSaved,
 }: {
-  references: SeekerReferenceRow[];
-  onChanged?: () => void;
+  reference: CandidateReferenceRow;
+  busy: boolean;
+  onCancel: () => void;
+  onSaved: (payload: {
+    unchanged?: boolean;
+    warning?: string;
+    demo?: boolean;
+    inviteSent?: boolean;
+  }) => void;
 }) {
-  const verified = references.filter((r) => r.status === "verified").length;
-  const total = references.length;
-  const [busyId, setBusyId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [draftEmail, setDraftEmail] = useState("");
-  const [draftLinkedIn, setDraftLinkedIn] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
+  const [draftEmail, setDraftEmail] = useState(reference.reference_email || "");
+  const [draftLinkedIn, setDraftLinkedIn] = useState(
+    reference.reference_linkedin_url?.trim() || ""
+  );
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  function startEdit(ref: SeekerReferenceRow) {
-    setEditingId(ref.id);
-    setDraftEmail(ref.reference_email);
-    setDraftLinkedIn(ref.reference_linkedin_url || "");
-    setMessage(null);
-  }
-
-  function cancelEdit() {
-    setEditingId(null);
-    setDraftEmail("");
-    setDraftLinkedIn("");
-  }
-
-  async function saveReference(referenceId: string) {
-    setBusyId(referenceId);
-    setMessage(null);
+  async function save() {
+    setSaving(true);
+    setLocalError(null);
     try {
-      const res = await fetch("/api/dashboard/seeker/references", {
+      const res = await fetch("/api/dashboard/candidate/references", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          referenceId,
+          referenceId: reference.id,
           email: draftEmail,
           linkedInUrl: draftLinkedIn,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Update failed");
-      setEditingId(null);
-      setDraftEmail("");
-      setDraftLinkedIn("");
-      if (data.unchanged) {
-        setMessage("No changes to save.");
-      } else if (data.warning) {
-        setMessage(data.warning);
-      } else if (data.demo) {
-        setMessage("Demo: reference updated.");
-      } else {
-        setMessage(
-          data.inviteSent
-            ? "Reference updated and invite sent."
-            : "Reference updated."
-        );
-      }
-      onChanged?.();
+      onSaved(data);
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Update failed");
+      setLocalError(err instanceof Error ? err.message : "Update failed");
     } finally {
-      setBusyId(null);
+      setSaving(false);
     }
   }
+
+  const disabled = busy || saving;
+
+  return (
+    <div className="grid gap-3">
+      <div className="grid gap-1.5">
+        <Label htmlFor={`ref-email-${reference.id}`}>Email</Label>
+        <input
+          id={`ref-email-${reference.id}`}
+          type="email"
+          value={draftEmail}
+          disabled={disabled}
+          onChange={(e) => setDraftEmail(e.target.value)}
+          autoComplete="off"
+          className="h-10 w-full rounded-md border border-[#2B5B84]/20 bg-white px-2.5 text-sm outline-none focus-visible:border-[#2B5B84] focus-visible:ring-2 focus-visible:ring-[#2B5B84]/20"
+        />
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor={`ref-linkedin-${reference.id}`}>
+          LinkedIn profile URL
+        </Label>
+        <input
+          id={`ref-linkedin-${reference.id}`}
+          type="text"
+          inputMode="url"
+          value={draftLinkedIn}
+          disabled={disabled}
+          onChange={(e) => setDraftLinkedIn(e.target.value)}
+          autoComplete="off"
+          placeholder="https://www.linkedin.com/in/their-profile"
+          className="h-10 w-full rounded-md border border-[#2B5B84]/20 bg-white px-2.5 text-sm outline-none focus-visible:border-[#2B5B84] focus-visible:ring-2 focus-visible:ring-[#2B5B84]/20"
+        />
+      </div>
+      {localError && (
+        <p className="text-xs text-destructive">{localError}</p>
+      )}
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          disabled={disabled || !draftEmail.trim() || !draftLinkedIn.trim()}
+          onClick={() => void save()}
+          className="h-10 bg-[#2B5B84] text-white hover:bg-[#244e71]"
+        >
+          {saving ? "Saving…" : "Save"}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={disabled}
+          onClick={onCancel}
+          className="h-10 border-[#2B5B84]/25 text-[#2B5B84]"
+          aria-label="Cancel edit"
+        >
+          <X className="size-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export function ReferenceStatusTracker({
+  references,
+  onChanged,
+}: {
+  references: CandidateReferenceRow[];
+  onChanged?: () => void;
+}) {
+  const verified = references.filter((r) => r.status === "verified").length;
+  const total = references.length;
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
   async function resend(referenceId: string) {
     setBusyId(referenceId);
     setMessage(null);
     try {
-      const res = await fetch("/api/dashboard/seeker/references/resend", {
+      const res = await fetch("/api/dashboard/candidate/references/resend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ referenceId }),
@@ -153,7 +203,10 @@ export function ReferenceStatusTracker({
                       type="button"
                       variant="outline"
                       disabled={busy}
-                      onClick={() => startEdit(ref)}
+                      onClick={() => {
+                        setEditingId(ref.id);
+                        setMessage(null);
+                      }}
                       className="h-10 gap-2 border-[#2B5B84]/25 text-[#2B5B84]"
                     >
                       <Pencil className="size-3.5" />
@@ -174,55 +227,29 @@ export function ReferenceStatusTracker({
               </div>
 
               {editing && (
-                <div className="grid gap-3">
-                  <div className="grid gap-1.5">
-                    <Label htmlFor={`ref-email-${ref.id}`}>Email</Label>
-                    <Input
-                      id={`ref-email-${ref.id}`}
-                      type="email"
-                      value={draftEmail}
-                      disabled={busy}
-                      onChange={(e) => setDraftEmail(e.target.value)}
-                      className="h-10 rounded-md border-[#2B5B84]/20 bg-white text-sm"
-                    />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor={`ref-linkedin-${ref.id}`}>
-                      LinkedIn profile URL
-                    </Label>
-                    <Input
-                      id={`ref-linkedin-${ref.id}`}
-                      type="url"
-                      value={draftLinkedIn}
-                      disabled={busy}
-                      onChange={(e) => setDraftLinkedIn(e.target.value)}
-                      placeholder="https://www.linkedin.com/in/their-profile"
-                      className="h-10 rounded-md border-[#2B5B84]/20 bg-white text-sm"
-                    />
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      type="button"
-                      disabled={
-                        busy || !draftEmail.trim() || !draftLinkedIn.trim()
-                      }
-                      onClick={() => void saveReference(ref.id)}
-                      className="h-10 bg-[#2B5B84] text-white hover:bg-[#244e71]"
-                    >
-                      {busy ? "Saving…" : "Save"}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={busy}
-                      onClick={cancelEdit}
-                      className="h-10 border-[#2B5B84]/25 text-[#2B5B84]"
-                      aria-label="Cancel edit"
-                    >
-                      <X className="size-3.5" />
-                    </Button>
-                  </div>
-                </div>
+                <EditReferenceForm
+                  key={ref.id}
+                  reference={ref}
+                  busy={busy}
+                  onCancel={() => setEditingId(null)}
+                  onSaved={(data) => {
+                    setEditingId(null);
+                    if (data.unchanged) {
+                      setMessage("No changes to save.");
+                    } else if (data.warning) {
+                      setMessage(data.warning);
+                    } else if (data.demo) {
+                      setMessage("Demo: reference updated.");
+                    } else {
+                      setMessage(
+                        data.inviteSent
+                          ? "Reference updated and invite sent."
+                          : "Reference updated."
+                      );
+                    }
+                    onChanged?.();
+                  }}
+                />
               )}
             </li>
           );

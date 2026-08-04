@@ -14,7 +14,9 @@ type AppSupabase = SupabaseClient<Database>;
 
 /**
  * Decide where a signed-in user should land.
- * Honors a safe `next` path when the user has access; otherwise role/profile defaults.
+ * Honors a safe `next` path when the user has access; otherwise lands on the
+ * candidate profile (or onboarding). Admin/superuser portals are URL-only —
+ * they are not the default post-login destination.
  */
 export async function resolvePostLoginPath(
   supabase: AppSupabase,
@@ -35,8 +37,9 @@ export async function resolvePostLoginPath(
     .maybeSingle();
 
   const isSuperuser = Boolean(profile?.is_superuser);
-  const isAdmin = Boolean(profile?.is_admin || profile?.is_superuser);
+  const isAdmin = Boolean(profile?.is_admin);
 
+  // Explicit portal deep-links (e.g. /login?next=/admin) still work for staff.
   if (safe?.startsWith("/superuser") && isSuperuser) return safe;
   if (safe?.startsWith("/admin") && isAdmin) return safe;
   if (
@@ -45,7 +48,7 @@ export async function resolvePostLoginPath(
       safe.startsWith("/onboarding") ||
       safe === "/")
   ) {
-    // Returning seekers who already finished onboarding should land on the
+    // Returning candidates who already finished onboarding should land on the
     // dashboard even when OAuth used next=/onboarding.
     if (safe.startsWith("/onboarding")) {
       const { data: candidate } = await supabase
@@ -53,13 +56,10 @@ export async function resolvePostLoginPath(
         .select("id")
         .eq("user_id", user.id)
         .maybeSingle();
-      if (candidate) return "/dashboard/seeker";
+      if (candidate) return "/dashboard/candidate";
     }
     return safe;
   }
-
-  if (isSuperuser) return "/superuser";
-  if (isAdmin) return "/admin";
 
   const { data: candidate } = await supabase
     .from("candidate_profiles")
@@ -67,6 +67,6 @@ export async function resolvePostLoginPath(
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (candidate) return "/dashboard/seeker";
+  if (candidate) return "/dashboard/candidate";
   return "/onboarding";
 }

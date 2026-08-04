@@ -1,8 +1,44 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { BrandMark } from "@/components/brand/brand-mark";
 import { WHY_MATCHLEVER } from "@/lib/marketing/why-matchlever";
+
+const ARISE_SOLUTIONS_URL = "https://www.arise-sol.com";
+
+function ariseSolutionsLink(className?: string) {
+  return (
+    <a
+      href={ARISE_SOLUTIONS_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={
+        className ??
+        "font-semibold text-[#2B5B84] underline decoration-[#2B5B84]/30 underline-offset-2 transition hover:text-[#E87A5D] hover:decoration-[#E87A5D]"
+      }
+    >
+      Arise Solutions
+    </a>
+  );
+}
+
+function withAriseSolutionsLinks(text: string): ReactNode {
+  const needle = "Arise Solutions";
+  if (!text.includes(needle)) return text;
+
+  const parts: ReactNode[] = [];
+  let rest = text;
+  let key = 0;
+  while (rest.includes(needle)) {
+    const index = rest.indexOf(needle);
+    if (index > 0) parts.push(rest.slice(0, index));
+    parts.push(<span key={key++}>{ariseSolutionsLink()}</span>);
+    rest = rest.slice(index + needle.length);
+  }
+  if (rest) parts.push(rest);
+  return parts;
+}
 
 export const metadata: Metadata = {
   title: "Why MatchLever · Arise Solutions",
@@ -34,7 +70,10 @@ export default function WhyMatchLeverPage() {
 
       <main className="mx-auto max-w-3xl px-5 py-10 sm:px-8 sm:py-14">
         <p className="font-display text-[11px] font-semibold tracking-[0.22em] text-[#E87A5D] uppercase">
-          {WHY_MATCHLEVER.eyebrow}
+          {ariseSolutionsLink(
+            "font-display text-[11px] font-semibold tracking-[0.22em] text-[#E87A5D] uppercase underline decoration-[#E87A5D]/40 underline-offset-2 transition hover:decoration-[#E87A5D]",
+          )}{" "}
+          LLC
         </p>
         <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-[#2B5B84] sm:text-4xl">
           {WHY_MATCHLEVER.title}
@@ -48,12 +87,12 @@ export default function WhyMatchLeverPage() {
               </h2>
               {"body" in section && section.body && (
                 <p className="mt-3 text-base leading-relaxed text-[#2A2D34]/80">
-                  {section.body}
+                  {withAriseSolutionsLinks(section.body)}
                 </p>
               )}
               {"after" in section && section.after && (
                 <p className="mt-4 text-base leading-relaxed text-[#2A2D34]/80">
-                  {section.after}
+                  {withAriseSolutionsLinks(section.after)}
                 </p>
               )}
               {"bullets" in section && section.bullets && (

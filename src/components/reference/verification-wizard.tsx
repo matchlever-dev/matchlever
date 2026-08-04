@@ -11,7 +11,7 @@ import {
   type ReferenceFormValues,
 } from "@/lib/reference/schema";
 import { BrandMark } from "@/components/brand/brand-mark";
-import { ReferrerSeekerCta } from "@/components/reference/referrer-seeker-cta";
+import { ReferrerCandidateCta } from "@/components/reference/referrer-candidate-cta";
 import { Progress } from "@/components/ui/progress";
 import {
   StepEndorsement,
@@ -198,7 +198,7 @@ export function ReferenceVerificationWizard({ token }: { token: string }) {
 
   if (loadError) {
     return (
-      <div className="flex min-h-[100svh] items-center justify-center bg-[#F7F6F3] px-5">
+      <div className="flex min-h-[100svh] flex-col items-center justify-center bg-[#F7F6F3] px-5">
         <div className="max-w-sm text-center">
           <BrandMark className="mx-auto h-14 w-auto" />
           <p className="mt-4 font-display text-lg font-semibold text-[#2B5B84]">
@@ -212,7 +212,7 @@ export function ReferenceVerificationWizard({ token }: { token: string }) {
 
   if (done) {
     return (
-      <div className="flex min-h-[100svh] items-center justify-center bg-[#F7F6F3] px-5 py-10">
+      <div className="flex min-h-[100svh] flex-col items-center justify-center bg-[#F7F6F3] px-5 py-10">
         <div className="w-full max-w-sm">
           <div className="text-center">
             <BrandMark className="mx-auto h-14 w-auto" />
@@ -227,7 +227,7 @@ export function ReferenceVerificationWizard({ token }: { token: string }) {
               /100.
             </p>
           </div>
-          <ReferrerSeekerCta className="mt-8 text-left" />
+          <ReferrerCandidateCta className="mt-8 text-left" />
         </div>
       </div>
     );
@@ -261,7 +261,7 @@ export function ReferenceVerificationWizard({ token }: { token: string }) {
           </div>
         </header>
 
-        <main className="mx-auto max-w-lg px-5 pb-28 pt-6">
+        <main className="mx-auto max-w-lg px-5 pb-36 pt-6">
           <AnimatePresence mode="wait">
             <motion.div
               key={step}

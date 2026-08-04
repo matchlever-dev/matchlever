@@ -8,7 +8,7 @@ export const WHY_MATCHLEVER = {
     },
     {
       heading: "Our Mission",
-      body: "We partner with top-tier companies and highly qualified, vetted job seekers to make finding the right match faster, easier, and smarter.",
+      body: "We partner with top-tier companies and highly qualified, vetted job candidates to make finding the right match faster, easier, and smarter.",
       after:
         "By cutting through the noise and focusing on true alignment—skills, culture, and mutual expectations—we eliminate the exhaustion of reviewing hundreds of mismatched applications or endless job boards.",
     },
@@ -16,7 +16,7 @@ export const WHY_MATCHLEVER = {
       heading: "How We Make the Difference",
       bullets: [
         {
-          label: "For Job Seekers",
+          label: "For Job Candidates",
           text: "Skip the frustration of endless blind applications. MatchLever connects you directly with opportunities that match your specific talents, experience, and career goals, saving you time and energy.",
         },
         {

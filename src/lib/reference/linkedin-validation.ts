@@ -6,7 +6,7 @@ import {
 } from "@/lib/reference/authenticity";
 import { linkedInUrlSchema } from "@/lib/reference/schema";
 
-/** Opaque message shown to seekers — never reveal which check failed. */
+/** Opaque message shown to candidates — never reveal which check failed. */
 export const REFERRER_LINKEDIN_INVALID_MESSAGE =
   "Referrer LinkedIn profile invalid";
 
@@ -266,7 +266,7 @@ function structuralGate(
 }
 
 /**
- * Validate a referrer LinkedIn profile for seeker intake / edits.
+ * Validate a referrer LinkedIn profile for candidate intake / edits.
  *
  * Preferred path: LINKEDIN_ENRICHMENT_URL + LINKEDIN_ENRICHMENT_API_KEY returning
  * connections, experiences, photo, and activity signals.

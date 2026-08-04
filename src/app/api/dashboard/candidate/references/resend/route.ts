@@ -79,7 +79,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to resend link";
-    console.error("[/api/dashboard/seeker/references/resend]", message);
+    console.error("[/api/dashboard/candidate/references/resend]", message);
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }
