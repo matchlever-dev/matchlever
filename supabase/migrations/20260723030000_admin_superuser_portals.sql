@@ -28,21 +28,21 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------
--- user_profiles.role for directory (seeker / hirer / both / staff)
+-- user_profiles.role for directory (candidate / recruiter / both / staff)
 -- ---------------------------------------------------------------------------
 
 alter table public.user_profiles
-  add column if not exists role text not null default 'seeker';
+  add column if not exists role text not null default 'candidate';
 
 alter table public.user_profiles
   drop constraint if exists user_profiles_role_check;
 
 alter table public.user_profiles
   add constraint user_profiles_role_check
-    check (role in ('seeker', 'hirer', 'both', 'staff'));
+    check (role in ('candidate', 'recruiter', 'both', 'staff'));
 
 comment on column public.user_profiles.role is
-  'Platform role used by directory: seeker, hirer, both, or staff.';
+  'Platform role used by directory: candidate, recruiter, both, or staff.';
 
 create index if not exists user_profiles_role_idx
   on public.user_profiles (role);
