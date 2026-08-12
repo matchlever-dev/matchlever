@@ -74,7 +74,11 @@ export async function POST(request: Request) {
 
     const sanitized = await sanitizeResumeWithGroq(rawText);
 
-    return NextResponse.json(sanitized);
+    // Cap stored raw text (same limit as the Groq prompt) for admin audit.
+    return NextResponse.json({
+      ...sanitized,
+      raw_resume_text: rawText.slice(0, 60_000),
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unexpected sanitize failure.";

@@ -34,8 +34,28 @@ export type AdminCandidateRow = {
   sanitized_summary: string | null;
   email: string | null;
   full_name: string | null;
+  updated_at: string;
+  /** Mean authenticity score across scored references; null if none scored. */
+  avg_authenticity_score: number | null;
   references: AdminReferenceRow[];
 };
+
+/** Privilege rank for admin Users "Score" sort: superuser > admin > none. */
+export function userPrivilegeScore(user: Pick<AdminUserRow, "is_admin" | "is_superuser">): number {
+  if (user.is_superuser) return 2;
+  if (user.is_admin) return 1;
+  return 0;
+}
+
+export function averageAuthenticityScore(
+  references: Pick<AdminReferenceRow, "authenticity_score">[]
+): number | null {
+  const scores = references
+    .map((r) => r.authenticity_score)
+    .filter((s): s is number => typeof s === "number" && !Number.isNaN(s));
+  if (scores.length === 0) return null;
+  return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+}
 
 export type DirectoryPerson = {
   id: string;
@@ -47,6 +67,8 @@ export type DirectoryPerson = {
   location: string | null;
   status: string | null;
   created_at: string;
+  /** Mean authenticity score for seekers; null for hirers / unscored. */
+  avg_authenticity_score: number | null;
 };
 
 export type ActiveJobPosting = {
@@ -133,6 +155,8 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
       "Staff platform engineer who cut p99 latency 62% on a multi-region event bus.",
     email: "sam.seeker@example.com",
     full_name: "Sam Patel",
+    updated_at: "2026-07-20T16:00:00.000Z",
+    avg_authenticity_score: 65,
     references: [
       {
         id: "ref-a",
@@ -169,6 +193,8 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
       "Backend engineer specializing in Postgres performance and API design.",
     email: "taylor@example.com",
     full_name: "Taylor Nguyen",
+    updated_at: "2026-07-10T09:00:00.000Z",
+    avg_authenticity_score: null,
     references: [
       {
         id: "ref-c",
@@ -180,6 +206,24 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
         lowTrust: true,
       },
     ],
+  },
+  {
+    id: "cand-3",
+    user_id: "user-6",
+    headline: "Product Designer",
+    status: "on_hold",
+    global_city: "Toronto",
+    global_country: "Canada",
+    timezone_offset: -240,
+    work_hours_start: "09:00:00",
+    work_hours_end: "17:00:00",
+    raw_resume_text: null,
+    sanitized_summary: null,
+    email: "riley@example.com",
+    full_name: "Riley Chen",
+    updated_at: "2026-07-28T12:00:00.000Z",
+    avg_authenticity_score: null,
+    references: [],
   },
 ];
 
@@ -194,6 +238,7 @@ export const DEMO_DIRECTORY: DirectoryPerson[] = [
     location: "Austin, United States",
     status: "actively_looking",
     created_at: "2026-06-12T15:30:00.000Z",
+    avg_authenticity_score: 65,
   },
   {
     id: "dir-s2",
@@ -205,6 +250,7 @@ export const DEMO_DIRECTORY: DirectoryPerson[] = [
     location: "Berlin, Germany",
     status: "on_hold",
     created_at: "2026-06-20T10:00:00.000Z",
+    avg_authenticity_score: null,
   },
   {
     id: "dir-h1",
@@ -216,6 +262,7 @@ export const DEMO_DIRECTORY: DirectoryPerson[] = [
     location: "San Francisco, United States",
     status: "active",
     created_at: "2026-06-18T09:10:00.000Z",
+    avg_authenticity_score: null,
   },
   {
     id: "dir-h2",
@@ -227,6 +274,7 @@ export const DEMO_DIRECTORY: DirectoryPerson[] = [
     location: "Toronto, Canada",
     status: "active",
     created_at: "2026-07-02T14:00:00.000Z",
+    avg_authenticity_score: null,
   },
 ];
 

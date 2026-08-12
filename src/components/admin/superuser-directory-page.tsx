@@ -1,11 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { DirectoryPerson } from "@/lib/admin/demo";
+import {
+  AdminListControls,
+  type AdminSortMode,
+} from "@/components/admin/admin-list-controls";
 import { PortalShell } from "@/components/admin/portal-shell";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -20,20 +23,29 @@ const SUPER_LINKS = [
   { href: "/superuser/manual-match", label: "Manual Match" },
 ];
 
+const DIRECTORY_STATUS_OPTIONS = [
+  { value: "all", label: "All statuses" },
+  { value: "seeker", label: "Candidate" },
+  { value: "hirer", label: "Hirer" },
+  { value: "actively_looking", label: "Actively looking" },
+  { value: "on_hold", label: "On Hold" },
+  { value: "active", label: "Hirer active" },
+];
+
 export function SuperuserDirectoryPage() {
   const [people, setPeople] = useState<DirectoryPerson[]>([]);
-  const [query, setQuery] = useState("");
+  const [keyword, setKeyword] = useState("");
+  const [sort, setSort] = useState<AdminSortMode>("recent");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [demo, setDemo] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async (q: string) => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(
-        `/api/superuser/directory?q=${encodeURIComponent(q)}`
-      );
+      const res = await fetch("/api/superuser/directory");
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to load directory");
       setPeople(json.people ?? []);
@@ -46,9 +58,50 @@ export function SuperuserDirectoryPage() {
   }, []);
 
   useEffect(() => {
-    const handle = window.setTimeout(() => void load(query), 200);
-    return () => window.clearTimeout(handle);
-  }, [query, load]);
+    void load();
+  }, [load]);
+
+  const filtered = useMemo(() => {
+    const list = people.filter((p) => {
+      if (statusFilter === "seeker" && p.kind !== "seeker") return false;
+      if (statusFilter === "hirer" && p.kind !== "hirer") return false;
+      if (
+        statusFilter !== "all" &&
+        statusFilter !== "seeker" &&
+        statusFilter !== "hirer" &&
+        p.status !== statusFilter
+      ) {
+        return false;
+      }
+
+      const q = keyword.trim().toLowerCase();
+      if (!q) return true;
+      const hay = [
+        p.email,
+        p.full_name,
+        p.title,
+        p.company,
+        p.location,
+        p.kind,
+        p.status,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
+    });
+
+    return [...list].sort((a, b) => {
+      if (sort === "score") {
+        const sa = a.avg_authenticity_score ?? -1;
+        const sb = b.avg_authenticity_score ?? -1;
+        if (sb !== sa) return sb - sa;
+      }
+      return (
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    });
+  }, [people, keyword, sort, statusFilter]);
 
   return (
     <PortalShell title="Superuser Portal" links={SUPER_LINKS} accent="superuser">
@@ -71,11 +124,15 @@ export function SuperuserDirectoryPage() {
         )}
       </div>
 
-      <Input
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search name, email, company, location…"
-        className="mb-4 h-11 max-w-lg bg-white"
+      <AdminListControls
+        sort={sort}
+        onSortChange={setSort}
+        status={statusFilter}
+        onStatusChange={setStatusFilter}
+        statusOptions={DIRECTORY_STATUS_OPTIONS}
+        keyword={keyword}
+        onKeywordChange={setKeyword}
+        keywordPlaceholder="Search name, email, company, location…"
       />
 
       {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
@@ -92,14 +149,17 @@ export function SuperuserDirectoryPage() {
                 <TableHead>Title / Company</TableHead>
                 <TableHead>Location</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Score</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {people.map((person) => (
+              {filtered.map((person) => (
                 <TableRow key={`${person.kind}-${person.id}`}>
                   <TableCell>
                     <Badge
-                      variant={person.kind === "seeker" ? "default" : "secondary"}
+                      variant={
+                        person.kind === "seeker" ? "default" : "secondary"
+                      }
                       className="capitalize"
                     >
                       {person.kind === "seeker" ? "Candidate" : person.kind}
@@ -123,12 +183,17 @@ export function SuperuserDirectoryPage() {
                   <TableCell className="text-sm capitalize">
                     {person.status?.replaceAll("_", " ") || "—"}
                   </TableCell>
+                  <TableCell className="text-sm tabular-nums">
+                    {person.avg_authenticity_score ?? "—"}
+                  </TableCell>
                 </TableRow>
               ))}
-              {people.length === 0 && (
+              {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-[#5B616B]">
-                    No matches.
+                  <TableCell colSpan={6} className="text-[#5B616B]">
+                    {people.length === 0
+                      ? "No people in the directory yet."
+                      : "No matches."}
                   </TableCell>
                 </TableRow>
               )}

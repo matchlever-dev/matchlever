@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireAdminApi } from "@/lib/auth/api-guards";
 import {
   DEMO_ADMIN_CANDIDATES,
+  averageAuthenticityScore,
   isLowTrustScore,
   type AdminCandidateRow,
   type AdminReferenceRow,
@@ -33,7 +34,7 @@ export async function GET() {
   const { data: profiles, error } = await supabase
     .from("candidate_profiles")
     .select(
-      "id, user_id, headline, status, global_city, global_country, timezone_offset, work_hours_start, work_hours_end, raw_resume_text, sanitized_summary"
+      "id, user_id, headline, status, global_city, global_country, timezone_offset, work_hours_start, work_hours_end, raw_resume_text, sanitized_summary, updated_at"
     )
     .order("updated_at", { ascending: false });
 
@@ -90,6 +91,7 @@ export async function GET() {
 
   const candidates: AdminCandidateRow[] = (profiles ?? []).map((p) => {
     const user = userMap.get(p.user_id);
+    const refs = refsByCandidate.get(p.id) ?? [];
     return {
       id: p.id,
       user_id: p.user_id,
@@ -104,7 +106,9 @@ export async function GET() {
       sanitized_summary: p.sanitized_summary,
       email: user?.email ?? null,
       full_name: user?.full_name ?? null,
-      references: refsByCandidate.get(p.id) ?? [],
+      updated_at: p.updated_at,
+      avg_authenticity_score: averageAuthenticityScore(refs),
+      references: refs,
     };
   });
 

@@ -198,6 +198,7 @@ export async function POST(request: Request) {
       user_id: user.id,
       headline: data.anonymousTitle?.trim() || "MatchLever Candidate",
       sanitized_summary: data.sanitizedSummary?.trim() || null,
+      raw_resume_text: data.rawResumeText?.trim() || null,
       verified_skills: data.verifiedSkills,
       suggested_taglines: data.suggestedTaglines.map((t) => t.trim()),
       selected_tagline: data.selectedTagline.trim(),

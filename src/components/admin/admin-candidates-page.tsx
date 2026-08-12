@@ -1,10 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 
-import type { AdminCandidateRow } from "@/lib/admin/demo";
-import { formatTimezoneOffset } from "@/lib/dashboard/candidate";
+import type { AdminCandidateRow, AdminReferenceRow } from "@/lib/admin/demo";
+import {
+  REQUIRED_VERIFIED_REFERENCES,
+  formatTimezoneOffset,
+} from "@/lib/dashboard/candidate";
+import {
+  AdminListControls,
+  matchesKeyword,
+  type AdminSortMode,
+} from "@/components/admin/admin-list-controls";
 import { PortalShell } from "@/components/admin/portal-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +24,12 @@ const ADMIN_LINKS = [
   { href: "/admin/contact", label: "Contact" },
 ];
 
+const CANDIDATE_STATUS_OPTIONS = [
+  { value: "all", label: "All statuses" },
+  { value: "actively_looking", label: "Active" },
+  { value: "on_hold", label: "On Hold" },
+];
+
 export function AdminCandidatesPage() {
   const [candidates, setCandidates] = useState<AdminCandidateRow[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -23,6 +37,9 @@ export function AdminCandidatesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [sort, setSort] = useState<AdminSortMode>("recent");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [keyword, setKeyword] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -34,7 +51,10 @@ export function AdminCandidatesPage() {
       const list = (json.candidates ?? []) as AdminCandidateRow[];
       setCandidates(list);
       setDemo(Boolean(json.demo));
-      setSelectedId((prev) => prev ?? list[0]?.id ?? null);
+      setSelectedId((prev) => {
+        if (prev && list.some((c) => c.id === prev)) return prev;
+        return list[0]?.id ?? null;
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load");
     } finally {
@@ -46,8 +66,39 @@ export function AdminCandidatesPage() {
     void load();
   }, [load]);
 
-  const selected =
-    candidates.find((c) => c.id === selectedId) ?? candidates[0] ?? null;
+  const filtered = useMemo(() => {
+    const list = candidates.filter((c) => {
+      if (statusFilter !== "all" && c.status !== statusFilter) return false;
+      return matchesKeyword(keyword, [
+        c.full_name,
+        c.email,
+        c.headline,
+        c.global_city,
+        c.global_country,
+        c.sanitized_summary,
+      ]);
+    });
+
+    return [...list].sort((a, b) => {
+      if (sort === "score") {
+        const sa = a.avg_authenticity_score ?? -1;
+        const sb = b.avg_authenticity_score ?? -1;
+        if (sb !== sa) return sb - sa;
+      }
+      return (
+        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      );
+    });
+  }, [candidates, keyword, sort, statusFilter]);
+
+  const selected = filtered.find((c) => c.id === selectedId) ?? null;
+
+  useEffect(() => {
+    if (filtered.length === 0) return;
+    if (!filtered.some((c) => c.id === selectedId)) {
+      setSelectedId(filtered[0].id);
+    }
+  }, [filtered, selectedId]);
 
   async function setStatus(status: "actively_looking" | "on_hold") {
     if (!selected) return;
@@ -77,7 +128,11 @@ export function AdminCandidatesPage() {
 
   async function deleteCandidate() {
     if (!selected) return;
-    if (!window.confirm(`Delete candidate profile for ${selected.full_name || selected.headline}?`)) {
+    if (
+      !window.confirm(
+        `Delete candidate profile for ${selected.full_name || selected.headline}?`
+      )
+    ) {
       return;
     }
     setBusy(true);
@@ -109,6 +164,9 @@ export function AdminCandidatesPage() {
           <h1 className="mt-2 font-display text-2xl font-semibold text-[#2B5B84]">
             Candidate profiles
           </h1>
+          <p className="mt-2 text-sm text-[#5B616B]">
+            All candidate profiles, including incomplete references and resumes.
+          </p>
         </div>
         {demo && (
           <Badge variant="secondary" className="bg-[#E87A5D]/15 text-[#E87A5D]">
@@ -117,6 +175,17 @@ export function AdminCandidatesPage() {
         )}
       </div>
 
+      <AdminListControls
+        sort={sort}
+        onSortChange={setSort}
+        status={statusFilter}
+        onStatusChange={setStatusFilter}
+        statusOptions={CANDIDATE_STATUS_OPTIONS}
+        keyword={keyword}
+        onKeywordChange={setKeyword}
+        keywordPlaceholder="Search name, email, headline, location…"
+      />
+
       {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
 
       {loading ? (
@@ -124,7 +193,7 @@ export function AdminCandidatesPage() {
       ) : (
         <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
           <aside className="space-y-2 border border-[#2B5B84]/15 bg-white p-3">
-            {candidates.map((c) => (
+            {filtered.map((c) => (
               <button
                 key={c.id}
                 type="button"
@@ -141,18 +210,36 @@ export function AdminCandidatesPage() {
                 <p className="truncate text-xs text-[#5B616B]">
                   {c.full_name || c.email || c.id}
                 </p>
-                <Badge
-                  className="mt-2"
-                  variant={
-                    c.status === "actively_looking" ? "default" : "secondary"
-                  }
-                >
-                  {c.status === "actively_looking" ? "Active" : "On Hold"}
-                </Badge>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <Badge
+                    variant={
+                      c.status === "actively_looking" ? "default" : "secondary"
+                    }
+                  >
+                    {c.status === "actively_looking" ? "Active" : "On Hold"}
+                  </Badge>
+                  <span className="text-[11px] text-[#5B616B]">
+                    Refs{" "}
+                    {
+                      c.references.filter((r) => r.status === "verified")
+                        .length
+                    }
+                    /{REQUIRED_VERIFIED_REFERENCES}
+                  </span>
+                  {c.avg_authenticity_score != null && (
+                    <span className="text-[11px] text-[#5B616B]">
+                      · Score {c.avg_authenticity_score}
+                    </span>
+                  )}
+                </div>
               </button>
             ))}
-            {candidates.length === 0 && (
-              <p className="p-2 text-sm text-[#5B616B]">No candidates yet.</p>
+            {filtered.length === 0 && (
+              <p className="p-2 text-sm text-[#5B616B]">
+                {candidates.length === 0
+                  ? "No candidates yet."
+                  : "No candidates match these filters."}
+              </p>
             )}
           </aside>
 
@@ -206,7 +293,10 @@ export function AdminCandidatesPage() {
                   <TabsTrigger value="references">Reference Audit</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="resume" className="mt-4 grid gap-4 md:grid-cols-2">
+                <TabsContent
+                  value="resume"
+                  className="mt-4 grid gap-4 md:grid-cols-2"
+                >
                   <AuditBlock title="Un-sanitized Resume">
                     <pre className="whitespace-pre-wrap font-sans text-xs leading-relaxed text-[#2A2D34]">
                       {selected.raw_resume_text || "No raw resume stored."}
@@ -214,7 +304,8 @@ export function AdminCandidatesPage() {
                   </AuditBlock>
                   <AuditBlock title="Sanitized Summary">
                     <p className="text-sm leading-relaxed text-[#2A2D34]">
-                      {selected.sanitized_summary || "No sanitized summary yet."}
+                      {selected.sanitized_summary ||
+                        "No sanitized summary yet."}
                     </p>
                   </AuditBlock>
                 </TabsContent>
@@ -244,49 +335,22 @@ export function AdminCandidatesPage() {
                 </TabsContent>
 
                 <TabsContent value="references" className="mt-4 space-y-3">
-                  {selected.references.map((ref) => (
-                    <div
-                      key={ref.id}
-                      className={`border p-4 ${
-                        ref.lowTrust
-                          ? "border-[#E87A5D]/40 bg-[#E87A5D]/08"
-                          : "border-[#2B5B84]/10 bg-[#F7F6F3]"
-                      }`}
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div>
-                          <p className="text-sm font-medium">{ref.reference_email}</p>
-                          <p className="mt-1 text-xs text-[#5B616B]">
-                            {ref.reference_linkedin_url || "No LinkedIn URL"}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-display text-sm font-semibold text-[#2B5B84]">
-                            AI score:{" "}
-                            {ref.authenticity_score === null
-                              ? "—"
-                              : ref.authenticity_score}
-                          </p>
-                          <p className="text-[11px] text-[#5B616B] capitalize">
-                            {ref.status}
-                          </p>
-                        </div>
-                      </div>
-                      {ref.lowTrust && (
-                        <div className="mt-3 flex items-start gap-2 text-xs text-[#E87A5D]">
-                          <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
-                          <span>
-                            Low-trust warning
-                            {ref.authenticity_flags.length
-                              ? `: ${ref.authenticity_flags.join(", ")}`
-                              : "."}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  {selected.references.length === 0 && (
-                    <p className="text-sm text-[#5B616B]">No references on file.</p>
+                  <p className="text-xs text-[#5B616B]">
+                    {
+                      selected.references.filter((r) => r.status === "verified")
+                        .length
+                    }{" "}
+                    of {REQUIRED_VERIFIED_REFERENCES} references verified
+                  </p>
+                  {padReferenceSlots(selected.references).map((slot, index) =>
+                    slot ? (
+                      <ReferenceCard key={slot.id} refRow={slot} />
+                    ) : (
+                      <EmptyReferenceSlot
+                        key={`empty-${index}`}
+                        slotNumber={index + 1}
+                      />
+                    )
                   )}
                 </TabsContent>
               </Tabs>
@@ -295,6 +359,70 @@ export function AdminCandidatesPage() {
         </div>
       )}
     </PortalShell>
+  );
+}
+
+function padReferenceSlots(
+  references: AdminReferenceRow[]
+): Array<AdminReferenceRow | null> {
+  const slots: Array<AdminReferenceRow | null> = [...references];
+  while (slots.length < REQUIRED_VERIFIED_REFERENCES) {
+    slots.push(null);
+  }
+  return slots;
+}
+
+function ReferenceCard({ refRow }: { refRow: AdminReferenceRow }) {
+  return (
+    <div
+      className={`border p-4 ${
+        refRow.lowTrust
+          ? "border-[#E87A5D]/40 bg-[#E87A5D]/08"
+          : "border-[#2B5B84]/10 bg-[#F7F6F3]"
+      }`}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <p className="text-sm font-medium">{refRow.reference_email}</p>
+          <p className="mt-1 text-xs text-[#5B616B]">
+            {refRow.reference_linkedin_url || "No LinkedIn URL"}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="font-display text-sm font-semibold text-[#2B5B84]">
+            AI score:{" "}
+            {refRow.authenticity_score === null
+              ? "—"
+              : refRow.authenticity_score}
+          </p>
+          <p className="text-[11px] text-[#5B616B] capitalize">
+            {refRow.status}
+          </p>
+        </div>
+      </div>
+      {refRow.lowTrust && (
+        <div className="mt-3 flex items-start gap-2 text-xs text-[#E87A5D]">
+          <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+          <span>
+            Low-trust warning
+            {refRow.authenticity_flags.length
+              ? `: ${refRow.authenticity_flags.join(", ")}`
+              : "."}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EmptyReferenceSlot({ slotNumber }: { slotNumber: number }) {
+  return (
+    <div className="border border-dashed border-[#2B5B84]/25 bg-[#F7F6F3]/60 p-4">
+      <p className="font-display text-[10px] font-semibold tracking-[0.2em] text-[#5B616B] uppercase">
+        Reference {slotNumber}
+      </p>
+      <p className="mt-2 text-sm text-[#5B616B]">To Be Completed</p>
+    </div>
   );
 }
 

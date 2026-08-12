@@ -18,6 +18,7 @@ const editSchema = z.object({
   verifiedSkills: z.array(z.string().trim().min(1)).max(20),
   suggestedTaglines: z.array(z.string().trim().min(8).max(200)).max(5).optional(),
   sanitizedSummary: z.string().trim().max(4000).nullable().optional(),
+  rawResumeText: z.string().trim().max(60_000).nullable().optional(),
   yearsExperience: z.number().int().min(0).max(60).nullable().optional(),
 });
 
@@ -55,6 +56,9 @@ export async function PATCH(request: Request) {
         : {}),
       ...(parsed.data.sanitizedSummary !== undefined
         ? { sanitized_summary: parsed.data.sanitizedSummary }
+        : {}),
+      ...(parsed.data.rawResumeText !== undefined
+        ? { raw_resume_text: parsed.data.rawResumeText }
         : {}),
       ...(parsed.data.yearsExperience !== undefined
         ? { years_experience: parsed.data.yearsExperience }

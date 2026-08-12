@@ -1,8 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-import type { AdminUserRow } from "@/lib/admin/demo";
+import {
+  type AdminUserRow,
+  userPrivilegeScore,
+} from "@/lib/admin/demo";
+import {
+  AdminListControls,
+  matchesKeyword,
+  type AdminSortMode,
+} from "@/components/admin/admin-list-controls";
 import { PortalShell } from "@/components/admin/portal-shell";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -21,12 +29,24 @@ const ADMIN_LINKS = [
   { href: "/admin/contact", label: "Contact" },
 ];
 
+const USER_STATUS_OPTIONS = [
+  { value: "all", label: "All roles" },
+  { value: "candidate", label: "Candidate" },
+  { value: "recruiter", label: "Recruiter" },
+  { value: "staff", label: "Staff" },
+  { value: "admin", label: "Admin" },
+  { value: "superuser", label: "Superuser" },
+];
+
 export function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUserRow[]>([]);
   const [demo, setDemo] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [sort, setSort] = useState<AdminSortMode>("recent");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [keyword, setKeyword] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -47,6 +67,32 @@ export function AdminUsersPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const filtered = useMemo(() => {
+    const list = users.filter((u) => {
+      if (statusFilter === "admin" && !u.is_admin) return false;
+      if (statusFilter === "superuser" && !u.is_superuser) return false;
+      if (
+        statusFilter !== "all" &&
+        statusFilter !== "admin" &&
+        statusFilter !== "superuser" &&
+        u.role !== statusFilter
+      ) {
+        return false;
+      }
+      return matchesKeyword(keyword, [u.full_name, u.email, u.role]);
+    });
+
+    return [...list].sort((a, b) => {
+      if (sort === "score") {
+        const diff = userPrivilegeScore(b) - userPrivilegeScore(a);
+        if (diff !== 0) return diff;
+      }
+      return (
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    });
+  }, [users, keyword, sort, statusFilter]);
 
   async function toggleFlag(
     user: AdminUserRow,
@@ -110,6 +156,17 @@ export function AdminUsersPage() {
         )}
       </div>
 
+      <AdminListControls
+        sort={sort}
+        onSortChange={setSort}
+        status={statusFilter}
+        onStatusChange={setStatusFilter}
+        statusOptions={USER_STATUS_OPTIONS}
+        keyword={keyword}
+        onKeywordChange={setKeyword}
+        keywordPlaceholder="Search name, email, role…"
+      />
+
       {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
 
       <div className="overflow-hidden border border-[#2B5B84]/15 bg-white">
@@ -126,7 +183,7 @@ export function AdminUsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user) => (
+              {filtered.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell>
                     <div className="font-medium text-[#2A2D34]">
@@ -157,6 +214,15 @@ export function AdminUsersPage() {
                   </TableCell>
                 </TableRow>
               ))}
+              {filtered.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-sm text-[#5B616B]">
+                    {users.length === 0
+                      ? "No users yet."
+                      : "No users match these filters."}
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         )}

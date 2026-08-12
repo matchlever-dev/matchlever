@@ -42,6 +42,7 @@ type SanitizeResponse = {
   verified_skills: string[];
   years_experience: number;
   suggested_taglines: string[];
+  raw_resume_text?: string;
   error?: string;
 };
 
@@ -61,6 +62,7 @@ export function EditProfileModal({
   const [resumeBusy, setResumeBusy] = useState(false);
   const [suggestedTaglines, setSuggestedTaglines] = useState<string[]>([]);
   const [sanitizedSummary, setSanitizedSummary] = useState<string | null>(null);
+  const [rawResumeText, setRawResumeText] = useState<string | null>(null);
   const [yearsExperience, setYearsExperience] = useState<number | null>(null);
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -85,6 +87,7 @@ export function EditProfileModal({
       setResumeName(null);
       setSuggestedTaglines([]);
       setSanitizedSummary(null);
+      setRawResumeText(null);
       setYearsExperience(null);
       setResumeBusy(false);
       setDragging(false);
@@ -122,6 +125,7 @@ export function EditProfileModal({
       const taglines = json.suggested_taglines ?? [];
       setSuggestedTaglines(taglines);
       setSanitizedSummary(json.sanitized_summary ?? null);
+      setRawResumeText(json.raw_resume_text ?? null);
       setYearsExperience(
         typeof json.years_experience === "number" ? json.years_experience : null
       );
@@ -181,6 +185,7 @@ export function EditProfileModal({
           ? { suggestedTaglines }
           : {}),
         ...(sanitizedSummary !== null ? { sanitizedSummary } : {}),
+        ...(rawResumeText !== null ? { rawResumeText } : {}),
         ...(yearsExperience !== null ? { yearsExperience } : {}),
       }),
     });

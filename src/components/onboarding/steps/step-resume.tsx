@@ -12,6 +12,7 @@ type SanitizeResponse = {
   verified_skills: string[];
   years_experience: number;
   suggested_taglines: string[];
+  raw_resume_text?: string;
   error?: string;
 };
 
@@ -71,6 +72,7 @@ export function StepResume() {
 
         setValue("anonymousTitle", data.anonymous_title);
         setValue("sanitizedSummary", data.sanitized_summary);
+        setValue("rawResumeText", data.raw_resume_text ?? "");
         setValue("verifiedSkills", data.verified_skills);
         setValue("yearsExperience", data.years_experience);
         setValue("suggestedTaglines", data.suggested_taglines, {
@@ -86,6 +88,7 @@ export function StepResume() {
           err instanceof Error ? err.message : "Could not sanitize resume"
         );
         setValue("suggestedTaglines", [], { shouldValidate: true });
+        setValue("rawResumeText", "");
       }
     },
     [setValue, candidateTosAgreed]

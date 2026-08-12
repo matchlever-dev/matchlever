@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { requireSuperuserApi } from "@/lib/auth/api-guards";
-import { DEMO_DIRECTORY, type DirectoryPerson } from "@/lib/admin/demo";
+import {
+  DEMO_DIRECTORY,
+  averageAuthenticityScore,
+  type DirectoryPerson,
+} from "@/lib/admin/demo";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
@@ -37,15 +41,49 @@ export async function GET(request: Request) {
       ...(hirers ?? []).map((h) => h.user_id),
     ]),
   ];
+  const candidateIds = (candidates ?? []).map((c) => c.id);
 
-  const { data: users } = userIds.length
-    ? await supabase
-        .from("user_profiles")
-        .select("id, email, full_name")
-        .in("id", userIds)
-    : { data: [] as { id: string; email: string | null; full_name: string | null }[] };
+  const [{ data: users }, { data: references }] = await Promise.all([
+    userIds.length
+      ? supabase
+          .from("user_profiles")
+          .select("id, email, full_name")
+          .in("id", userIds)
+      : Promise.resolve({
+          data: [] as {
+            id: string;
+            email: string | null;
+            full_name: string | null;
+          }[],
+        }),
+    candidateIds.length
+      ? supabase
+          .from("candidate_references")
+          .select("candidate_profile_id, authenticity_score")
+          .in("candidate_profile_id", candidateIds)
+      : Promise.resolve({
+          data: [] as {
+            candidate_profile_id: string;
+            authenticity_score: number | null;
+          }[],
+        }),
+  ]);
 
   const userMap = new Map((users ?? []).map((u) => [u.id, u]));
+  const refsByCandidate = new Map<
+    string,
+    { authenticity_score: number | null }[]
+  >();
+  for (const ref of references ?? []) {
+    const list = refsByCandidate.get(ref.candidate_profile_id) ?? [];
+    list.push({
+      authenticity_score:
+        ref.authenticity_score === null
+          ? null
+          : Number(ref.authenticity_score),
+    });
+    refsByCandidate.set(ref.candidate_profile_id, list);
+  }
 
   const people: DirectoryPerson[] = [
     ...(candidates ?? []).map((c) => {
@@ -53,6 +91,7 @@ export async function GET(request: Request) {
       const location = [c.global_city, c.global_country]
         .filter(Boolean)
         .join(", ");
+      const refs = refsByCandidate.get(c.id) ?? [];
       return {
         id: c.id,
         kind: "seeker" as const,
@@ -63,6 +102,7 @@ export async function GET(request: Request) {
         location: location || null,
         status: c.status,
         created_at: c.created_at,
+        avg_authenticity_score: averageAuthenticityScore(refs),
       };
     }),
     ...(hirers ?? []).map((h) => {
@@ -80,6 +120,7 @@ export async function GET(request: Request) {
         location: location || null,
         status: "active",
         created_at: h.created_at,
+        avg_authenticity_score: null,
       };
     }),
   ].sort(
