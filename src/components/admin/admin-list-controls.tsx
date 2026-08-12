@@ -17,6 +17,11 @@ export type AdminListStatusOption = {
   label: string;
 };
 
+const SORT_OPTIONS: Array<{ value: AdminSortMode; label: string }> = [
+  { value: "recent", label: "Recent" },
+  { value: "score", label: "Score" },
+];
+
 export function AdminListControls({
   sort,
   onSortChange,
@@ -36,6 +41,11 @@ export function AdminListControls({
   onKeywordChange: (value: string) => void;
   keywordPlaceholder?: string;
 }) {
+  const sortLabel =
+    SORT_OPTIONS.find((opt) => opt.value === sort)?.label ?? "Recent";
+  const statusLabel =
+    statusOptions.find((opt) => opt.value === status)?.label ?? status;
+
   return (
     <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <div className="grid gap-1.5">
@@ -49,11 +59,14 @@ export function AdminListControls({
           }}
         >
           <SelectTrigger className="h-10 w-full bg-white">
-            <SelectValue />
+            <SelectValue placeholder="Sort">{sortLabel}</SelectValue>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="recent">Recent</SelectItem>
-            <SelectItem value="score">Score</SelectItem>
+            {SORT_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -69,7 +82,7 @@ export function AdminListControls({
           }}
         >
           <SelectTrigger className="h-10 w-full bg-white">
-            <SelectValue />
+            <SelectValue placeholder="Status">{statusLabel}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {statusOptions.map((opt) => (
