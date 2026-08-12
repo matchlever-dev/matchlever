@@ -5,6 +5,7 @@ import { requireAdminApi } from "@/lib/auth/api-guards";
 import {
   DEMO_ADMIN_CANDIDATES,
   averageAuthenticityScore,
+  computeCandidateMissing,
   isLowTrustScore,
   type AdminCandidateRow,
   type AdminReferenceRow,
@@ -31,42 +32,53 @@ export async function GET() {
   }
 
   const supabase = await createClient();
-  const { data: profiles, error } = await supabase
-    .from("candidate_profiles")
-    .select(
-      "id, user_id, headline, status, global_city, global_country, timezone_offset, work_hours_start, work_hours_end, raw_resume_text, sanitized_summary, updated_at"
-    )
+
+  // Every logged-in user has a user_profiles row; candidate_profiles may be absent
+  // until onboarding completes.
+  const { data: users, error: usersError } = await supabase
+    .from("user_profiles")
+    .select("id, email, full_name, created_at, updated_at")
     .order("updated_at", { ascending: false });
 
-  if (error) {
-    console.error("[admin candidates]", error.message);
+  if (usersError) {
+    console.error("[admin candidates users]", usersError.message);
     return NextResponse.json(
       { error: "Unable to load candidates" },
       { status: 500 }
     );
   }
 
-  const userIds = [...new Set((profiles ?? []).map((p) => p.user_id))];
+  const userIds = (users ?? []).map((u) => u.id);
+
+  const { data: profiles, error: profilesError } = userIds.length
+    ? await supabase
+        .from("candidate_profiles")
+        .select(
+          "id, user_id, headline, status, global_city, global_country, timezone_offset, work_hours_start, work_hours_end, raw_resume_text, sanitized_summary, updated_at"
+        )
+        .in("user_id", userIds)
+    : { data: [] as never[], error: null };
+
+  if (profilesError) {
+    console.error("[admin candidates profiles]", profilesError.message);
+    return NextResponse.json(
+      { error: "Unable to load candidates" },
+      { status: 500 }
+    );
+  }
+
+  const profileByUser = new Map((profiles ?? []).map((p) => [p.user_id, p]));
   const profileIds = (profiles ?? []).map((p) => p.id);
 
-  const [{ data: users }, { data: references }] = await Promise.all([
-    userIds.length
-      ? supabase
-          .from("user_profiles")
-          .select("id, email, full_name")
-          .in("id", userIds)
-      : Promise.resolve({ data: [] as { id: string; email: string | null; full_name: string | null }[] }),
-    profileIds.length
-      ? supabase
-          .from("candidate_references")
-          .select(
-            "id, candidate_profile_id, reference_email, reference_linkedin_url, authenticity_score, authenticity_flags, status"
-          )
-          .in("candidate_profile_id", profileIds)
-      : Promise.resolve({ data: [] as never[] }),
-  ]);
+  const { data: references } = profileIds.length
+    ? await supabase
+        .from("candidate_references")
+        .select(
+          "id, candidate_profile_id, reference_email, reference_linkedin_url, authenticity_score, authenticity_flags, status"
+        )
+        .in("candidate_profile_id", profileIds)
+    : { data: [] as never[] };
 
-  const userMap = new Map((users ?? []).map((u) => [u.id, u]));
   const refsByCandidate = new Map<string, AdminReferenceRow[]>();
 
   for (const ref of references ?? []) {
@@ -89,28 +101,49 @@ export async function GET() {
     refsByCandidate.set(ref.candidate_profile_id, list);
   }
 
-  const candidates: AdminCandidateRow[] = (profiles ?? []).map((p) => {
-    const user = userMap.get(p.user_id);
-    const refs = refsByCandidate.get(p.id) ?? [];
-    return {
-      id: p.id,
-      user_id: p.user_id,
-      headline: p.headline,
-      status: p.status,
-      global_city: p.global_city,
-      global_country: p.global_country,
-      timezone_offset: p.timezone_offset,
-      work_hours_start: p.work_hours_start,
-      work_hours_end: p.work_hours_end,
-      raw_resume_text: p.raw_resume_text,
-      sanitized_summary: p.sanitized_summary,
-      email: user?.email ?? null,
-      full_name: user?.full_name ?? null,
-      updated_at: p.updated_at,
-      avg_authenticity_score: averageAuthenticityScore(refs),
+  const candidates: AdminCandidateRow[] = (users ?? []).map((user) => {
+    const profile = profileByUser.get(user.id) ?? null;
+    const refs = profile ? refsByCandidate.get(profile.id) ?? [] : [];
+    const hasProfile = Boolean(profile);
+    const base = {
+      has_candidate_profile: hasProfile,
+      headline: profile?.headline ?? null,
+      global_city: profile?.global_city ?? null,
+      global_country: profile?.global_country ?? null,
+      work_hours_start: profile?.work_hours_start ?? null,
+      work_hours_end: profile?.work_hours_end ?? null,
+      raw_resume_text: profile?.raw_resume_text ?? null,
+      sanitized_summary: profile?.sanitized_summary ?? null,
       references: refs,
     };
+
+    return {
+      // Prefer candidate profile id when present; otherwise key by user id.
+      id: profile?.id ?? user.id,
+      user_id: user.id,
+      has_candidate_profile: hasProfile,
+      headline: base.headline,
+      status: profile?.status ?? "incomplete",
+      global_city: base.global_city,
+      global_country: base.global_country,
+      timezone_offset: profile?.timezone_offset ?? null,
+      work_hours_start: base.work_hours_start,
+      work_hours_end: base.work_hours_end,
+      raw_resume_text: base.raw_resume_text,
+      sanitized_summary: base.sanitized_summary,
+      email: user.email,
+      full_name: user.full_name,
+      updated_at: profile?.updated_at ?? user.updated_at ?? user.created_at,
+      avg_authenticity_score: averageAuthenticityScore(refs),
+      references: refs,
+      missing: computeCandidateMissing(base),
+    };
   });
+
+  candidates.sort(
+    (a, b) =>
+      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+  );
 
   return NextResponse.json({ demo: false, candidates });
 }

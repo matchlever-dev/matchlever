@@ -23,6 +23,8 @@ export type AdminReferenceRow = {
 export type AdminCandidateRow = {
   id: string;
   user_id: string;
+  /** False when the user has logged in but never finished creating a candidate_profiles row. */
+  has_candidate_profile: boolean;
   headline: string | null;
   status: string;
   global_city: string | null;
@@ -38,7 +40,43 @@ export type AdminCandidateRow = {
   /** Mean authenticity score across scored references; null if none scored. */
   avg_authenticity_score: number | null;
   references: AdminReferenceRow[];
+  missing: {
+    resume: boolean;
+    profile: boolean;
+    references: boolean;
+  };
 };
+
+export function computeCandidateMissing(input: {
+  has_candidate_profile: boolean;
+  headline: string | null;
+  global_city: string | null;
+  global_country: string | null;
+  work_hours_start: string | null;
+  work_hours_end: string | null;
+  raw_resume_text: string | null;
+  sanitized_summary: string | null;
+  references: Pick<AdminReferenceRow, "status">[];
+}): AdminCandidateRow["missing"] {
+  const hasResume = Boolean(
+    input.raw_resume_text?.trim() || input.sanitized_summary?.trim()
+  );
+  const hasProfileInfo =
+    input.has_candidate_profile &&
+    Boolean(input.headline?.trim()) &&
+    Boolean(input.global_city?.trim()) &&
+    Boolean(input.global_country?.trim()) &&
+    Boolean(input.work_hours_start) &&
+    Boolean(input.work_hours_end);
+  const verifiedRefs = input.references.filter(
+    (r) => r.status === "verified"
+  ).length;
+  return {
+    resume: !hasResume,
+    profile: !hasProfileInfo,
+    references: verifiedRefs < 3,
+  };
+}
 
 /** Privilege rank for admin Users "Score" sort: superuser > admin > none. */
 export function userPrivilegeScore(user: Pick<AdminUserRow, "is_admin" | "is_superuser">): number {
@@ -142,6 +180,7 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
   {
     id: "cand-1",
     user_id: "user-2",
+    has_candidate_profile: true,
     headline: "Staff Platform Engineer",
     status: "actively_looking",
     global_city: "Austin",
@@ -177,10 +216,12 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
         lowTrust: true,
       },
     ],
+    missing: { resume: false, profile: false, references: true },
   },
   {
     id: "cand-2",
     user_id: "user-5",
+    has_candidate_profile: true,
     headline: "Senior Backend Engineer",
     status: "on_hold",
     global_city: "Berlin",
@@ -206,10 +247,12 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
         lowTrust: true,
       },
     ],
+    missing: { resume: false, profile: false, references: true },
   },
   {
     id: "cand-3",
     user_id: "user-6",
+    has_candidate_profile: true,
     headline: "Product Designer",
     status: "on_hold",
     global_city: "Toronto",
@@ -224,6 +267,27 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
     updated_at: "2026-07-28T12:00:00.000Z",
     avg_authenticity_score: null,
     references: [],
+    missing: { resume: true, profile: false, references: true },
+  },
+  {
+    id: "user-7",
+    user_id: "user-7",
+    has_candidate_profile: false,
+    headline: null,
+    status: "incomplete",
+    global_city: null,
+    global_country: null,
+    timezone_offset: null,
+    work_hours_start: null,
+    work_hours_end: null,
+    raw_resume_text: null,
+    sanitized_summary: null,
+    email: "morgan@example.com",
+    full_name: "Morgan Ellis",
+    updated_at: "2026-08-01T08:00:00.000Z",
+    avg_authenticity_score: null,
+    references: [],
+    missing: { resume: true, profile: true, references: true },
   },
 ];
 
