@@ -20,7 +20,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 
 const SUPER_LINKS = [
-  { href: "/superuser/directory", label: "Directory" },
+  { href: "/superuser/candidates", label: "Candidates" },
   { href: "/superuser/manual-match", label: "Manual Match" },
 ];
 

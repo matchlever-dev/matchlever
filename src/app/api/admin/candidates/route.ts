@@ -176,6 +176,14 @@ export async function PATCH(request: Request) {
   const supabase = await createClient();
 
   if (parsed.data.action === "delete") {
+    // Destructive deletes are admin-only (Admin Portal). Superuser portal has no delete UI.
+    if (!auth.actor.demo && !auth.actor.hasAdminFlag) {
+      return NextResponse.json(
+        { error: "Only admins can delete candidate profiles" },
+        { status: 403 }
+      );
+    }
+
     const { error } = await supabase
       .from("candidate_profiles")
       .delete()

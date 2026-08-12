@@ -24,6 +24,11 @@ const ADMIN_LINKS = [
   { href: "/admin/contact", label: "Contact" },
 ];
 
+const SUPERUSER_LINKS = [
+  { href: "/superuser/candidates", label: "Candidates" },
+  { href: "/superuser/manual-match", label: "Manual Match" },
+];
+
 const CANDIDATE_STATUS_OPTIONS = [
   { value: "all", label: "All statuses" },
   { value: "actively_looking", label: "Active" },
@@ -47,6 +52,38 @@ function statusLabel(status: string) {
 }
 
 export function AdminCandidatesPage() {
+  return (
+    <CandidateProfilesPage
+      portalTitle="Admin Portal"
+      links={ADMIN_LINKS}
+      accent="admin"
+      allowDelete
+    />
+  );
+}
+
+export function SuperuserCandidatesPage() {
+  return (
+    <CandidateProfilesPage
+      portalTitle="Superuser Portal"
+      links={SUPERUSER_LINKS}
+      accent="superuser"
+      allowDelete={false}
+    />
+  );
+}
+
+function CandidateProfilesPage({
+  portalTitle,
+  links,
+  accent,
+  allowDelete,
+}: {
+  portalTitle: string;
+  links: { href: string; label: string }[];
+  accent: "admin" | "superuser";
+  allowDelete: boolean;
+}) {
   const [candidates, setCandidates] = useState<AdminCandidateRow[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [demo, setDemo] = useState(false);
@@ -150,7 +187,7 @@ export function AdminCandidatesPage() {
   }
 
   async function deleteCandidate() {
-    if (!selected?.has_candidate_profile) return;
+    if (!allowDelete || !selected?.has_candidate_profile) return;
     if (
       !window.confirm(
         `Delete candidate profile for ${selected.full_name || selected.headline}?`
@@ -200,7 +237,7 @@ export function AdminCandidatesPage() {
   }
 
   return (
-    <PortalShell title="Admin Portal" links={ADMIN_LINKS}>
+    <PortalShell title={portalTitle} links={links} accent={accent}>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="font-display text-[11px] font-semibold tracking-[0.22em] text-[#E87A5D] uppercase">
@@ -338,16 +375,18 @@ export function AdminCandidatesPage() {
                   >
                     On Hold
                   </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    disabled={busy || !selected.has_candidate_profile}
-                    className="border-destructive/40 text-destructive"
-                    onClick={() => void deleteCandidate()}
-                  >
-                    Delete
-                  </Button>
+                  {allowDelete && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={busy || !selected.has_candidate_profile}
+                      className="border-destructive/40 text-destructive"
+                      onClick={() => void deleteCandidate()}
+                    >
+                      Delete
+                    </Button>
+                  )}
                 </div>
               </div>
 

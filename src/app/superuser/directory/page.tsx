@@ -1,11 +1,6 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import { SuperuserDirectoryPage } from "@/components/admin/superuser-directory-page";
-
-export const metadata: Metadata = {
-  title: "Superuser Directory · MatchLever",
-};
-
+/** Legacy Directory route → Candidates profiles. */
 export default function Page() {
-  return <SuperuserDirectoryPage />;
+  redirect("/superuser/candidates");
 }
