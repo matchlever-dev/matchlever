@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { candidateNameForInvite } from "@/lib/auth/display-name";
 import { sendReferenceInviteEmail } from "@/lib/email/resend";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
@@ -19,6 +20,7 @@ export async function POST(request: Request) {
     if (!isSupabaseConfigured()) {
       const result = await sendReferenceInviteEmail({
         to: "demo@example.com",
+        candidateName: "Sam Patel",
         candidateTitle: "Staff Platform Engineer",
         token: "demo-token-ref-three-cccc",
       });
@@ -38,11 +40,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
-      .from("candidate_profiles")
-      .select("id, headline")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    const [{ data: profile }, { data: userProfile }] = await Promise.all([
+      supabase
+        .from("candidate_profiles")
+        .select("id, headline")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("user_profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .maybeSingle(),
+    ]);
 
     if (!profile) {
       return NextResponse.json(
@@ -71,6 +80,7 @@ export async function POST(request: Request) {
 
     const result = await sendReferenceInviteEmail({
       to: reference.reference_email,
+      candidateName: candidateNameForInvite(user, userProfile?.full_name),
       candidateTitle: profile.headline || "MatchLever candidate",
       token: reference.verification_token,
     });

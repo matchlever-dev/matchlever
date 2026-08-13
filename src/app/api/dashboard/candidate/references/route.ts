@@ -2,6 +2,7 @@ import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { candidateNameForInvite } from "@/lib/auth/display-name";
 import { sendReferenceInviteEmail } from "@/lib/email/resend";
 import { linkedInUrlSchema } from "@/lib/reference/schema";
 import {
@@ -80,11 +81,18 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
-      .from("candidate_profiles")
-      .select("id, headline")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    const [{ data: profile }, { data: userProfile }] = await Promise.all([
+      supabase
+        .from("candidate_profiles")
+        .select("id, headline")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("user_profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .maybeSingle(),
+    ]);
 
     if (!profile) {
       return NextResponse.json(
@@ -219,6 +227,7 @@ export async function PATCH(request: Request) {
       try {
         const sent = await sendReferenceInviteEmail({
           to: nextEmail,
+          candidateName: candidateNameForInvite(user, userProfile?.full_name),
           candidateTitle: profile.headline || "MatchLever candidate",
           token,
         });

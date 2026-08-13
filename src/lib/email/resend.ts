@@ -21,8 +21,29 @@ export function getCandidateOnboardingUrl() {
   return `${getAppBaseUrl()}/onboarding`;
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function oneLine(value: string) {
+  return value.replace(/[\r\n]+/g, " ").trim();
+}
+
+export function referenceInviteSubject(candidateName: string) {
+  const name = oneLine(candidateName);
+  if (!name || name === "a MatchLever candidate") {
+    return "Please verify a MatchLever reference";
+  }
+  return `Please verify a MatchLever reference for ${name}`;
+}
+
 export async function sendReferenceInviteEmail(args: {
   to: string;
+  candidateName: string;
   candidateTitle: string;
   token: string;
 }) {
@@ -31,21 +52,36 @@ export async function sendReferenceInviteEmail(args: {
   const onboardingUrl = getCandidateOnboardingUrl();
   const from =
     process.env.RESEND_FROM_EMAIL?.trim() || "MatchLever <onboarding@resend.dev>";
+  const candidateName = oneLine(args.candidateName) || "a MatchLever candidate";
+  const candidateTitle = oneLine(args.candidateTitle);
+  const subject = referenceInviteSubject(candidateName);
+  const nameHtml = escapeHtml(candidateName);
+  const titleHtml = candidateTitle ? escapeHtml(candidateTitle) : "";
+  const whoHtml =
+    candidateName === "a MatchLever candidate"
+      ? `a MatchLever candidate${titleHtml ? ` (<strong>${titleHtml}</strong>)` : ""}`
+      : `<strong>${nameHtml}</strong>${titleHtml ? ` (${titleHtml})` : ""}`;
 
   if (!resend) {
-    console.info("[resend demo]", { to: args.to, inviteUrl, onboardingUrl });
+    console.info("[resend demo]", {
+      to: args.to,
+      candidateName,
+      candidateTitle,
+      subject,
+      inviteUrl,
+      onboardingUrl,
+    });
     return { demo: true as const, inviteUrl };
   }
 
   const { data, error } = await resend.emails.send({
     from,
     to: args.to,
-    subject: "Please verify a MatchLever reference",
+    subject,
     html: `
       <div style="font-family:Arial,sans-serif;line-height:1.5;color:#2A2D34">
         <p>Hello,</p>
-        <p>You've been asked to verify a reference for a MatchLever candidate
-        (<strong>${args.candidateTitle}</strong>).</p>
+        <p>You've been asked to verify a reference for ${whoHtml}.</p>
         <p>
           <a href="${inviteUrl}" style="background:#2B5B84;color:#fff;padding:10px 16px;text-decoration:none;border-radius:6px;display:inline-block">
             Open verification link

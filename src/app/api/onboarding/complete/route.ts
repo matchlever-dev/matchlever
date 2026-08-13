@@ -1,6 +1,10 @@
 import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 
+import {
+  candidateNameForInvite,
+  displayNameFromAuthUser,
+} from "@/lib/auth/display-name";
 import { sendReferenceInviteEmail } from "@/lib/email/resend";
 import { onboardingFormSchema, resolveOnboardingCity } from "@/lib/onboarding/form-schema";
 import { TIMEZONE_OPTIONS } from "@/lib/onboarding/schema";
@@ -123,13 +127,7 @@ export async function POST(request: Request) {
     }
 
     // Ensure app profile row exists (auth trigger normally creates it).
-    const fullName =
-      (typeof user.user_metadata?.full_name === "string"
-        ? user.user_metadata.full_name
-        : null) ||
-      (typeof user.user_metadata?.name === "string"
-        ? user.user_metadata.name
-        : null);
+    const fullName = displayNameFromAuthUser(user);
     const avatarUrl =
       typeof user.user_metadata?.avatar_url === "string"
         ? user.user_metadata.avatar_url
@@ -294,6 +292,7 @@ export async function POST(request: Request) {
 
     const candidateTitle =
       data.anonymousTitle?.trim() || "a MatchLever candidate";
+    const candidateName = candidateNameForInvite(user, fullName);
 
     const emailResults: {
       email: string;
@@ -306,6 +305,7 @@ export async function POST(request: Request) {
       try {
         const sent = await sendReferenceInviteEmail({
           to: ref.reference_email,
+          candidateName,
           candidateTitle,
           token: ref.verification_token,
         });
