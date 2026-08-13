@@ -299,6 +299,7 @@ export async function POST(request: Request) {
       demo: boolean;
       inviteUrl: string;
       error?: string;
+      skipped?: boolean;
     }[] = [];
 
     for (const ref of insertedRefs) {
@@ -313,6 +314,7 @@ export async function POST(request: Request) {
           email: ref.reference_email,
           demo: sent.demo,
           inviteUrl: sent.inviteUrl,
+          skipped: sent.skipped,
         });
       } catch (err) {
         const message =
@@ -329,12 +331,15 @@ export async function POST(request: Request) {
 
     const failedEmails = emailResults.filter((r) => r.error);
     const demoEmails = emailResults.filter((r) => r.demo && !r.error);
+    const skippedEmails = emailResults.filter((r) => r.skipped);
     const firstError = failedEmails[0]?.error;
     const warning =
       failedEmails.length > 0
         ? failedEmails.length === insertedRefs.length
           ? `Reference emails failed to send${firstError ? `: ${firstError}` : ""}. You can resend from the dashboard. Check RESEND_FROM_EMAIL uses a verified Resend domain.`
           : "Some reference emails failed — you can resend from the dashboard."
+        : skippedEmails.length > 0
+          ? "Some referrers have unsubscribed from automated MatchLever emails, so we didn't email them."
         : demoEmails.length > 0
           ? "Reference invites were saved but not emailed — RESEND_API_KEY is missing. Add it and use Resend Link on the dashboard."
           : undefined;

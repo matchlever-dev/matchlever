@@ -4,6 +4,7 @@ import {
   getCandidateProfileReminderUrl,
   sendIncompleteProfileReminderEmail,
 } from "@/lib/email/resend";
+import { listUnsubscribedEmails, normalizeEmail } from "@/lib/email/unsubscribe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
@@ -34,6 +35,7 @@ export type IncompleteProfileReminderResult = {
   demo: boolean;
   eligible: number;
   sent: number;
+  skipped: number;
   failed: number;
   errors: string[];
 };
@@ -84,6 +86,7 @@ export async function runIncompleteProfileReminders(): Promise<IncompleteProfile
       demo: true,
       eligible: 0,
       sent: 0,
+      skipped: 0,
       failed: 0,
       errors: [],
     };
@@ -134,9 +137,12 @@ export async function runIncompleteProfileReminders(): Promise<IncompleteProfile
     refsByCandidate.set(ref.candidate_profile_id, list);
   }
 
+  const unsubscribed = await listUnsubscribedEmails();
+
   const recipients = users.flatMap((user) => {
     const email = user.email?.trim();
     if (!email) return [];
+    if (unsubscribed.has(normalizeEmail(email))) return [];
 
     const profile = profileByUser.get(user.id) ?? null;
     const isCandidateRole = CANDIDATE_ROLES.has(user.role);
@@ -177,6 +183,7 @@ export async function runIncompleteProfileReminders(): Promise<IncompleteProfile
 
   const errors: string[] = [];
   let sent = 0;
+  let skipped = 0;
   let failed = 0;
   let demo = false;
 
@@ -188,6 +195,10 @@ export async function runIncompleteProfileReminders(): Promise<IncompleteProfile
         incompleteItems: recipient.incompleteItems,
         profileUrl: getCandidateProfileReminderUrl(recipient.hasCandidateProfile),
       });
+      if (result.skipped) {
+        skipped += 1;
+        continue;
+      }
       if (result.demo) demo = true;
       sent += 1;
     } catch (error) {
@@ -208,6 +219,7 @@ export async function runIncompleteProfileReminders(): Promise<IncompleteProfile
     demo,
     eligible: recipients.length,
     sent,
+    skipped,
     failed,
     errors: errors.slice(0, 20),
   };

@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { candidateNameForInvite } from "@/lib/auth/display-name";
 import { sendReferenceInviteEmail } from "@/lib/email/resend";
+import { UNSUBSCRIBED_EMAIL_MESSAGE } from "@/lib/email/unsubscribe";
 import { linkedInUrlSchema } from "@/lib/reference/schema";
 import {
   REFERRER_LINKEDIN_INVALID_MESSAGE,
@@ -219,7 +220,7 @@ export async function PATCH(request: Request) {
     }
 
     let invite:
-      | { demo: boolean; inviteUrl: string; id?: string }
+      | { demo: boolean; inviteUrl: string; id?: string; skipped?: boolean }
       | { error: string }
       | null = null;
 
@@ -245,12 +246,16 @@ export async function PATCH(request: Request) {
       reference_email: nextEmail ?? reference.reference_email,
       reference_linkedin_url:
         nextLinkedIn ?? reference.reference_linkedin_url,
-      inviteSent: Boolean(invite && !("error" in invite)),
+      inviteSent: Boolean(
+        invite && !("error" in invite) && !invite.skipped
+      ),
       invite,
       warning:
         invite && "error" in invite
           ? `Saved, but invite failed to send: ${invite.error}`
-          : undefined,
+          : invite && "skipped" in invite && invite.skipped
+            ? UNSUBSCRIBED_EMAIL_MESSAGE
+            : undefined,
     });
   } catch (error) {
     const message =

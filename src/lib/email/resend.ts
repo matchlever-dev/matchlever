@@ -1,5 +1,11 @@
 import { Resend } from "resend";
 
+import {
+  createUnsubscribeToken,
+  isEmailUnsubscribed,
+  normalizeEmail,
+} from "@/lib/email/unsubscribe";
+
 export function getResendClient() {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   if (!apiKey || apiKey.includes("your-")) return null;
@@ -38,6 +44,77 @@ function getFromEmail() {
   );
 }
 
+function getUnsubscribePageUrl(email: string) {
+  return `${getAppBaseUrl()}/unsubscribe?token=${encodeURIComponent(
+    createUnsubscribeToken(email)
+  )}`;
+}
+
+function getUnsubscribeApiUrl(email: string) {
+  return `${getAppBaseUrl()}/api/email/unsubscribe?token=${encodeURIComponent(
+    createUnsubscribeToken(email)
+  )}`;
+}
+
+function unsubscribeFooterHtml(unsubscribeUrl: string) {
+  return `
+        <p style="margin:28px 0 0;font-size:11px;line-height:1.5;color:#8A9099">
+          This is an automated message from MatchLever.
+          <a href="${unsubscribeUrl}" style="color:#5B616B;text-decoration:underline">Unsubscribe from automated MatchLever emails</a>.
+        </p>`;
+}
+
+async function deliverAutomatedEmail(args: {
+  to: string;
+  subject: string;
+  html: string;
+}): Promise<
+  | { skipped: true; reason: "unsubscribed"; demo: false; id?: undefined }
+  | { skipped?: false; demo: true; id?: undefined }
+  | { skipped?: false; demo: false; id?: string }
+> {
+  const to = normalizeEmail(args.to);
+  if (await isEmailUnsubscribed(to)) {
+    console.info("[resend skip unsubscribed]", { to, subject: args.subject });
+    return { skipped: true, reason: "unsubscribed", demo: false };
+  }
+
+  const unsubscribeUrl = getUnsubscribePageUrl(to);
+  const html = `
+      <div style="font-family:Arial,sans-serif;line-height:1.5;color:#2A2D34">
+        ${args.html}
+        ${unsubscribeFooterHtml(unsubscribeUrl)}
+      </div>
+    `;
+  const resend = getResendClient();
+
+  if (!resend) {
+    console.info("[resend demo]", {
+      to,
+      subject: args.subject,
+      unsubscribeUrl,
+    });
+    return { demo: true };
+  }
+
+  const { data, error } = await resend.emails.send({
+    from: getFromEmail(),
+    to,
+    subject: args.subject,
+    html,
+    headers: {
+      "List-Unsubscribe": `<${getUnsubscribeApiUrl(to)}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    },
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return { demo: false, id: data?.id };
+}
+
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, "&amp;")
@@ -69,10 +146,8 @@ export async function sendReferenceInviteEmail(args: {
   token: string;
   reminder?: boolean;
 }) {
-  const resend = getResendClient();
   const inviteUrl = getReferenceInviteUrl(args.token);
   const onboardingUrl = getCandidateOnboardingUrl();
-  const from = getFromEmail();
   const candidateName = oneLine(args.candidateName) || "a MatchLever candidate";
   const candidateTitle = oneLine(args.candidateTitle);
   const reminder = Boolean(args.reminder);
@@ -87,25 +162,10 @@ export async function sendReferenceInviteEmail(args: {
     ? `This is a reminder to complete your reference for ${whoHtml}.`
     : `You've been asked to verify a reference for ${whoHtml}.`;
 
-  if (!resend) {
-    console.info("[resend demo]", {
-      to: args.to,
-      candidateName,
-      candidateTitle,
-      reminder,
-      subject,
-      inviteUrl,
-      onboardingUrl,
-    });
-    return { demo: true as const, inviteUrl };
-  }
-
-  const { data, error } = await resend.emails.send({
-    from,
+  const delivered = await deliverAutomatedEmail({
     to: args.to,
     subject,
     html: `
-      <div style="font-family:Arial,sans-serif;line-height:1.5;color:#2A2D34">
         <p>Hello,</p>
         <p>${intro}</p>
         <p>
@@ -131,15 +191,10 @@ export async function sendReferenceInviteEmail(args: {
             Start as an incognito candidate
           </a>
         </div>
-      </div>
     `,
   });
 
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return { demo: false as const, inviteUrl, id: data?.id };
+  return { ...delivered, inviteUrl };
 }
 
 export async function sendIncompleteProfileReminderEmail(args: {
@@ -148,8 +203,6 @@ export async function sendIncompleteProfileReminderEmail(args: {
   incompleteItems: string[];
   profileUrl: string;
 }) {
-  const resend = getResendClient();
-  const from = getFromEmail();
   const firstName = oneLine(args.candidateName || "").split(/\s+/)[0] || "";
   const greeting = firstName ? `Hi ${escapeHtml(firstName)},` : "Hi,";
   const items = args.incompleteItems
@@ -163,22 +216,10 @@ export async function sendIncompleteProfileReminderEmail(args: {
     ? `${firstName}, your MatchLever profile is incomplete`
     : "Your MatchLever profile is incomplete";
 
-  if (!resend) {
-    console.info("[resend demo]", {
-      to: args.to,
-      subject,
-      incompleteItems: items,
-      profileUrl,
-    });
-    return { demo: true as const, id: undefined as string | undefined };
-  }
-
-  const { data, error } = await resend.emails.send({
-    from,
+  return deliverAutomatedEmail({
     to: args.to,
     subject,
     html: `
-      <div style="font-family:Arial,sans-serif;line-height:1.5;color:#2A2D34">
         <p>${greeting}</p>
         <p>Your MatchLever candidate profile is still incomplete, so recruiters
         cannot find you yet. Please finish the items below:</p>
@@ -190,13 +231,6 @@ export async function sendIncompleteProfileReminderEmail(args: {
         </p>
         <p style="font-size:12px;color:#5B616B">Or paste this URL:<br/>${profileUrl}</p>
         <p style="font-size:12px;color:#5B616B">We'll send this reminder weekly until your profile is complete.</p>
-      </div>
     `,
   });
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return { demo: false as const, id: data?.id };
 }

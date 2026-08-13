@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { candidateNameForInvite } from "@/lib/auth/display-name";
 import { sendReferenceInviteEmail } from "@/lib/email/resend";
+import { UNSUBSCRIBED_EMAIL_MESSAGE } from "@/lib/email/unsubscribe";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
@@ -24,6 +25,12 @@ export async function POST(request: Request) {
         candidateTitle: "Staff Platform Engineer",
         token: "demo-token-ref-three-cccc",
       });
+      if (result.skipped) {
+        return NextResponse.json(
+          { error: UNSUBSCRIBED_EMAIL_MESSAGE },
+          { status: 409 }
+        );
+      }
       return NextResponse.json({
         ok: true,
         ...result,
@@ -84,6 +91,13 @@ export async function POST(request: Request) {
       candidateTitle: profile.headline || "MatchLever candidate",
       token: reference.verification_token,
     });
+
+    if (result.skipped) {
+      return NextResponse.json(
+        { error: UNSUBSCRIBED_EMAIL_MESSAGE },
+        { status: 409 }
+      );
+    }
 
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {

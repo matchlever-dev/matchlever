@@ -5,6 +5,7 @@ import { DEMO_ADMIN_CANDIDATES } from "@/lib/admin/demo";
 import { requireAdminApi } from "@/lib/auth/api-guards";
 import { candidateNameForInvite } from "@/lib/auth/display-name";
 import { sendReferenceInviteEmail } from "@/lib/email/resend";
+import { UNSUBSCRIBED_EMAIL_MESSAGE } from "@/lib/email/unsubscribe";
 import { createClient } from "@/lib/supabase/server";
 
 const bodySchema = z.object({
@@ -51,6 +52,13 @@ export async function POST(request: Request) {
         token: `demo-token-${demoMatch.reference.id}`,
         reminder: true,
       });
+
+      if (result.skipped) {
+        return NextResponse.json(
+          { error: UNSUBSCRIBED_EMAIL_MESSAGE },
+          { status: 409 }
+        );
+      }
 
       return NextResponse.json({
         ok: true,
@@ -109,6 +117,13 @@ export async function POST(request: Request) {
       token: reference.verification_token,
       reminder: true,
     });
+
+    if (result.skipped) {
+      return NextResponse.json(
+        { error: UNSUBSCRIBED_EMAIL_MESSAGE },
+        { status: 409 }
+      );
+    }
 
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
