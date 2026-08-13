@@ -1,7 +1,10 @@
 import { z } from "zod";
 
-import { analyzeLinkedInUrlStructure } from "@/lib/reference/authenticity";
-import { linkedInUrlSchema } from "@/lib/reference/schema";
+import { normalizePublicLinkedInProfileUrl } from "@/lib/auth/linkedin-url";
+import {
+  analyzeLinkedInUrlStructure,
+  type LinkedInStructureSignals,
+} from "@/lib/reference/authenticity";
 
 /** Shown when a referrer LinkedIn URL is missing, malformed, or does not open. */
 export const REFERRER_LINKEDIN_INVALID_MESSAGE =
@@ -82,10 +85,20 @@ function responseIsMissingProfile(finalUrl: string, html: string): boolean {
     const parsed = new URL(finalUrl);
     if (!/(^|\.)linkedin\.com$/i.test(parsed.hostname)) return true;
     const path = parsed.pathname.toLowerCase();
-    return path.includes("/404") || path === "/" || path.includes("/pub/dir");
+    return path.includes("/404") || path.includes("/pub/dir");
   } catch {
     return true;
   }
+}
+
+function structuralProfileLooksReal(signals: LinkedInStructureSignals): boolean {
+  return (
+    signals.structuralScore >= 70 &&
+    signals.slugLooksHuman &&
+    Boolean(signals.slug) &&
+    signals.slugLength >= 3 &&
+    signals.slugLength <= 60
+  );
 }
 
 async function fetchEnrichment(
@@ -172,15 +185,13 @@ async function probePublicProfile(linkedInUrl: string): Promise<{
       return { checks, flags };
     }
 
-    // WAF / rate-limit: the page did not actually open for us.
+    // LinkedIn WAF / rate-limit from datacenter IPs — not proof the profile is fake.
     if (res.status === 999 || res.status === 429) {
-      checks.exists = false;
-      flags.push("public_blocked_page_did_not_open");
+      flags.push(`public_blocked_${res.status}`);
       return { checks, flags };
     }
 
     if (res.status >= 400) {
-      checks.exists = false;
       flags.push("public_http_error");
       return { checks, flags };
     }
@@ -254,31 +265,31 @@ async function probePublicProfile(linkedInUrl: string): Promise<{
   } catch (error) {
     const message = error instanceof Error ? error.message : "probe_failed";
     flags.push(`public_probe_error:${message.slice(0, 80)}`);
-    checks.exists = false;
     return { checks, flags };
   }
 }
 
 /**
  * Validate a referrer LinkedIn profile for candidate intake / edits.
- * A URL is valid only when the profile page actually opens (HTTP fetch
- * succeeds and LinkedIn does not serve a missing-profile page).
+ * Rejects malformed URLs and definitive missing-profile responses.
+ * LinkedIn often blocks datacenter fetches (999 / auth wall); those are
+ * inconclusive, so a well-formed public /in/ URL is still accepted.
  */
 export async function validateReferrerLinkedIn(
   rawUrl: string
 ): Promise<ReferrerLinkedInValidation> {
-  const parsedUrl = linkedInUrlSchema.safeParse(rawUrl);
-  if (!parsedUrl.success) {
+  const cleaned = normalizePublicLinkedInProfileUrl(rawUrl);
+  if (!cleaned) {
     return {
       valid: false,
-      normalizedUrl: rawUrl.trim(),
+      normalizedUrl: typeof rawUrl === "string" ? rawUrl.trim() : "",
       mode: "structural",
       checks: emptyChecks(false),
       flags: ["invalid_url_format"],
     };
   }
 
-  const normalizedUrl = normalizeLinkedInProfileUrl(parsedUrl.data);
+  const normalizedUrl = normalizeLinkedInProfileUrl(cleaned);
   const signals = analyzeLinkedInUrlStructure(normalizedUrl);
   const flags: string[] = [
     `structural_score_${signals.structuralScore}`,
@@ -318,18 +329,43 @@ export async function validateReferrerLinkedIn(
   flags.push(...probe.flags);
 
   const checks: LinkedInChecks = {
-    exists: probe.checks.exists ?? false,
+    exists: probe.checks.exists ?? null,
     connections100: probe.checks.connections100 ?? null,
     hasJob: probe.checks.hasJob ?? null,
     hasPhoto: probe.checks.hasPhoto ?? null,
     recentActivity: probe.checks.recentActivity ?? null,
   };
 
+  if (checks.exists === false) {
+    return {
+      valid: false,
+      normalizedUrl,
+      mode: "public_probe",
+      checks,
+      flags,
+    };
+  }
+
+  if (checks.exists === true) {
+    return {
+      valid: true,
+      normalizedUrl,
+      mode: "public_probe",
+      checks,
+      flags,
+    };
+  }
+
+  const looksReal = structuralProfileLooksReal(signals);
+  flags.push(looksReal ? "structural_accept" : "structural_reject");
   return {
-    valid: checks.exists === true,
+    valid: looksReal,
     normalizedUrl,
-    mode: "public_probe",
-    checks,
+    mode: "structural",
+    checks: {
+      ...checks,
+      exists: looksReal ? true : null,
+    },
     flags,
   };
 }
