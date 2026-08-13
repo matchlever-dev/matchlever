@@ -35,6 +35,8 @@ export function CandidateDashboard() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [inviteWarning, setInviteWarning] = useState<string | null>(null);
+  const [linkedinDraft, setLinkedinDraft] = useState("");
+  const [linkedinBusy, setLinkedinBusy] = useState(false);
 
   useEffect(() => {
     const warning = searchParams.get("warning");
@@ -59,7 +61,9 @@ export function CandidateDashboard() {
         return;
       }
       if (!res.ok) throw new Error(json.error || "Failed to load dashboard");
-      setData(json as CandidateDashboardData);
+      const next = json as CandidateDashboardData;
+      setData(next);
+      setLinkedinDraft(next.linkedinUrl || "");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load dashboard");
       // Demo fixtures only when Supabase itself is not configured.
@@ -110,6 +114,26 @@ export function CandidateDashboard() {
       setError(err instanceof Error ? err.message : "Unable to update status");
     } finally {
       setStatusBusy(false);
+    }
+  }
+
+  async function saveLinkedInUrl() {
+    if (!data) return;
+    setLinkedinBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/me/linkedin", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: linkedinDraft.trim() }),
+      });
+      const json = (await res.json()) as { error?: string; url?: string };
+      if (!res.ok) throw new Error(json.error || "Unable to save LinkedIn URL");
+      setData({ ...data, linkedinUrl: json.url || linkedinDraft.trim() });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to save LinkedIn URL");
+    } finally {
+      setLinkedinBusy(false);
     }
   }
 
@@ -266,14 +290,41 @@ export function CandidateDashboard() {
             <p className="font-display text-[11px] font-semibold tracking-[0.22em] text-[#E87A5D] uppercase">
               Account
             </p>
-            <div className="mt-3">
+            <div className="mt-3 space-y-2">
               <p className="text-[11px] font-semibold tracking-[0.14em] text-[#5B616B] uppercase">
                 LinkedIn
               </p>
-              <ReferrerLinkedInLink
-                url={data.linkedinUrl}
-                className="mt-1 block text-sm break-all"
+              {data.linkedinUrl ? (
+                <ReferrerLinkedInLink
+                  url={data.linkedinUrl}
+                  className="block text-sm break-all"
+                />
+              ) : (
+                <p className="text-sm text-[#5B616B]">
+                  LinkedIn sign-in does not include your public profile link.
+                  Paste it below so admins can open your profile.
+                </p>
+              )}
+              <input
+                type="url"
+                value={linkedinDraft}
+                onChange={(e) => setLinkedinDraft(e.target.value)}
+                placeholder="https://www.linkedin.com/in/your-profile"
+                className="h-10 w-full rounded-md border border-[#2B5B84]/20 bg-white px-2.5 text-sm outline-none focus-visible:border-[#2B5B84] focus-visible:ring-2 focus-visible:ring-[#2B5B84]/20"
               />
+              <Button
+                type="button"
+                variant="outline"
+                disabled={
+                  linkedinBusy ||
+                  !linkedinDraft.trim() ||
+                  linkedinDraft.trim() === (data.linkedinUrl || "")
+                }
+                onClick={() => void saveLinkedInUrl()}
+                className="h-10 border-[#2B5B84]/25 text-[#2B5B84]"
+              >
+                {linkedinBusy ? "Saving…" : "Save LinkedIn URL"}
+              </Button>
             </div>
             <div className="mt-4 flex flex-col gap-3">
               <Button

@@ -10,6 +10,7 @@ import type { OnboardingFormValues } from "@/lib/onboarding/form-schema";
 import { CANDIDATE_TOS } from "@/lib/legal/candidate-tos";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
@@ -30,6 +31,7 @@ export function StepAuth() {
   const {
     watch,
     setValue,
+    register,
     formState: { errors },
   } = useFormContext<OnboardingFormValues>();
 
@@ -46,6 +48,11 @@ export function StepAuth() {
         const { data } = await supabase.auth.getUser();
         if (active && data.user) {
           setValue("linkedInConnected", true, { shouldValidate: true });
+          const res = await fetch("/api/me/linkedin");
+          const json = (await res.json()) as { url?: string | null };
+          if (active && json.url) {
+            setValue("candidateLinkedInUrl", json.url, { shouldValidate: true });
+          }
         }
       } catch {
         // Supabase may be unconfigured in local demos.
@@ -206,6 +213,28 @@ export function StepAuth() {
           <p className="text-xs font-medium text-[#2B5B84]">
             Identity verified. Your name stays off the public candidate card.
           </p>
+        )}
+        {linkedInConnected && (
+          <div className="grid gap-2">
+            <Label htmlFor="candidate-linkedin-url">
+              Your LinkedIn profile URL
+            </Label>
+            <Input
+              id="candidate-linkedin-url"
+              type="url"
+              placeholder="https://www.linkedin.com/in/your-profile"
+              {...register("candidateLinkedInUrl")}
+            />
+            <p className="text-xs text-[#5B616B]">
+              LinkedIn sign-in does not always include your public profile link.
+              Paste the URL from your LinkedIn profile so admins can open it.
+            </p>
+            {errors.candidateLinkedInUrl && (
+              <p className="text-xs text-destructive">
+                {errors.candidateLinkedInUrl.message}
+              </p>
+            )}
+          </div>
         )}
       </div>
 

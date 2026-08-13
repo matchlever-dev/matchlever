@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { resolveCandidateLinkedInUrl } from "@/lib/auth/linkedin-url";
+import { captureCandidateLinkedInUrl } from "@/lib/auth/linkedin-url";
 import {
   DEMO_CANDIDATE_DASHBOARD,
   formatTimezoneOffset,
@@ -30,6 +30,9 @@ export async function GET() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -91,10 +94,11 @@ export async function GET() {
       console.error("[candidate dashboard user_profiles]", userProfileError.message);
     }
 
-    const linkedinUrl = resolveCandidateLinkedInUrl({
+    const linkedinUrl = await captureCandidateLinkedInUrl({
       stored: userProfileError ? null : userProfile?.linkedin_url,
       authUser: user,
       resumeText: profile.raw_resume_text,
+      accessToken: session?.provider_token,
     });
     if (
       linkedinUrl &&

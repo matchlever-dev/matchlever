@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requireAdminApi } from "@/lib/auth/api-guards";
-import { resolveCandidateLinkedInUrl } from "@/lib/auth/linkedin-url";
+import {
+  linkedinUrlFromAuthUser,
+  resolveCandidateLinkedInUrl,
+} from "@/lib/auth/linkedin-url";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   DEMO_ADMIN_CANDIDATES,
   averageAuthenticityScore,
@@ -69,6 +73,36 @@ export async function GET() {
       { error: "Unable to load candidates" },
       { status: 500 }
     );
+  }
+
+  const linkedInFromAuth = new Map<string, string>();
+  const admin = createAdminClient();
+  if (admin) {
+    for (let page = 1; page <= 20; page += 1) {
+      const { data, error } = await admin.auth.admin.listUsers({
+        page,
+        perPage: 200,
+      });
+      if (error || !data?.users?.length) break;
+      for (const authUser of data.users) {
+        const url = linkedinUrlFromAuthUser(authUser);
+        if (url) linkedInFromAuth.set(authUser.id, url);
+      }
+      if (data.users.length < 200) break;
+    }
+    const missingStored = (users ?? []).filter(
+      (row) => !row.linkedin_url && linkedInFromAuth.has(row.id)
+    );
+    if (missingStored.length) {
+      await Promise.all(
+        missingStored.map((row) =>
+          admin
+            .from("user_profiles")
+            .update({ linkedin_url: linkedInFromAuth.get(row.id)! })
+            .eq("id", row.id)
+        )
+      );
+    }
   }
 
   const userIds = (users ?? []).map((u) => u.id);
@@ -158,7 +192,7 @@ export async function GET() {
       email: user.email,
       full_name: user.full_name,
       linkedin_url: resolveCandidateLinkedInUrl({
-        stored: user.linkedin_url,
+        stored: user.linkedin_url || linkedInFromAuth.get(user.id) || null,
         resumeText: profile?.raw_resume_text,
       }),
       updated_at: profile?.updated_at ?? user.updated_at ?? user.created_at,
@@ -172,6 +206,26 @@ export async function GET() {
     (a, b) =>
       new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
   );
+
+  if (admin) {
+    const storedById = new Map(
+      (users ?? []).map((row) => [row.id, row.linkedin_url])
+    );
+    void Promise.all(
+      candidates
+        .filter(
+          (row) =>
+            Boolean(row.linkedin_url) &&
+            row.linkedin_url !== storedById.get(row.user_id)
+        )
+        .map((row) =>
+          admin
+            .from("user_profiles")
+            .update({ linkedin_url: row.linkedin_url })
+            .eq("id", row.user_id)
+        )
+    );
+  }
 
   return NextResponse.json({ demo: false, candidates });
 }

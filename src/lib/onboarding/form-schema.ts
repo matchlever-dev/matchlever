@@ -24,6 +24,7 @@ function needsCommuteFields(modes: LocationModeValue[]) {
 export const onboardingFormObjectSchema = z.object({
   candidateTosAgreed: z.boolean(),
   linkedInConnected: z.boolean(),
+  candidateLinkedInUrl: z.string(),
   incognitoAgreed: z.boolean(),
   resumeFileName: z.string(),
   anonymousTitle: z.string().optional(),
@@ -158,6 +159,15 @@ export const onboardingFormSchema = onboardingFormObjectSchema
         path: ["candidateTosAgreed"],
       });
     }
+    const linkedIn = linkedInUrlSchema.safeParse(data.candidateLinkedInUrl);
+    if (!linkedIn.success) {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "Add your public LinkedIn profile URL (https://www.linkedin.com/in/...)",
+        path: ["candidateLinkedInUrl"],
+      });
+    }
     refinePreferences(data, ctx);
   });
 
@@ -166,6 +176,7 @@ export type OnboardingFormValues = z.infer<typeof onboardingFormObjectSchema>;
 export const defaultOnboardingValues: OnboardingFormValues = {
   candidateTosAgreed: false,
   linkedInConnected: false,
+  candidateLinkedInUrl: "",
   incognitoAgreed: false,
   resumeFileName: "",
   anonymousTitle: "",
@@ -210,6 +221,7 @@ export function getStepSchema(step: OnboardingStepId) {
         .object({
           candidateTosAgreed: z.boolean(),
           linkedInConnected: z.boolean(),
+          candidateLinkedInUrl: z.string(),
           incognitoAgreed: z.boolean(),
         })
         .superRefine((data, ctx) => {
@@ -225,6 +237,15 @@ export function getStepSchema(step: OnboardingStepId) {
               code: "custom",
               message: "Connect LinkedIn to continue",
               path: ["linkedInConnected"],
+            });
+          }
+          const linkedIn = linkedInUrlSchema.safeParse(data.candidateLinkedInUrl);
+          if (!linkedIn.success) {
+            ctx.addIssue({
+              code: "custom",
+              message:
+                "Add your public LinkedIn profile URL (https://www.linkedin.com/in/...)",
+              path: ["candidateLinkedInUrl"],
             });
           }
           if (!data.incognitoAgreed) {

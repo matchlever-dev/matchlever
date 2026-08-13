@@ -133,7 +133,9 @@ export async function POST(request: Request) {
       typeof user.user_metadata?.avatar_url === "string"
         ? user.user_metadata.avatar_url
         : null;
-    const linkedInUrl = linkedinUrlFromAuthUser(user);
+    const linkedInUrl =
+      data.candidateLinkedInUrl?.trim() ||
+      linkedinUrlFromAuthUser(user);
 
     const { data: existingUserProfile } = await supabase
       .from("user_profiles")
