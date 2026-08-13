@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Send } from "lucide-react";
 
 import type { AdminCandidateRow, AdminReferenceRow } from "@/lib/admin/demo";
 import {
@@ -525,6 +525,35 @@ function padReferenceSlots(
 }
 
 function ReferenceCard({ refRow }: { refRow: AdminReferenceRow }) {
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const verified = refRow.status === "verified";
+
+  async function resend() {
+    setBusy(true);
+    setMessage(null);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/candidates/references/resend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ referenceId: refRow.id }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Resend failed");
+      setMessage(
+        json.demo
+          ? "Demo: reminder logged (add RESEND_API_KEY to send for real)."
+          : `Reminder sent to ${refRow.reference_email}.`
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Resend failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div
       className={`border p-4 ${
@@ -563,6 +592,26 @@ function ReferenceCard({ refRow }: { refRow: AdminReferenceRow }) {
           </span>
         </div>
       )}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={busy || verified}
+          onClick={() => void resend()}
+          className="h-8 gap-1.5 border-[#2B5B84]/25 text-[#2B5B84]"
+        >
+          <Send className="size-3.5" />
+          {busy ? "Sending…" : "Resend Email"}
+        </Button>
+        {verified && (
+          <p className="text-[11px] text-[#5B616B]">Already verified</p>
+        )}
+      </div>
+      {message && (
+        <p className="mt-2 text-xs text-[#2B5B84]">{message}</p>
+      )}
+      {error && <p className="mt-2 text-xs text-[#E87A5D]">{error}</p>}
     </div>
   );
 }

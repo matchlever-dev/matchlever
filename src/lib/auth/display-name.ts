@@ -27,12 +27,12 @@ export function displayNameFromAuthUser(user: AuthUserLike): string | null {
 }
 
 export function candidateNameForInvite(
-  user: AuthUserLike,
+  user?: AuthUserLike | null,
   storedName?: string | null
 ): string {
   return (
     stringOrNull(storedName) ||
-    displayNameFromAuthUser(user) ||
+    (user ? displayNameFromAuthUser(user) : null) ||
     "a MatchLever candidate"
   );
 }

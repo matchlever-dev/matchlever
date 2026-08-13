@@ -33,12 +33,16 @@ function oneLine(value: string) {
   return value.replace(/[\r\n]+/g, " ").trim();
 }
 
-export function referenceInviteSubject(candidateName: string) {
+export function referenceInviteSubject(
+  candidateName: string,
+  reminder = false
+) {
   const name = oneLine(candidateName);
+  const prefix = reminder ? "Reminder: please verify" : "Please verify";
   if (!name || name === "a MatchLever candidate") {
-    return "Please verify a MatchLever reference";
+    return `${prefix} a MatchLever reference`;
   }
-  return `Please verify a MatchLever reference for ${name}`;
+  return `${prefix} a MatchLever reference for ${name}`;
 }
 
 export async function sendReferenceInviteEmail(args: {
@@ -46,6 +50,7 @@ export async function sendReferenceInviteEmail(args: {
   candidateName: string;
   candidateTitle: string;
   token: string;
+  reminder?: boolean;
 }) {
   const resend = getResendClient();
   const inviteUrl = getReferenceInviteUrl(args.token);
@@ -54,19 +59,24 @@ export async function sendReferenceInviteEmail(args: {
     process.env.RESEND_FROM_EMAIL?.trim() || "MatchLever <onboarding@resend.dev>";
   const candidateName = oneLine(args.candidateName) || "a MatchLever candidate";
   const candidateTitle = oneLine(args.candidateTitle);
-  const subject = referenceInviteSubject(candidateName);
+  const reminder = Boolean(args.reminder);
+  const subject = referenceInviteSubject(candidateName, reminder);
   const nameHtml = escapeHtml(candidateName);
   const titleHtml = candidateTitle ? escapeHtml(candidateTitle) : "";
   const whoHtml =
     candidateName === "a MatchLever candidate"
       ? `a MatchLever candidate${titleHtml ? ` (<strong>${titleHtml}</strong>)` : ""}`
       : `<strong>${nameHtml}</strong>${titleHtml ? ` (${titleHtml})` : ""}`;
+  const intro = reminder
+    ? `This is a reminder to complete your reference for ${whoHtml}.`
+    : `You've been asked to verify a reference for ${whoHtml}.`;
 
   if (!resend) {
     console.info("[resend demo]", {
       to: args.to,
       candidateName,
       candidateTitle,
+      reminder,
       subject,
       inviteUrl,
       onboardingUrl,
@@ -81,7 +91,7 @@ export async function sendReferenceInviteEmail(args: {
     html: `
       <div style="font-family:Arial,sans-serif;line-height:1.5;color:#2A2D34">
         <p>Hello,</p>
-        <p>You've been asked to verify a reference for ${whoHtml}.</p>
+        <p>${intro}</p>
         <p>
           <a href="${inviteUrl}" style="background:#2B5B84;color:#fff;padding:10px 16px;text-decoration:none;border-radius:6px;display:inline-block">
             Open verification link
