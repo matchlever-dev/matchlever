@@ -27,10 +27,19 @@ function asLinkedInProfileUrl(value: unknown): string | null {
       return null;
     }
     url.protocol = "https:";
+    url.search = "";
+    url.hash = "";
     return url.toString().replace(/\/+$/, "");
   } catch {
     return null;
   }
+}
+
+/** Normalize a pasted LinkedIn profile URL for storage and display. */
+export function normalizePublicLinkedInProfileUrl(
+  value: unknown
+): string | null {
+  return asLinkedInProfileUrl(value);
 }
 
 function slugToLinkedInUrl(value: unknown): string | null {
