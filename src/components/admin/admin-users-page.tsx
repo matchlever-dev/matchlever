@@ -102,23 +102,13 @@ export function AdminUsersPage() {
     const previous = users;
     const nextUsers = users.map((u) => {
       if (u.id !== user.id) return u;
-      if (field === "is_superuser") {
-        return { ...u, is_superuser: value };
-      }
-      return { ...u, is_admin: value, is_superuser: value ? u.is_superuser : false };
+      return { ...u, [field]: value };
     });
     setUsers(nextUsers);
     setBusyId(user.id);
 
     try {
-      const body =
-        field === "is_superuser"
-          ? { userId: user.id, is_superuser: value }
-          : {
-              userId: user.id,
-              is_admin: value,
-              is_superuser: value ? user.is_superuser : false,
-            };
+      const body = { userId: user.id, [field]: value };
 
       const res = await fetch("/api/admin/users", {
         method: "PATCH",
@@ -146,7 +136,8 @@ export function AdminUsersPage() {
             Registered users
           </h1>
           <p className="mt-2 text-sm text-[#5B616B]">
-            Toggle admin and superuser privileges in real time.
+            Toggle Admin and Superuser independently — a user can be either,
+            both, or neither.
           </p>
         </div>
         {demo && (

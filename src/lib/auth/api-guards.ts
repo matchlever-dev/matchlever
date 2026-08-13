@@ -70,6 +70,21 @@ export async function requireAdminApi(): Promise<
   };
 }
 
+/** Admin Portal actions that must not be available to superuser-only accounts. */
+export async function requireAdminFlagApi(): Promise<
+  { ok: true; actor: ApiActor } | { ok: false; response: NextResponse }
+> {
+  const result = await requireAdminApi();
+  if (!result.ok) return result;
+  if (!result.actor.hasAdminFlag) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
+    };
+  }
+  return result;
+}
+
 export async function requireSuperuserApi(): Promise<
   { ok: true; actor: ApiActor } | { ok: false; response: NextResponse }
 > {

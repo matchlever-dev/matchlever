@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { requireAdminApi } from "@/lib/auth/api-guards";
+import { requireAdminFlagApi } from "@/lib/auth/api-guards";
 import { DEMO_ADMIN_USERS } from "@/lib/admin/demo";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET() {
-  const auth = await requireAdminApi();
+  const auth = await requireAdminFlagApi();
   if (!auth.ok) return auth.response;
 
   if (auth.actor.demo) {
@@ -40,7 +40,7 @@ const patchSchema = z.object({
 });
 
 export async function PATCH(request: Request) {
-  const auth = await requireAdminApi();
+  const auth = await requireAdminFlagApi();
   if (!auth.ok) return auth.response;
 
   const parsed = patchSchema.safeParse(await request.json());

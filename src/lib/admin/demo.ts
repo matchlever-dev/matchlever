@@ -178,6 +178,15 @@ export const DEMO_ADMIN_USERS: AdminUserRow[] = [
     is_superuser: false,
     created_at: "2026-07-01T11:00:00.000Z",
   },
+  {
+    id: "user-5",
+    email: "super@matchlever.demo",
+    full_name: "Riley Super",
+    role: "staff",
+    is_admin: false,
+    is_superuser: true,
+    created_at: "2026-07-08T08:45:00.000Z",
+  },
 ];
 
 export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
