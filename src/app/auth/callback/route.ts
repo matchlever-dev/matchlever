@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { linkedinUrlFromAuthUser } from "@/lib/auth/linkedin-url";
 import {
   resolvePostLoginPath,
   sanitizeNextPath,
@@ -42,6 +43,27 @@ export async function GET(request: Request) {
             url.origin
           )
         );
+      }
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const linkedInUrl = user ? linkedinUrlFromAuthUser(user) : null;
+    if (user && linkedInUrl) {
+      const { data: existing } = await supabase
+        .from("user_profiles")
+        .select("linkedin_url")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!existing?.linkedin_url) {
+        const { error: linkedInError } = await supabase
+          .from("user_profiles")
+          .update({ linkedin_url: linkedInUrl })
+          .eq("id", user.id);
+        if (linkedInError) {
+          console.error("[auth callback linkedin_url]", linkedInError.message);
+        }
       }
     }
 

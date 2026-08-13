@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { resolveCandidateLinkedInUrl } from "@/lib/auth/linkedin-url";
 import {
   DEMO_CANDIDATE_DASHBOARD,
   formatTimezoneOffset,
@@ -37,7 +38,7 @@ export async function GET() {
     const { data: profile, error } = await supabase
       .from("candidate_profiles")
       .select(
-        "id, headline, selected_tagline, suggested_taglines, verified_skills, global_city, global_country, timezone_offset, status"
+        "id, headline, selected_tagline, suggested_taglines, verified_skills, global_city, global_country, timezone_offset, status, raw_resume_text"
       )
       .eq("user_id", user.id)
       .maybeSingle();
@@ -81,6 +82,34 @@ export async function GET() {
       ? profile.suggested_taglines.map(String)
       : [];
 
+    const { data: userProfile, error: userProfileError } = await supabase
+      .from("user_profiles")
+      .select("linkedin_url")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (userProfileError && !userProfileError.message.includes("linkedin_url")) {
+      console.error("[candidate dashboard user_profiles]", userProfileError.message);
+    }
+
+    const linkedinUrl = resolveCandidateLinkedInUrl({
+      stored: userProfileError ? null : userProfile?.linkedin_url,
+      authUser: user,
+      resumeText: profile.raw_resume_text,
+    });
+    if (
+      linkedinUrl &&
+      !userProfileError &&
+      linkedinUrl !== userProfile?.linkedin_url
+    ) {
+      const { error: linkedInError } = await supabase
+        .from("user_profiles")
+        .update({ linkedin_url: linkedinUrl })
+        .eq("id", user.id);
+      if (linkedInError) {
+        console.error("[candidate dashboard linkedin_url]", linkedInError.message);
+      }
+    }
+
     const fullName =
       (typeof user.user_metadata?.full_name === "string"
         ? user.user_metadata.full_name
@@ -123,6 +152,7 @@ export async function GET() {
       timezoneOffset: profile.timezone_offset,
       timezoneLabel: formatTimezoneOffset(profile.timezone_offset),
       status,
+      linkedinUrl,
       references: refs,
     };
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requireAdminApi } from "@/lib/auth/api-guards";
+import { resolveCandidateLinkedInUrl } from "@/lib/auth/linkedin-url";
 import {
   DEMO_ADMIN_CANDIDATES,
   averageAuthenticityScore,
@@ -20,6 +21,16 @@ function flagsFromJson(value: Json): string[] {
   );
 }
 
+function locationModesFromProfile(profile: {
+  location_modes?: string[] | null;
+  location_mode?: string | null;
+} | null): string[] {
+  const modes = (profile?.location_modes ?? []).filter(Boolean);
+  if (modes.length) return modes;
+  if (profile?.location_mode) return [profile.location_mode];
+  return [];
+}
+
 export async function GET() {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
@@ -35,10 +46,22 @@ export async function GET() {
 
   // Every logged-in user has a user_profiles row; candidate_profiles may be absent
   // until onboarding completes.
-  const { data: users, error: usersError } = await supabase
+  let { data: users, error: usersError } = await supabase
     .from("user_profiles")
-    .select("id, email, full_name, created_at, updated_at")
+    .select("id, email, full_name, linkedin_url, created_at, updated_at")
     .order("updated_at", { ascending: false });
+
+  if (usersError?.message?.includes("linkedin_url")) {
+    const fallback = await supabase
+      .from("user_profiles")
+      .select("id, email, full_name, created_at, updated_at")
+      .order("updated_at", { ascending: false });
+    users = (fallback.data ?? []).map((user) => ({
+      ...user,
+      linkedin_url: null as string | null,
+    }));
+    usersError = fallback.error;
+  }
 
   if (usersError) {
     console.error("[admin candidates users]", usersError.message);
@@ -54,7 +77,7 @@ export async function GET() {
     ? await supabase
         .from("candidate_profiles")
         .select(
-          "id, user_id, headline, status, global_city, global_country, timezone_offset, work_hours_start, work_hours_end, raw_resume_text, sanitized_summary, updated_at"
+          "id, user_id, headline, status, global_city, global_country, timezone_offset, work_hours_start, work_hours_end, location_modes, location_mode, raw_resume_text, sanitized_summary, updated_at"
         )
         .in("user_id", userIds)
     : { data: [] as never[], error: null };
@@ -129,10 +152,15 @@ export async function GET() {
       timezone_offset: profile?.timezone_offset ?? null,
       work_hours_start: base.work_hours_start,
       work_hours_end: base.work_hours_end,
+      location_modes: locationModesFromProfile(profile),
       raw_resume_text: base.raw_resume_text,
       sanitized_summary: base.sanitized_summary,
       email: user.email,
       full_name: user.full_name,
+      linkedin_url: resolveCandidateLinkedInUrl({
+        stored: user.linkedin_url,
+        resumeText: profile?.raw_resume_text,
+      }),
       updated_at: profile?.updated_at ?? user.updated_at ?? user.created_at,
       avg_authenticity_score: averageAuthenticityScore(refs),
       references: refs,

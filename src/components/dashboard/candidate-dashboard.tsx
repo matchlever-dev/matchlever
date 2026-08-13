@@ -14,6 +14,7 @@ import {
 import { BrandMark } from "@/components/brand/brand-mark";
 import { AnonymousCandidateCard } from "@/components/dashboard/anonymous-candidate-card";
 import { ReferenceStatusTracker } from "@/components/dashboard/reference-status-tracker";
+import { ReferrerLinkedInLink } from "@/components/reference/referrer-linkedin-link";
 import {
   DeleteAccountDialog,
   EditProfileModal,
@@ -265,6 +266,15 @@ export function CandidateDashboard() {
             <p className="font-display text-[11px] font-semibold tracking-[0.22em] text-[#E87A5D] uppercase">
               Account
             </p>
+            <div className="mt-3">
+              <p className="text-[11px] font-semibold tracking-[0.14em] text-[#5B616B] uppercase">
+                LinkedIn
+              </p>
+              <ReferrerLinkedInLink
+                url={data.linkedinUrl}
+                className="mt-1 block text-sm break-all"
+              />
+            </div>
             <div className="mt-4 flex flex-col gap-3">
               <Button
                 type="button"

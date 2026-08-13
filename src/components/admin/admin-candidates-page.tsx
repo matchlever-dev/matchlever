@@ -8,12 +8,14 @@ import {
   REQUIRED_VERIFIED_REFERENCES,
   formatTimezoneOffset,
 } from "@/lib/dashboard/candidate";
+import { LOCATION_MODES } from "@/lib/onboarding/schema";
 import {
   AdminListControls,
   matchesKeyword,
   type AdminSortMode,
 } from "@/components/admin/admin-list-controls";
 import { PortalShell } from "@/components/admin/portal-shell";
+import { ReferrerLinkedInLink } from "@/components/reference/referrer-linkedin-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -49,6 +51,17 @@ function statusLabel(status: string) {
   if (status === "on_hold") return "On Hold";
   if (status === "incomplete") return "Incomplete";
   return status.replaceAll("_", " ");
+}
+
+function formatLocationPreference(modes: string[]) {
+  const known = LOCATION_MODES.filter((mode) => modes.includes(mode.value)).map(
+    (mode) => mode.label
+  );
+  const extras = modes.filter(
+    (mode) => !LOCATION_MODES.some((option) => option.value === mode)
+  );
+  const labels = [...known, ...extras];
+  return labels.length ? labels.join(", ") : "To Be Completed";
 }
 
 export function AdminCandidatesPage() {
@@ -131,6 +144,7 @@ function CandidateProfilesPage({
       return matchesKeyword(keyword, [
         c.full_name,
         c.email,
+        c.linkedin_url,
         c.headline,
         c.global_city,
         c.global_country,
@@ -219,6 +233,7 @@ function CandidateProfilesPage({
                 timezone_offset: null,
                 work_hours_start: null,
                 work_hours_end: null,
+                location_modes: [],
                 raw_resume_text: null,
                 sanitized_summary: null,
                 avg_authenticity_score: null,
@@ -347,6 +362,13 @@ function CandidateProfilesPage({
                     {selected.email}
                     {selected.headline ? ` · ${selected.headline}` : ""}
                   </p>
+                  <p className="mt-1 text-sm text-[#5B616B]">
+                    LinkedIn ·{" "}
+                    <ReferrerLinkedInLink
+                      url={selected.linkedin_url}
+                      className="text-sm break-all"
+                    />
+                  </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button
@@ -446,6 +468,11 @@ function CandidateProfilesPage({
                           {selected.work_hours_start && selected.work_hours_end
                             ? `${selected.work_hours_start.slice(0, 5)} – ${selected.work_hours_end.slice(0, 5)}`
                             : "To Be Completed"}
+                        </p>
+                      </AuditBlock>
+                      <AuditBlock title="Onsite / Remote / Hybrid">
+                        <p className="text-sm">
+                          {formatLocationPreference(selected.location_modes)}
                         </p>
                       </AuditBlock>
                     </div>
@@ -565,9 +592,10 @@ function ReferenceCard({ refRow }: { refRow: AdminReferenceRow }) {
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <p className="text-sm font-medium">{refRow.reference_email}</p>
-          <p className="mt-1 text-xs text-[#5B616B]">
-            {refRow.reference_linkedin_url || "No LinkedIn URL"}
-          </p>
+          <ReferrerLinkedInLink
+            url={refRow.reference_linkedin_url}
+            className="mt-1 block max-w-full truncate text-xs"
+          />
         </div>
         <div className="text-right">
           <p className="font-display text-sm font-semibold text-[#2B5B84]">

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { FormProvider, useForm } from "react-hook-form";
+import { useMemo, useState } from "react";
+import { FormProvider, useForm, type FieldPath } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -25,6 +25,7 @@ export function OnboardingWizard() {
   const router = useRouter();
   const [step, setStep] = useState<OnboardingStepId>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckingLinkedIn, setIsCheckingLinkedIn] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const form = useForm<OnboardingFormValues>({
@@ -32,6 +33,17 @@ export function OnboardingWizard() {
     defaultValues: defaultOnboardingValues,
     mode: "onTouched",
   });
+  const references = form.watch("references");
+  const referencesReady = useMemo(
+    () =>
+      step !== 4 ||
+      (Array.isArray(references) &&
+        references.length === 3 &&
+        references.every(
+          (ref) => ref.email.trim().length > 0 && ref.linkedInUrl.trim().length > 0
+        )),
+    [references, step]
+  );
 
   async function validateCurrentStep() {
     const schema = getStepSchema(step);
@@ -43,8 +55,8 @@ export function OnboardingWizard() {
     }
 
     for (const issue of parsed.error.issues) {
-      const path = issue.path.join(".") || "root";
-      form.setError(path as keyof OnboardingFormValues, {
+      const path = (issue.path.join(".") || "root") as FieldPath<OnboardingFormValues>;
+      form.setError(path, {
         type: "manual",
         message: issue.message,
       });
@@ -52,10 +64,67 @@ export function OnboardingWizard() {
     return false;
   }
 
+  async function validateReferencePagesOpen() {
+    const refs = form.getValues("references");
+    const res = await fetch("/api/reference/validate-linkedin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ urls: refs.map((ref) => ref.linkedInUrl) }),
+    });
+    const data = (await res.json()) as {
+      error?: string;
+      results?: Array<{
+        valid: boolean;
+        normalizedUrl: string;
+        error: string | null;
+      }>;
+    };
+    if (!res.ok) {
+      throw new Error(data.error || "Unable to check LinkedIn profile pages");
+    }
+
+    let allOpen = true;
+    (data.results ?? []).forEach((result, index) => {
+      if (!result.valid) {
+        allOpen = false;
+        form.setError(`references.${index}.linkedInUrl`, {
+          type: "manual",
+          message:
+            result.error ||
+            "This LinkedIn page could not be opened. Check the URL.",
+        });
+        return;
+      }
+      form.clearErrors(`references.${index}.linkedInUrl`);
+      form.setValue(`references.${index}.linkedInUrl`, result.normalizedUrl, {
+        shouldDirty: true,
+        shouldValidate: false,
+      });
+    });
+    return allOpen;
+  }
+
   async function handleNext() {
     setSubmitError(null);
     const ok = await validateCurrentStep();
     if (!ok) return;
+
+    if (step === 4) {
+      setIsCheckingLinkedIn(true);
+      try {
+        const pagesOpen = await validateReferencePagesOpen();
+        if (!pagesOpen) return;
+      } catch (err) {
+        setSubmitError(
+          err instanceof Error
+            ? err.message
+            : "Unable to check LinkedIn profile pages"
+        );
+        return;
+      } finally {
+        setIsCheckingLinkedIn(false);
+      }
+    }
 
     if (step < ONBOARDING_STEPS.length) {
       setStep((step + 1) as OnboardingStepId);
@@ -74,8 +143,18 @@ export function OnboardingWizard() {
       const data = (await res.json()) as {
         error?: string;
         warning?: string;
+        referenceIndex?: number;
       };
       if (!res.ok) {
+        if (typeof data.referenceIndex === "number") {
+          form.setError(`references.${data.referenceIndex}.linkedInUrl`, {
+            type: "manual",
+            message:
+              data.error ||
+              "This LinkedIn page could not be opened. Check the URL.",
+          });
+          return;
+        }
         throw new Error(data.error || "Could not complete onboarding");
       }
       if (data.warning) {
@@ -127,10 +206,19 @@ export function OnboardingWizard() {
         </main>
         <WizardFooter
           step={step}
-          isSubmitting={isSubmitting}
+          isSubmitting={isSubmitting || isCheckingLinkedIn}
+          nextDisabled={!referencesReady}
           onBack={handleBack}
           onNext={handleNext}
-          nextLabel={step === 4 ? "Complete profile" : "Continue"}
+          nextLabel={
+            isCheckingLinkedIn
+              ? "Checking LinkedIn pages…"
+              : isSubmitting
+                ? "Saving…"
+                : step === 4
+                  ? "Complete profile"
+                  : "Continue"
+          }
         />
       </div>
     </FormProvider>

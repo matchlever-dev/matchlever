@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 export function WizardFooter({
   step,
   isSubmitting,
+  nextDisabled,
   onBack,
   onNext,
   nextLabel,
 }: {
   step: number;
   isSubmitting?: boolean;
+  nextDisabled?: boolean;
   onBack: () => void;
   onNext: () => void;
   nextLabel: string;
@@ -30,10 +32,10 @@ export function WizardFooter({
         <Button
           type="button"
           onClick={onNext}
-          disabled={isSubmitting}
+          disabled={isSubmitting || nextDisabled}
           className="min-w-36 bg-[#2B5B84] text-white hover:bg-[#244e71]"
         >
-          {isSubmitting ? "Saving…" : nextLabel}
+          {nextLabel}
         </Button>
       </div>
     </footer>

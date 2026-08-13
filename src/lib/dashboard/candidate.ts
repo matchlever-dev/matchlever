@@ -37,6 +37,7 @@ export type CandidateDashboardData = {
   timezoneOffset: number | null;
   timezoneLabel: string;
   status: CandidateAvailability;
+  linkedinUrl: string | null;
   references: CandidateReferenceRow[];
 };
 
@@ -92,6 +93,7 @@ export const DEMO_CANDIDATE_DASHBOARD: CandidateDashboardData = {
   timezoneOffset: -300,
   timezoneLabel: "UTC-5",
   status: "on_hold",
+  linkedinUrl: "https://www.linkedin.com/in/sam-patel",
   references: [
     {
       id: "ref-1",

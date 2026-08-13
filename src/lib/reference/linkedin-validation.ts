@@ -1,14 +1,11 @@
 import { z } from "zod";
 
-import {
-  analyzeLinkedInUrlStructure,
-  type LinkedInStructureSignals,
-} from "@/lib/reference/authenticity";
+import { analyzeLinkedInUrlStructure } from "@/lib/reference/authenticity";
 import { linkedInUrlSchema } from "@/lib/reference/schema";
 
-/** Opaque message shown to candidates — never reveal which check failed. */
+/** Shown when a referrer LinkedIn URL is missing, malformed, or does not open. */
 export const REFERRER_LINKEDIN_INVALID_MESSAGE =
-  "Referrer LinkedIn profile invalid";
+  "This LinkedIn page could not be opened. Use a full public profile URL (https://www.linkedin.com/in/...).";
 
 export type LinkedInCheckKey =
   | "exists"
@@ -63,18 +60,32 @@ const enrichmentSchema = z.object({
   recentActivity: z.boolean().optional(),
 });
 
-function allRequiredPassed(checks: LinkedInChecks): boolean {
-  return (
-    checks.exists === true &&
-    checks.connections100 === true &&
-    checks.hasJob === true &&
-    checks.hasPhoto === true &&
-    checks.recentActivity === true
+function emptyChecks(exists: boolean | null): LinkedInChecks {
+  return {
+    exists,
+    connections100: null,
+    hasJob: null,
+    hasPhoto: null,
+    recentActivity: null,
+  };
+}
+
+function htmlSaysProfileMissing(html: string): boolean {
+  return /page not found|profile not found|this page doesn’t exist|this page doesn't exist|this profile is not available|the profile you are trying to view is not available/i.test(
+    html
   );
 }
 
-function anyDefinitiveFail(checks: LinkedInChecks): boolean {
-  return Object.values(checks).some((value) => value === false);
+function responseIsMissingProfile(finalUrl: string, html: string): boolean {
+  if (htmlSaysProfileMissing(html)) return true;
+  try {
+    const parsed = new URL(finalUrl);
+    if (!/(^|\.)linkedin\.com$/i.test(parsed.hostname)) return true;
+    const path = parsed.pathname.toLowerCase();
+    return path.includes("/404") || path === "/" || path.includes("/pub/dir");
+  } catch {
+    return true;
+  }
 }
 
 async function fetchEnrichment(
@@ -130,6 +141,9 @@ async function fetchEnrichment(
   };
 }
 
+const BROWSER_UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+
 async function probePublicProfile(linkedInUrl: string): Promise<{
   checks: Partial<LinkedInChecks>;
   flags: string[];
@@ -142,12 +156,15 @@ async function probePublicProfile(linkedInUrl: string): Promise<{
       method: "GET",
       redirect: "follow",
       headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; MatchLeverBot/1.0; +https://www.matchlever.com)",
-        Accept: "text/html,application/xhtml+xml",
+        "User-Agent": BROWSER_UA,
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
       },
+      cache: "no-store",
       signal: AbortSignal.timeout(8_000),
     });
+
+    flags.push(`public_status_${res.status}`);
 
     if (res.status === 404) {
       checks.exists = false;
@@ -155,25 +172,31 @@ async function probePublicProfile(linkedInUrl: string): Promise<{
       return { checks, flags };
     }
 
-    // LinkedIn often returns auth walls (999 / 999-like) for bots — treat as
-    // inconclusive existence rather than a definitive miss.
+    // WAF / rate-limit: the page did not actually open for us.
     if (res.status === 999 || res.status === 429) {
-      flags.push(`public_status_${res.status}`);
+      checks.exists = false;
+      flags.push("public_blocked_page_did_not_open");
+      return { checks, flags };
+    }
+
+    if (res.status >= 400) {
+      checks.exists = false;
+      flags.push("public_http_error");
       return { checks, flags };
     }
 
     const html = await res.text();
-    const lower = html.toLowerCase();
+    const finalUrl = res.url || linkedInUrl;
 
-    if (
-      /page not found|profile not found|this page doesn’t exist|this page doesn't exist/i.test(
-        html
-      )
-    ) {
+    if (responseIsMissingProfile(finalUrl, html)) {
       checks.exists = false;
-      flags.push("public_not_found_copy");
+      flags.push("public_not_found");
       return { checks, flags };
     }
+
+    const lower = html.toLowerCase();
+    checks.exists = true;
+    flags.push("public_page_opened");
 
     const ogTitle = html.match(
       /property=["']og:title["']\s+content=["']([^"']+)["']/i
@@ -186,7 +209,6 @@ async function probePublicProfile(linkedInUrl: string): Promise<{
     )?.[1];
 
     if (ogTitle || /linkedin\.com\/in\//i.test(html)) {
-      checks.exists = true;
       flags.push("public_profile_signal");
     }
 
@@ -232,47 +254,15 @@ async function probePublicProfile(linkedInUrl: string): Promise<{
   } catch (error) {
     const message = error instanceof Error ? error.message : "probe_failed";
     flags.push(`public_probe_error:${message.slice(0, 80)}`);
+    checks.exists = false;
     return { checks, flags };
   }
 }
 
-function structuralGate(
-  signals: LinkedInStructureSignals
-): { checks: LinkedInChecks; flags: string[] } {
-  const strongStructure =
-    signals.structuralScore >= 70 &&
-    signals.slugLooksHuman &&
-    Boolean(signals.slug) &&
-    signals.slugLength >= 3 &&
-    signals.slugLength <= 60;
-
-  // Without enrichment, LinkedIn rarely exposes connections / activity / jobs
-  // to anonymous fetches. Use a strict structural gate as a substitute so we
-  // still reject thin / fake-looking URLs without blocking real short slugs.
-  return {
-    checks: {
-      exists: strongStructure,
-      connections100: strongStructure,
-      hasJob: strongStructure,
-      hasPhoto: strongStructure,
-      recentActivity: strongStructure,
-    },
-    flags: [
-      "structural_substitute_gate",
-      `structural_score_${signals.structuralScore}`,
-      signals.slugLooksHuman ? "slug_looks_human" : "slug_weak",
-    ],
-  };
-}
-
 /**
  * Validate a referrer LinkedIn profile for candidate intake / edits.
- *
- * Preferred path: LINKEDIN_ENRICHMENT_URL + LINKEDIN_ENRICHMENT_API_KEY returning
- * connections, experiences, photo, and activity signals.
- *
- * Fallback: public HTML probe + structural substitute gates (LinkedIn blocks
- * most anonymous scrapes after Proxycurl-era enforcement).
+ * A URL is valid only when the profile page actually opens (HTTP fetch
+ * succeeds and LinkedIn does not serve a missing-profile page).
  */
 export async function validateReferrerLinkedIn(
   rawUrl: string
@@ -283,90 +273,63 @@ export async function validateReferrerLinkedIn(
       valid: false,
       normalizedUrl: rawUrl.trim(),
       mode: "structural",
-      checks: {
-        exists: false,
-        connections100: false,
-        hasJob: false,
-        hasPhoto: false,
-        recentActivity: false,
-      },
+      checks: emptyChecks(false),
       flags: ["invalid_url_format"],
     };
   }
 
   const normalizedUrl = normalizeLinkedInProfileUrl(parsedUrl.data);
   const signals = analyzeLinkedInUrlStructure(normalizedUrl);
-  const flags: string[] = [];
+  const flags: string[] = [
+    `structural_score_${signals.structuralScore}`,
+    signals.slugLooksHuman ? "slug_looks_human" : "slug_weak",
+  ];
 
-  // 1) Optional enrichment provider (full fidelity when configured)
   try {
     const enriched = await fetchEnrichment(normalizedUrl);
     if (enriched) {
       flags.push("enrichment_provider");
-      const valid =
-        allRequiredPassed(enriched) && !anyDefinitiveFail(enriched);
-      return {
-        valid,
-        normalizedUrl,
-        mode: "enrichment",
-        checks: enriched,
-        flags,
-      };
+      if (enriched.exists === true) {
+        return {
+          valid: true,
+          normalizedUrl,
+          mode: "enrichment",
+          checks: enriched,
+          flags,
+        };
+      }
+      if (enriched.exists === false) {
+        return {
+          valid: false,
+          normalizedUrl,
+          mode: "enrichment",
+          checks: enriched,
+          flags,
+        };
+      }
+      flags.push("enrichment_exists_unknown");
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "enrichment_failed";
     flags.push(`enrichment_error:${message.slice(0, 80)}`);
   }
 
-  // 2) Public probe (best-effort; often auth-walled)
   const probe = await probePublicProfile(normalizedUrl);
   flags.push(...probe.flags);
 
-  const merged: LinkedInChecks = {
-    exists: probe.checks.exists ?? null,
+  const checks: LinkedInChecks = {
+    exists: probe.checks.exists ?? false,
     connections100: probe.checks.connections100 ?? null,
     hasJob: probe.checks.hasJob ?? null,
     hasPhoto: probe.checks.hasPhoto ?? null,
     recentActivity: probe.checks.recentActivity ?? null,
   };
 
-  if (anyDefinitiveFail(merged)) {
-    return {
-      valid: false,
-      normalizedUrl,
-      mode: "public_probe",
-      checks: merged,
-      flags,
-    };
-  }
-
-  if (allRequiredPassed(merged)) {
-    return {
-      valid: true,
-      normalizedUrl,
-      mode: "public_probe",
-      checks: merged,
-      flags,
-    };
-  }
-
-  // 3) Structural substitute for checks LinkedIn won't expose anonymously
-  const gate = structuralGate(signals);
-  flags.push(...gate.flags);
-
-  const filled: LinkedInChecks = {
-    exists: merged.exists ?? gate.checks.exists,
-    connections100: merged.connections100 ?? gate.checks.connections100,
-    hasJob: merged.hasJob ?? gate.checks.hasJob,
-    hasPhoto: merged.hasPhoto ?? gate.checks.hasPhoto,
-    recentActivity: merged.recentActivity ?? gate.checks.recentActivity,
-  };
-
   return {
-    valid: allRequiredPassed(filled),
+    valid: checks.exists === true,
     normalizedUrl,
-    mode: "structural",
-    checks: filled,
+    mode: "public_probe",
+    checks,
     flags,
   };
 }

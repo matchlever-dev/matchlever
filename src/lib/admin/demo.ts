@@ -34,10 +34,12 @@ export type AdminCandidateRow = {
   timezone_offset: number | null;
   work_hours_start: string | null;
   work_hours_end: string | null;
+  location_modes: string[];
   raw_resume_text: string | null;
   sanitized_summary: string | null;
   email: string | null;
   full_name: string | null;
+  linkedin_url: string | null;
   updated_at: string;
   /** Mean authenticity score across scored references; null if none scored. */
   avg_authenticity_score: number | null;
@@ -190,12 +192,14 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
     timezone_offset: -300,
     work_hours_start: "09:00:00",
     work_hours_end: "17:00:00",
+    location_modes: ["remote", "hybrid"],
     raw_resume_text:
       "Sam Patel\nsam.seeker@example.com\n+1 512-555-0199\nBuilt Kafka pipelines at Acme…",
     sanitized_summary:
       "Staff platform engineer who cut p99 latency 62% on a multi-region event bus.",
     email: "sam.seeker@example.com",
     full_name: "Sam Patel",
+    linkedin_url: "https://www.linkedin.com/in/sam-patel",
     updated_at: "2026-07-20T16:00:00.000Z",
     avg_authenticity_score: 65,
     references: [
@@ -231,11 +235,13 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
     timezone_offset: 120,
     work_hours_start: "10:00:00",
     work_hours_end: "18:00:00",
+    location_modes: ["onsite"],
     raw_resume_text: "Resume PDF extract with personal identifiers…",
     sanitized_summary:
       "Backend engineer specializing in Postgres performance and API design.",
     email: "taylor@example.com",
     full_name: "Taylor Nguyen",
+    linkedin_url: "https://www.linkedin.com/in/taylor-nguyen",
     updated_at: "2026-07-10T09:00:00.000Z",
     avg_authenticity_score: null,
     references: [
@@ -262,10 +268,12 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
     timezone_offset: -240,
     work_hours_start: "09:00:00",
     work_hours_end: "17:00:00",
+    location_modes: ["remote"],
     raw_resume_text: null,
     sanitized_summary: null,
     email: "riley@example.com",
     full_name: "Riley Chen",
+    linkedin_url: null,
     updated_at: "2026-07-28T12:00:00.000Z",
     avg_authenticity_score: null,
     references: [],
@@ -282,10 +290,12 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
     timezone_offset: null,
     work_hours_start: null,
     work_hours_end: null,
+    location_modes: [],
     raw_resume_text: null,
     sanitized_summary: null,
     email: "morgan@example.com",
     full_name: "Morgan Ellis",
+    linkedin_url: null,
     updated_at: "2026-08-01T08:00:00.000Z",
     avg_authenticity_score: null,
     references: [],

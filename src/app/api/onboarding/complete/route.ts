@@ -5,6 +5,7 @@ import {
   candidateNameForInvite,
   displayNameFromAuthUser,
 } from "@/lib/auth/display-name";
+import { linkedinUrlFromAuthUser } from "@/lib/auth/linkedin-url";
 import { sendReferenceInviteEmail } from "@/lib/email/resend";
 import { onboardingFormSchema, resolveOnboardingCity } from "@/lib/onboarding/form-schema";
 import { TIMEZONE_OPTIONS } from "@/lib/onboarding/schema";
@@ -18,6 +19,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 function timezoneOffsetMinutes(timezone: string): number | null {
   return (
@@ -59,32 +61,31 @@ export async function POST(request: Request) {
       );
     }
 
-    const validatedRefs: {
-      email: string;
-      linkedInUrl: string;
-      relationship: "manager" | "peer";
-      flags: string[];
-    }[] = [];
+    const linkedInResults = await Promise.all(
+      data.references.map((ref) => validateReferrerLinkedIn(ref.linkedInUrl))
+    );
+    const failedIndex = linkedInResults.findIndex((result) => !result.valid);
+    if (failedIndex >= 0) {
+      const failed = linkedInResults[failedIndex];
+      console.info("[onboarding linkedin invalid]", {
+        index: failedIndex,
+        email: data.references[failedIndex]?.email,
+        mode: failed?.mode,
+        checks: failed?.checks,
+        flags: failed?.flags,
+      });
+      return NextResponse.json(
+        {
+          error: REFERRER_LINKEDIN_INVALID_MESSAGE,
+          referenceIndex: failedIndex,
+        },
+        { status: 400 }
+      );
+    }
 
-    for (const [index, ref] of data.references.entries()) {
-      const validation = await validateReferrerLinkedIn(ref.linkedInUrl);
-      if (!validation.valid) {
-        console.info("[onboarding linkedin invalid]", {
-          index,
-          email: ref.email,
-          mode: validation.mode,
-          checks: validation.checks,
-          flags: validation.flags,
-        });
-        return NextResponse.json(
-          {
-            error: REFERRER_LINKEDIN_INVALID_MESSAGE,
-            referenceIndex: index,
-          },
-          { status: 400 }
-        );
-      }
-      validatedRefs.push({
+    const validatedRefs = data.references.map((ref, index) => {
+      const validation = linkedInResults[index]!;
+      return {
         email: ref.email.trim().toLowerCase(),
         linkedInUrl: validation.normalizedUrl,
         relationship: ref.relationship,
@@ -93,8 +94,8 @@ export async function POST(request: Request) {
           `validation_mode:${validation.mode}`,
           ...validation.flags,
         ],
-      });
-    }
+      };
+    });
 
     if (!isSupabaseConfigured()) {
       console.info("[onboarding/complete demo]", {
@@ -132,6 +133,7 @@ export async function POST(request: Request) {
       typeof user.user_metadata?.avatar_url === "string"
         ? user.user_metadata.avatar_url
         : null;
+    const linkedInUrl = linkedinUrlFromAuthUser(user);
 
     const { data: existingUserProfile } = await supabase
       .from("user_profiles")
@@ -147,6 +149,7 @@ export async function POST(request: Request) {
           full_name: fullName,
           avatar_url: avatarUrl,
           role: "candidate",
+          ...(linkedInUrl ? { linkedin_url: linkedInUrl } : {}),
         })
         .eq("id", user.id);
       if (profileUpdateError) {
@@ -175,6 +178,7 @@ export async function POST(request: Request) {
           full_name: fullName,
           avatar_url: avatarUrl,
           role: "candidate",
+          linkedin_url: linkedInUrl,
         });
       if (profileInsertError) {
         console.error("[onboarding user_profiles insert]", profileInsertError.message);

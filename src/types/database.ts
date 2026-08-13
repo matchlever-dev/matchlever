@@ -19,6 +19,7 @@ export type Database = {
           email: string | null;
           full_name: string | null;
           avatar_url: string | null;
+          linkedin_url: string | null;
           is_admin: boolean;
           is_superuser: boolean;
           role: string;
@@ -30,6 +31,7 @@ export type Database = {
           email?: string | null;
           full_name?: string | null;
           avatar_url?: string | null;
+          linkedin_url?: string | null;
           is_admin?: boolean;
           is_superuser?: boolean;
           role?: string;
@@ -41,6 +43,7 @@ export type Database = {
           email?: string | null;
           full_name?: string | null;
           avatar_url?: string | null;
+          linkedin_url?: string | null;
           is_admin?: boolean;
           is_superuser?: boolean;
           role?: string;

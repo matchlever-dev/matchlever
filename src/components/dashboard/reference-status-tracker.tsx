@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CheckCircle2, Clock3, Pencil, Send, X } from "lucide-react";
 
 import type { CandidateReferenceRow } from "@/lib/dashboard/candidate";
+import { ReferrerLinkedInLink } from "@/components/reference/referrer-linkedin-link";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
@@ -187,9 +188,10 @@ export function ReferenceStatusTracker({
                   {!editing && (
                     <div className="mt-1 space-y-0.5 text-xs text-[#5B616B]">
                       <p className="truncate">{ref.reference_email}</p>
-                      <p className="truncate">
-                        {ref.reference_linkedin_url || "No LinkedIn URL"}
-                      </p>
+                      <ReferrerLinkedInLink
+                        url={ref.reference_linkedin_url}
+                        className="block truncate"
+                      />
                       <p>
                         {ref.relationship ? `${ref.relationship} · ` : ""}
                         {done ? "Verified" : "Awaiting response"}

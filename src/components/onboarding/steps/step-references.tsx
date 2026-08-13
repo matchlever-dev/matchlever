@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 
 import type { OnboardingFormValues } from "@/lib/onboarding/form-schema";
@@ -23,8 +24,56 @@ export function StepReferences() {
   const {
     register,
     control,
+    setError,
+    clearErrors,
+    setValue,
     formState: { errors },
   } = useFormContext<OnboardingFormValues>();
+  const [checkingIndex, setCheckingIndex] = useState<number | null>(null);
+
+  async function checkLinkedInPage(index: number, rawUrl: string) {
+    const url = rawUrl.trim();
+    if (!url) return;
+    setCheckingIndex(index);
+    try {
+      const res = await fetch("/api/reference/validate-linkedin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ urls: [url] }),
+      });
+      const data = (await res.json()) as {
+        error?: string;
+        results?: Array<{
+          valid: boolean;
+          normalizedUrl: string;
+          error: string | null;
+        }>;
+      };
+      const result = data.results?.[0];
+      if (!res.ok || !result?.valid) {
+        setError(`references.${index}.linkedInUrl`, {
+          type: "manual",
+          message:
+            result?.error ||
+            data.error ||
+            "This LinkedIn page could not be opened. Check the URL.",
+        });
+        return;
+      }
+      clearErrors(`references.${index}.linkedInUrl`);
+      setValue(`references.${index}.linkedInUrl`, result.normalizedUrl, {
+        shouldDirty: true,
+        shouldValidate: false,
+      });
+    } catch {
+      setError(`references.${index}.linkedInUrl`, {
+        type: "manual",
+        message: "This LinkedIn page could not be opened. Check the URL.",
+      });
+    } finally {
+      setCheckingIndex(null);
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -33,9 +82,9 @@ export function StepReferences() {
           Reference intake
         </h2>
         <p className="mt-2 text-sm text-[#2A2D34]/70 sm:text-base">
-          Add three references — any mix of former managers or peers is fine.
-          Include each person&apos;s email and LinkedIn profile URL so we can
-          verify they&apos;re real professionals before invites go out.
+          Add all three references — any mix of former managers or peers is
+          fine. Each LinkedIn profile URL is checked live and must actually
+          open before you can finish this step.
         </p>
       </div>
 
@@ -70,8 +119,17 @@ export function StepReferences() {
                 id={`ref-linkedin-${slot.index}`}
                 type="url"
                 placeholder="https://www.linkedin.com/in/their-profile"
-                {...register(`references.${slot.index}.linkedInUrl`)}
+                {...register(`references.${slot.index}.linkedInUrl`, {
+                  onBlur: (event) => {
+                    void checkLinkedInPage(slot.index, event.target.value);
+                  },
+                })}
               />
+              {checkingIndex === slot.index && (
+                <p className="text-xs text-[#5B616B]" aria-live="polite">
+                  Checking that this LinkedIn page opens…
+                </p>
+              )}
               {errors.references?.[slot.index]?.linkedInUrl && (
                 <p className="text-xs text-destructive">
                   {errors.references[slot.index]?.linkedInUrl?.message}
