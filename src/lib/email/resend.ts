@@ -21,6 +21,23 @@ export function getCandidateOnboardingUrl() {
   return `${getAppBaseUrl()}/onboarding`;
 }
 
+export function getCandidateDashboardUrl() {
+  return `${getAppBaseUrl()}/dashboard/candidate`;
+}
+
+/** Email CTA: login, then continue onboarding or open the candidate profile. */
+export function getCandidateProfileReminderUrl(hasCandidateProfile: boolean) {
+  const next = hasCandidateProfile ? "/dashboard/candidate" : "/onboarding";
+  return `${getAppBaseUrl()}/login?next=${encodeURIComponent(next)}`;
+}
+
+function getFromEmail() {
+  return (
+    process.env.RESEND_FROM_EMAIL?.trim() ||
+    "MatchLever <onboarding@resend.dev>"
+  );
+}
+
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, "&amp;")
@@ -55,8 +72,7 @@ export async function sendReferenceInviteEmail(args: {
   const resend = getResendClient();
   const inviteUrl = getReferenceInviteUrl(args.token);
   const onboardingUrl = getCandidateOnboardingUrl();
-  const from =
-    process.env.RESEND_FROM_EMAIL?.trim() || "MatchLever <onboarding@resend.dev>";
+  const from = getFromEmail();
   const candidateName = oneLine(args.candidateName) || "a MatchLever candidate";
   const candidateTitle = oneLine(args.candidateTitle);
   const reminder = Boolean(args.reminder);
@@ -124,4 +140,63 @@ export async function sendReferenceInviteEmail(args: {
   }
 
   return { demo: false as const, inviteUrl, id: data?.id };
+}
+
+export async function sendIncompleteProfileReminderEmail(args: {
+  to: string;
+  candidateName: string | null;
+  incompleteItems: string[];
+  profileUrl: string;
+}) {
+  const resend = getResendClient();
+  const from = getFromEmail();
+  const firstName = oneLine(args.candidateName || "").split(/\s+/)[0] || "";
+  const greeting = firstName ? `Hi ${escapeHtml(firstName)},` : "Hi,";
+  const items = args.incompleteItems
+    .map((item) => oneLine(item))
+    .filter(Boolean);
+  const itemsHtml = items
+    .map((item) => `<li>${escapeHtml(item)}</li>`)
+    .join("");
+  const profileUrl = args.profileUrl;
+  const subject = firstName
+    ? `${firstName}, your MatchLever profile is incomplete`
+    : "Your MatchLever profile is incomplete";
+
+  if (!resend) {
+    console.info("[resend demo]", {
+      to: args.to,
+      subject,
+      incompleteItems: items,
+      profileUrl,
+    });
+    return { demo: true as const, id: undefined as string | undefined };
+  }
+
+  const { data, error } = await resend.emails.send({
+    from,
+    to: args.to,
+    subject,
+    html: `
+      <div style="font-family:Arial,sans-serif;line-height:1.5;color:#2A2D34">
+        <p>${greeting}</p>
+        <p>Your MatchLever candidate profile is still incomplete, so recruiters
+        cannot find you yet. Please finish the items below:</p>
+        <ul>${itemsHtml}</ul>
+        <p>
+          <a href="${profileUrl}" style="background:#2B5B84;color:#fff;padding:10px 16px;text-decoration:none;border-radius:6px;display:inline-block">
+            Complete your profile
+          </a>
+        </p>
+        <p style="font-size:12px;color:#5B616B">Or paste this URL:<br/>${profileUrl}</p>
+        <p style="font-size:12px;color:#5B616B">We'll send this reminder weekly until your profile is complete.</p>
+      </div>
+    `,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return { demo: false as const, id: data?.id };
 }

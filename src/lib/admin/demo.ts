@@ -1,3 +1,5 @@
+import { REQUIRED_VERIFIED_REFERENCES } from "@/lib/dashboard/candidate";
+
 /** Shared demo payloads + helpers for admin / superuser portals. */
 
 export type AdminUserRow = {
@@ -74,7 +76,7 @@ export function computeCandidateMissing(input: {
   return {
     resume: !hasResume,
     profile: !hasProfileInfo,
-    references: verifiedRefs < 3,
+    references: verifiedRefs < REQUIRED_VERIFIED_REFERENCES,
   };
 }
 
