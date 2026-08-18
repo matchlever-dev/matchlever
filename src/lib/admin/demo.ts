@@ -89,6 +89,35 @@ export function userPrivilegeScore(user: Pick<AdminUserRow, "is_admin" | "is_sup
   return 0;
 }
 
+/** Display-only account types for the admin Users table. A user can be Candidate and Recruiter. */
+export function userAccountTypeLabels(role: string): {
+  candidate: string | null;
+  recruiter: string | null;
+} {
+  switch (role.trim().toLowerCase()) {
+    case "both":
+      return { candidate: "Candidate", recruiter: "Recruiter" };
+    case "candidate":
+      return { candidate: "Candidate", recruiter: null };
+    case "recruiter":
+      return { candidate: null, recruiter: "Recruiter" };
+    case "staff":
+      return { candidate: "Staff", recruiter: null };
+    default:
+      return { candidate: role || null, recruiter: null };
+  }
+}
+
+export function userMatchesAccountTypeFilter(
+  role: string,
+  filter: string
+): boolean {
+  if (filter === "candidate") return role === "candidate" || role === "both";
+  if (filter === "recruiter") return role === "recruiter" || role === "both";
+  if (filter === "staff") return role === "staff";
+  return true;
+}
+
 export function averageAuthenticityScore(
   references: Pick<AdminReferenceRow, "authenticity_score">[]
 ): number | null {
@@ -186,6 +215,15 @@ export const DEMO_ADMIN_USERS: AdminUserRow[] = [
     is_admin: false,
     is_superuser: true,
     created_at: "2026-07-08T08:45:00.000Z",
+  },
+  {
+    id: "user-8",
+    email: "morgan.both@example.com",
+    full_name: "Morgan Ellis",
+    role: "both",
+    is_admin: false,
+    is_superuser: false,
+    created_at: "2026-07-15T10:20:00.000Z",
   },
 ];
 

@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   type AdminUserRow,
+  userAccountTypeLabels,
+  userMatchesAccountTypeFilter,
   userPrivilegeScore,
 } from "@/lib/admin/demo";
 import {
@@ -76,11 +78,17 @@ export function AdminUsersPage() {
         statusFilter !== "all" &&
         statusFilter !== "admin" &&
         statusFilter !== "superuser" &&
-        u.role !== statusFilter
+        !userMatchesAccountTypeFilter(u.role, statusFilter)
       ) {
         return false;
       }
-      return matchesKeyword(keyword, [u.full_name, u.email, u.role]);
+      const types = userAccountTypeLabels(u.role);
+      return matchesKeyword(keyword, [
+        u.full_name,
+        u.email,
+        types.candidate,
+        types.recruiter,
+      ]);
     });
 
     return [...list].sort((a, b) => {
@@ -155,7 +163,7 @@ export function AdminUsersPage() {
         statusOptions={USER_STATUS_OPTIONS}
         keyword={keyword}
         onKeywordChange={setKeyword}
-        keywordPlaceholder="Search name, email, role…"
+        keywordPlaceholder="Search name, email, type…"
       />
 
       {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
@@ -168,46 +176,55 @@ export function AdminUsersPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>User</TableHead>
-                <TableHead>Role</TableHead>
+                <TableHead>Candidate</TableHead>
+                <TableHead>Recruiter</TableHead>
                 <TableHead>Admin</TableHead>
                 <TableHead>Superuser</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>
-                    <div className="font-medium text-[#2A2D34]">
-                      {user.full_name || "Unnamed"}
-                    </div>
-                    <div className="text-xs text-[#5B616B]">{user.email}</div>
-                  </TableCell>
-                  <TableCell className="capitalize">{user.role}</TableCell>
-                  <TableCell>
-                    <Switch
-                      checked={user.is_admin}
-                      disabled={busyId === user.id}
-                      onCheckedChange={(checked) =>
-                        void toggleFlag(user, "is_admin", checked)
-                      }
-                      aria-label={`Toggle admin for ${user.email}`}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Switch
-                      checked={user.is_superuser}
-                      disabled={busyId === user.id}
-                      onCheckedChange={(checked) =>
-                        void toggleFlag(user, "is_superuser", checked)
-                      }
-                      aria-label={`Toggle superuser for ${user.email}`}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
+              {filtered.map((user) => {
+                const types = userAccountTypeLabels(user.role);
+                return (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <div className="font-medium text-[#2A2D34]">
+                        {user.full_name || "Unnamed"}
+                      </div>
+                      <div className="text-xs text-[#5B616B]">{user.email}</div>
+                    </TableCell>
+                    <TableCell className="text-[#2A2D34]">
+                      {types.candidate ?? ""}
+                    </TableCell>
+                    <TableCell className="text-[#2A2D34]">
+                      {types.recruiter ?? ""}
+                    </TableCell>
+                    <TableCell>
+                      <Switch
+                        checked={user.is_admin}
+                        disabled={busyId === user.id}
+                        onCheckedChange={(checked) =>
+                          void toggleFlag(user, "is_admin", checked)
+                        }
+                        aria-label={`Toggle admin for ${user.email}`}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Switch
+                        checked={user.is_superuser}
+                        disabled={busyId === user.id}
+                        onCheckedChange={(checked) =>
+                          void toggleFlag(user, "is_superuser", checked)
+                        }
+                        aria-label={`Toggle superuser for ${user.email}`}
+                      />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-sm text-[#5B616B]">
+                  <TableCell colSpan={5} className="text-sm text-[#5B616B]">
                     {users.length === 0
                       ? "No users yet."
                       : "No users match these filters."}
