@@ -6,6 +6,7 @@ import {
   sanitizedResumeSchema,
   type SanitizedResume,
 } from "@/lib/resume/sanitize-schema";
+import { toPostgresStringArray, toPostgresText } from "@/lib/postgres-text";
 
 /** Groq retired llama-3.3-70b-versatile on 2026-08-16. */
 const DEFAULT_MODEL = "openai/gpt-oss-120b";
@@ -145,11 +146,19 @@ function normalizePayload(value: unknown): unknown {
   return {
     ...obj,
     years_experience: years,
+    anonymous_title:
+      typeof obj.anonymous_title === "string"
+        ? toPostgresText(obj.anonymous_title).trim()
+        : obj.anonymous_title,
+    sanitized_summary:
+      typeof obj.sanitized_summary === "string"
+        ? toPostgresText(obj.sanitized_summary).trim()
+        : obj.sanitized_summary,
     verified_skills: Array.isArray(skills)
-      ? skills.map(String).map((s) => s.trim()).filter(Boolean)
+      ? toPostgresStringArray(skills.map(String))
       : skills,
     suggested_taglines: Array.isArray(taglines)
-      ? taglines.map(String).map((s) => s.trim()).filter(Boolean).slice(0, 3)
+      ? toPostgresStringArray(taglines.map(String)).slice(0, 3)
       : taglines,
   };
 }

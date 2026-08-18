@@ -1,3 +1,5 @@
+import { toPostgresText } from "@/lib/postgres-text";
+
 const ACCEPTED_MIME_TYPES = new Set([
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -38,7 +40,7 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
   const { extractText, getDocumentProxy } = await import("unpdf");
   const pdf = await getDocumentProxy(new Uint8Array(buffer));
   const { text } = await extractText(pdf, { mergePages: true });
-  const merged = text.trim();
+  const merged = toPostgresText(text).trim();
   if (!merged) {
     throw new Error("Could not extract text from PDF. Try a text-based PDF.");
   }
@@ -48,7 +50,7 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
 async function extractDocxText(buffer: Buffer): Promise<string> {
   const mammoth = await import("mammoth");
   const result = await mammoth.extractRawText({ buffer });
-  const text = result.value?.trim() ?? "";
+  const text = toPostgresText(result.value ?? "").trim();
   if (!text) {
     throw new Error("Could not extract text from DOCX.");
   }

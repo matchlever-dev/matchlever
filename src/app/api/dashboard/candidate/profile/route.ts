@@ -4,6 +4,11 @@ import { z } from "zod";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  toPostgresStringArray,
+  toPostgresText,
+  toPostgresTextOrNull,
+} from "@/lib/postgres-text";
 import type { Database } from "@/types/database";
 
 type CandidateProfileUpdate =
@@ -45,20 +50,24 @@ export async function PATCH(request: Request) {
     }
 
     const update: CandidateProfileUpdate = {
-      headline: parsed.data.headline,
-      selected_tagline: parsed.data.selectedTagline,
-      global_city: parsed.data.globalCity,
-      global_country: parsed.data.globalCountry,
+      headline: toPostgresText(parsed.data.headline),
+      selected_tagline: toPostgresText(parsed.data.selectedTagline),
+      global_city: toPostgresText(parsed.data.globalCity),
+      global_country: toPostgresText(parsed.data.globalCountry),
       timezone_offset: parsed.data.timezoneOffset,
-      verified_skills: parsed.data.verifiedSkills,
+      verified_skills: toPostgresStringArray(parsed.data.verifiedSkills),
       ...(parsed.data.suggestedTaglines
-        ? { suggested_taglines: parsed.data.suggestedTaglines }
+        ? { suggested_taglines: toPostgresStringArray(parsed.data.suggestedTaglines) }
         : {}),
       ...(parsed.data.sanitizedSummary !== undefined
-        ? { sanitized_summary: parsed.data.sanitizedSummary }
+        ? { sanitized_summary: toPostgresTextOrNull(parsed.data.sanitizedSummary) }
         : {}),
       ...(parsed.data.rawResumeText !== undefined
-        ? { raw_resume_text: parsed.data.rawResumeText }
+        ? {
+            raw_resume_text:
+              toPostgresTextOrNull(parsed.data.rawResumeText)?.slice(0, 60_000) ??
+              null,
+          }
         : {}),
       ...(parsed.data.yearsExperience !== undefined
         ? { years_experience: parsed.data.yearsExperience }

@@ -8,6 +8,11 @@ import {
 import { linkedinUrlFromAuthUser } from "@/lib/auth/linkedin-url";
 import { sendReferenceInviteEmail } from "@/lib/email/resend";
 import { onboardingFormSchema, resolveOnboardingCity } from "@/lib/onboarding/form-schema";
+import {
+  toPostgresStringArray,
+  toPostgresText,
+  toPostgresTextOrNull,
+} from "@/lib/postgres-text";
 import { TIMEZONE_OPTIONS } from "@/lib/onboarding/schema";
 import {
   REFERRER_LINKEDIN_INVALID_MESSAGE,
@@ -200,14 +205,16 @@ export async function POST(request: Request) {
 
     const candidatePayload = {
       user_id: user.id,
-      headline: data.anonymousTitle?.trim() || "MatchLever Candidate",
-      sanitized_summary: data.sanitizedSummary?.trim() || null,
-      raw_resume_text: data.rawResumeText?.trim() || null,
-      verified_skills: data.verifiedSkills,
-      suggested_taglines: data.suggestedTaglines.map((t) => t.trim()),
-      selected_tagline: data.selectedTagline.trim(),
-      global_city: resolvedCity,
-      global_country: data.globalCountry,
+      headline:
+        toPostgresText(data.anonymousTitle?.trim() || "") ||
+        "MatchLever Candidate",
+      sanitized_summary: toPostgresTextOrNull(data.sanitizedSummary),
+      raw_resume_text: toPostgresTextOrNull(data.rawResumeText)?.slice(0, 60_000) ?? null,
+      verified_skills: toPostgresStringArray(data.verifiedSkills),
+      suggested_taglines: toPostgresStringArray(data.suggestedTaglines),
+      selected_tagline: toPostgresText(data.selectedTagline.trim()),
+      global_city: toPostgresText(resolvedCity),
+      global_country: toPostgresText(data.globalCountry),
       timezone_offset: timezoneOffsetMinutes(data.timezone),
       work_hours_start: normalizeTime(data.workHoursStart),
       work_hours_end: normalizeTime(data.workHoursEnd),
@@ -216,7 +223,7 @@ export async function POST(request: Request) {
       max_commute_miles: needsLocal ? data.maxCommuteMiles : null,
       open_to_relocation: needsLocal ? data.openToRelocation : null,
       min_salary: data.minSalary,
-      visa_status: data.visaStatus,
+      visa_status: toPostgresText(data.visaStatus),
       years_experience: data.yearsExperience ?? null,
       seeker_tos_accepted_at: new Date().toISOString(),
       // Hidden until all three references are verified.
@@ -237,7 +244,12 @@ export async function POST(request: Request) {
         .update(candidatePayload)
         .eq("id", candidateId);
       if (updateError) {
-        console.error("[onboarding candidate update]", updateError.message);
+        console.error(
+          "[onboarding candidate update]",
+          updateError.message,
+          updateError.code,
+          updateError.details
+        );
         return NextResponse.json(
           { error: "Unable to update candidate profile" },
           { status: 500 }
@@ -250,7 +262,12 @@ export async function POST(request: Request) {
         .select("id")
         .single();
       if (insertError || !inserted) {
-        console.error("[onboarding candidate insert]", insertError?.message);
+        console.error(
+          "[onboarding candidate insert]",
+          insertError?.message,
+          insertError?.code,
+          insertError?.details
+        );
         return NextResponse.json(
           { error: "Unable to create candidate profile" },
           { status: 500 }
