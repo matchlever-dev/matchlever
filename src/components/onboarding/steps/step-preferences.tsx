@@ -67,8 +67,10 @@ export function StepPreferences() {
     }
   }
 
+  const editorTaglines = [0, 1, 2].map((index) => taglines[index] ?? "");
+
   function updateTagline(index: number, value: string) {
-    const next = [...taglines];
+    const next = [...editorTaglines];
     const previous = next[index] ?? "";
     next[index] = value;
     setValue("suggestedTaglines", next, { shouldValidate: true });
@@ -421,63 +423,58 @@ export function StepPreferences() {
             Edit the AI suggestions, then select the one that leads your card.
           </p>
         </div>
-        {taglines.length === 3 ? (
-          <Controller
-            control={control}
-            name="selectedTagline"
-            render={({ field }) => {
-              const selectedIndex = Math.max(
-                0,
-                taglines.findIndex((t) => t === field.value)
-              );
-              return (
-                <RadioGroup
-                  value={String(selectedIndex)}
-                  onValueChange={(value) => {
-                    const index = Number(value);
-                    field.onChange(taglines[index] ?? "");
-                  }}
-                  className="gap-3"
-                >
-                  {taglines.map((tagline, index) => (
-                    <label
-                      key={`tagline-${index}`}
-                      className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition ${
-                        selectedIndex === index
-                          ? "border-[#E87A5D] bg-[#E87A5D]/10"
-                          : "border-[#2B5B84]/15 bg-white hover:border-[#2B5B84]/40"
-                      }`}
-                    >
-                      <RadioGroupItem
-                        value={String(index)}
-                        className="mt-2.5"
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span className="text-[11px] font-semibold tracking-wide text-[#E87A5D] uppercase">
-                          Option {index + 1}
-                        </span>
-                        <Input
-                          value={tagline}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            updateTagline(index, e.target.value);
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                          className="mt-2 bg-white"
-                          maxLength={160}
-                        />
+        <Controller
+          control={control}
+          name="selectedTagline"
+          render={({ field }) => {
+            const selectedIndex = Math.max(
+              0,
+              editorTaglines.findIndex((t) => t === field.value)
+            );
+            return (
+              <RadioGroup
+                value={String(selectedIndex)}
+                onValueChange={(value) => {
+                  const index = Number(value);
+                  field.onChange(editorTaglines[index] ?? "");
+                }}
+                className="gap-3"
+              >
+                {editorTaglines.map((tagline, index) => (
+                  <label
+                    key={`tagline-${index}`}
+                    className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition ${
+                      selectedIndex === index
+                        ? "border-[#E87A5D] bg-[#E87A5D]/10"
+                        : "border-[#2B5B84]/15 bg-white hover:border-[#2B5B84]/40"
+                    }`}
+                  >
+                    <RadioGroupItem
+                      value={String(index)}
+                      className="mt-2.5"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="text-[11px] font-semibold tracking-wide text-[#E87A5D] uppercase">
+                        Option {index + 1}
                       </span>
-                    </label>
-                  ))}
-                </RadioGroup>
-              );
-            }}
-          />
-        ) : (
-          <p className="rounded-lg bg-[#F8F9FA] px-3 py-3 text-sm text-[#2A2D34]/65">
-            Complete Step 2 so AI-suggested taglines appear here.
-          </p>
-        )}
+                      <Input
+                        value={tagline}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          updateTagline(index, e.target.value);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="mt-2 bg-white"
+                        maxLength={160}
+                        placeholder="At least 8 characters"
+                      />
+                    </span>
+                  </label>
+                ))}
+              </RadioGroup>
+            );
+          }}
+        />
         {errors.selectedTagline && (
           <p className="text-xs text-destructive">
             {errors.selectedTagline.message}

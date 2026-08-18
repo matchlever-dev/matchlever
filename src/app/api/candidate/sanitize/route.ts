@@ -86,6 +86,9 @@ export async function POST(request: Request) {
     const invalidKey =
       /invalid api key/i.test(message) || /invalid_api_key/i.test(message);
     const missingKey = message.includes("GROQ_API_KEY");
+    const modelMissing =
+      /model_not_found/i.test(message) ||
+      /does not exist or you do not have access/i.test(message);
 
     const status = missingKey || invalidKey
       ? 500
@@ -97,7 +100,9 @@ export async function POST(request: Request) {
       ? "Invalid GROQ_API_KEY. Create a new key at https://console.groq.com/keys and set it in Vercel Environment Variables, then redeploy."
       : missingKey
         ? "Missing GROQ_API_KEY on the server. Add it in Vercel Environment Variables and redeploy."
-        : message;
+        : modelMissing
+          ? "Groq model is unavailable. llama-3.3-70b-versatile was retired on Aug 16, 2026 — set GROQ_MODEL to openai/gpt-oss-120b and redeploy."
+          : message;
 
     console.error("[/api/candidate/sanitize]", message);
     return NextResponse.json({ error: clientMessage }, { status });

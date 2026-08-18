@@ -270,10 +270,14 @@ export function getStepSchema(step: OnboardingStepId) {
               path: ["resumeFileName"],
             });
           }
-          if (data.suggestedTaglines.length !== 3) {
+          const trimmedTaglines = data.suggestedTaglines.map((t) => t.trim());
+          if (
+            trimmedTaglines.length !== 3 ||
+            trimmedTaglines.some((t) => t.length < 8)
+          ) {
             ctx.addIssue({
               code: "custom",
-              message: "Wait for AI extraction to finish",
+              message: "Each Superpower Tagline needs at least 8 characters",
               path: ["suggestedTaglines"],
             });
           }
