@@ -9,6 +9,7 @@ import {
   formatTimezoneOffset,
 } from "@/lib/dashboard/candidate";
 import { LOCATION_MODES } from "@/lib/onboarding/schema";
+import { relationshipLabel } from "@/lib/reference/relationship";
 import {
   AdminListControls,
   matchesKeyword,
@@ -552,6 +553,8 @@ function ReferenceCard({ refRow }: { refRow: AdminReferenceRow }) {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const verified = refRow.status === "verified";
+  const referrerName = refRow.reference_name || refRow.reference_email;
+  const relationship = relationshipLabel(refRow.relationship);
 
   async function resend() {
     setBusy(true);
@@ -587,7 +590,15 @@ function ReferenceCard({ refRow }: { refRow: AdminReferenceRow }) {
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <p className="text-sm font-medium">{refRow.reference_email}</p>
+          <p className="text-sm font-medium">{referrerName}</p>
+          {relationship ? (
+            <p className="mt-0.5 text-xs text-[#5B616B]">{relationship}</p>
+          ) : null}
+          {refRow.reference_name ? (
+            <p className="mt-0.5 text-xs text-[#5B616B]">
+              {refRow.reference_email}
+            </p>
+          ) : null}
           <ReferrerLinkedInLink
             url={refRow.reference_linkedin_url}
             className="mt-1 block max-w-full truncate text-xs"

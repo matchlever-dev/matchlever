@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 import { OTHER_CITY_VALUE } from "@/lib/onboarding/locations";
+import {
+  referenceRelationshipSchema,
+  UNSELECTED_RELATIONSHIP,
+} from "@/lib/reference/relationship";
 import { linkedInUrlSchema } from "@/lib/reference/schema";
 import { tryParseHttpUrl } from "@/lib/url";
 
@@ -53,7 +57,7 @@ export const onboardingFormObjectSchema = z.object({
       z.object({
         email: z.string().email("Enter a valid email address"),
         linkedInUrl: linkedInUrlSchema,
-        relationship: z.enum(["manager", "peer"]),
+        relationship: referenceRelationshipSchema,
       })
     )
     .length(3)
@@ -195,9 +199,9 @@ export const defaultOnboardingValues: OnboardingFormValues = {
   visaStatus: "none",
   selectedTagline: "",
   references: [
-    { email: "", linkedInUrl: "", relationship: "manager" },
-    { email: "", linkedInUrl: "", relationship: "manager" },
-    { email: "", linkedInUrl: "", relationship: "manager" },
+    { email: "", linkedInUrl: "", relationship: UNSELECTED_RELATIONSHIP },
+    { email: "", linkedInUrl: "", relationship: UNSELECTED_RELATIONSHIP },
+    { email: "", linkedInUrl: "", relationship: UNSELECTED_RELATIONSHIP },
   ],
 };
 

@@ -15,6 +15,8 @@ export type AdminUserRow = {
 export type AdminReferenceRow = {
   id: string;
   reference_email: string;
+  reference_name: string | null;
+  relationship: string | null;
   reference_linkedin_url: string | null;
   authenticity_score: number | null;
   authenticity_flags: string[];
@@ -253,6 +255,8 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
       {
         id: "ref-a",
         reference_email: "manager.one@example.com",
+        reference_name: "Jordan Lee",
+        relationship: "manager",
         reference_linkedin_url: "https://linkedin.com/in/manager-one",
         authenticity_score: 88,
         authenticity_flags: [],
@@ -262,6 +266,8 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
       {
         id: "ref-b",
         reference_email: "peer.two@example.com",
+        reference_name: null,
+        relationship: "peer",
         reference_linkedin_url: "https://linkedin.com/in/peer-two",
         authenticity_score: 41,
         authenticity_flags: ["linkedin_mismatch", "tenure_gap"],
@@ -295,6 +301,8 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
       {
         id: "ref-c",
         reference_email: "dir@example.com",
+        reference_name: null,
+        relationship: "skip_level",
         reference_linkedin_url: null,
         authenticity_score: null,
         authenticity_flags: ["awaiting_linkedin"],

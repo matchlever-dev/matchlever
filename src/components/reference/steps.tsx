@@ -6,24 +6,11 @@ import type { ReferenceFormValues } from "@/lib/reference/schema";
 import { groupSuperpowersByCategory } from "@/lib/reference/taxonomy";
 import { ensureAbsoluteHttpUrl, urlTextInputProps } from "@/lib/url";
 import { ReferrerCandidateCta } from "@/components/reference/referrer-candidate-cta";
+import { RelationshipSelect } from "@/components/reference/relationship-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
-
-const RELATIONSHIP_OPTIONS = [
-  { value: "manager", label: "Former manager" },
-  { value: "skip_level", label: "Skip-level / director" },
-  { value: "peer", label: "Peer collaborator" },
-  { value: "other", label: "Other" },
-] as const;
 
 export function StepIdentity({
   candidateTitle,
@@ -77,23 +64,11 @@ export function StepIdentity({
           control={control}
           name="relationship"
           render={({ field }) => (
-            <Select
+            <RelationshipSelect
               value={field.value}
-              onValueChange={(value) =>
-                field.onChange(value as ReferenceFormValues["relationship"])
-              }
-            >
-              <SelectTrigger className="h-12 w-full min-w-0 text-base">
-                <SelectValue placeholder="Select relationship" />
-              </SelectTrigger>
-              <SelectContent>
-                {RELATIONSHIP_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onValueChange={field.onChange}
+              className="h-12 text-base"
+            />
           )}
         />
         {errors.relationship && (

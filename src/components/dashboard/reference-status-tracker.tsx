@@ -4,8 +4,14 @@ import { useState } from "react";
 import { CheckCircle2, Clock3, Pencil, Send, X } from "lucide-react";
 
 import type { CandidateReferenceRow } from "@/lib/dashboard/candidate";
+import {
+  isReferenceRelationship,
+  relationshipLabel,
+  type ReferenceRelationship,
+} from "@/lib/reference/relationship";
 import { ensureAbsoluteHttpUrl, urlTextInputProps } from "@/lib/url";
 import { ReferrerLinkedInLink } from "@/components/reference/referrer-linkedin-link";
+import { RelationshipSelect } from "@/components/reference/relationship-select";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
@@ -29,6 +35,11 @@ function EditReferenceForm({
   const [draftLinkedIn, setDraftLinkedIn] = useState(
     reference.reference_linkedin_url?.trim() || ""
   );
+  const [draftRelationship, setDraftRelationship] = useState(
+    isReferenceRelationship(reference.relationship)
+      ? reference.relationship
+      : ""
+  );
   const [localError, setLocalError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -43,6 +54,7 @@ function EditReferenceForm({
           referenceId: reference.id,
           email: draftEmail,
           linkedInUrl: draftLinkedIn,
+          relationship: draftRelationship,
         }),
       });
       const data = await res.json();
@@ -91,13 +103,32 @@ function EditReferenceForm({
           className="h-10 w-full rounded-md border border-[#2B5B84]/20 bg-white px-2.5 text-sm outline-none focus-visible:border-[#2B5B84] focus-visible:ring-2 focus-visible:ring-[#2B5B84]/20"
         />
       </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor={`ref-relationship-${reference.id}`}>
+          Relationship
+        </Label>
+        <RelationshipSelect
+          id={`ref-relationship-${reference.id}`}
+          value={draftRelationship}
+          disabled={disabled}
+          onValueChange={(value: ReferenceRelationship) =>
+            setDraftRelationship(value)
+          }
+          className="h-10 bg-white"
+        />
+      </div>
       {localError && (
         <p className="text-xs text-destructive">{localError}</p>
       )}
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
-          disabled={disabled || !draftEmail.trim() || !draftLinkedIn.trim()}
+          disabled={
+            disabled ||
+            !draftEmail.trim() ||
+            !draftLinkedIn.trim() ||
+            !draftRelationship
+          }
           onClick={() => void save()}
           className="h-10 bg-[#2B5B84] text-white hover:bg-[#244e71]"
         >
@@ -198,7 +229,9 @@ export function ReferenceStatusTracker({
                         className="block truncate"
                       />
                       <p>
-                        {ref.relationship ? `${ref.relationship} · ` : ""}
+                        {ref.relationship
+                          ? `${relationshipLabel(ref.relationship)} · `
+                          : ""}
                         {done ? "Verified" : "Awaiting response"}
                       </p>
                     </div>
@@ -263,7 +296,7 @@ export function ReferenceStatusTracker({
         })}
         {references.length === 0 && (
           <li className="text-sm text-[#5B616B]">
-            No references yet. Complete onboarding to invite managers or peers.
+            No references yet. Complete onboarding to invite your references.
           </li>
         )}
       </ul>

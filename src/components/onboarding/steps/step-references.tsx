@@ -4,16 +4,11 @@ import { useState } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 
 import type { OnboardingFormValues } from "@/lib/onboarding/form-schema";
+import type { ReferenceRelationship } from "@/lib/reference/relationship";
 import { ensureAbsoluteHttpUrl, urlTextInputProps } from "@/lib/url";
+import { RelationshipSelect } from "@/components/reference/relationship-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 const REFERENCE_SLOTS = [
   { index: 0 },
@@ -83,9 +78,9 @@ export function StepReferences() {
           Reference intake
         </h2>
         <p className="mt-2 text-sm text-[#2A2D34]/70 sm:text-base">
-          Add all three references — any mix of former managers or peers is
-          fine. Each LinkedIn profile URL is checked live and must actually
-          open before you can finish this step.
+          Add all three references — any mix of Peer, Direct Report, Former
+          Manager, or Skip Level Manager is fine. Each LinkedIn profile URL is
+          checked live and must actually open before you can finish this step.
         </p>
         <div className="mt-4 rounded-xl border border-[#2B5B84]/15 bg-white p-4 text-sm leading-relaxed text-[#2A2D34]">
           <p className="font-display text-[11px] font-semibold tracking-[0.18em] text-[#E87A5D] uppercase">
@@ -162,22 +157,19 @@ export function StepReferences() {
                 control={control}
                 name={`references.${slot.index}.relationship`}
                 render={({ field }) => (
-                  <Select
+                  <RelationshipSelect
                     value={field.value}
-                    onValueChange={(value) =>
-                      field.onChange(value as "manager" | "peer")
+                    onValueChange={(value: ReferenceRelationship) =>
+                      field.onChange(value)
                     }
-                  >
-                    <SelectTrigger className="w-full min-w-0">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="manager">Former manager</SelectItem>
-                      <SelectItem value="peer">Peer</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  />
                 )}
               />
+              {errors.references?.[slot.index]?.relationship && (
+                <p className="text-xs text-destructive">
+                  {errors.references[slot.index]?.relationship?.message}
+                </p>
+              )}
             </div>
           </div>
         ))}

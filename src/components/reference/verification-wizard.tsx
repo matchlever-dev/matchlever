@@ -10,6 +10,7 @@ import {
   referenceFormSchema,
   type ReferenceFormValues,
 } from "@/lib/reference/schema";
+import { isReferenceRelationship } from "@/lib/reference/relationship";
 import { BrandMark } from "@/components/brand/brand-mark";
 import { ReferrerCandidateCta } from "@/components/reference/referrer-candidate-cta";
 import { Progress } from "@/components/ui/progress";
@@ -70,11 +71,8 @@ export function ReferenceVerificationWizard({ token }: { token: string }) {
         }
         if (!active) return;
         setInvite(data as Invite);
-        if (data.relationship) {
-          form.setValue(
-            "relationship",
-            data.relationship as ReferenceFormValues["relationship"]
-          );
+        if (isReferenceRelationship(data.relationship)) {
+          form.setValue("relationship", data.relationship);
         }
         if (data.reference_name) {
           form.setValue("managerName", data.reference_name);

@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { z } from "zod";
 
 import { ensureAbsoluteHttpUrl } from "@/lib/url";
+import { relationshipLabel } from "@/lib/reference/relationship";
 
 export type LinkedInStructureSignals = {
   url: string;
@@ -145,7 +146,7 @@ Flag examples: valid_url_structure, human_slug, weak_slug, young_account_signal,
           role: "user",
           content: JSON.stringify({
             managerName: context.managerName,
-            relationship: context.relationship,
+            relationship: relationshipLabel(context.relationship) || context.relationship,
             signals,
           }),
         },

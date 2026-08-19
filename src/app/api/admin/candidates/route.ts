@@ -131,7 +131,7 @@ export async function GET() {
     ? await supabase
         .from("candidate_references")
         .select(
-          "id, candidate_profile_id, reference_email, reference_linkedin_url, authenticity_score, authenticity_flags, status"
+          "id, candidate_profile_id, reference_email, reference_name, relationship, reference_linkedin_url, authenticity_score, authenticity_flags, status"
         )
         .in("candidate_profile_id", profileIds)
     : { data: [] as never[] };
@@ -147,6 +147,8 @@ export async function GET() {
     const row: AdminReferenceRow = {
       id: ref.id,
       reference_email: ref.reference_email,
+      reference_name: ref.reference_name,
+      relationship: ref.relationship,
       reference_linkedin_url: ref.reference_linkedin_url,
       authenticity_score: score,
       authenticity_flags: flags,

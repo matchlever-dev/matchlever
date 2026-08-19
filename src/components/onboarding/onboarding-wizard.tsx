@@ -40,7 +40,10 @@ export function OnboardingWizard() {
       (Array.isArray(references) &&
         references.length === 3 &&
         references.every(
-          (ref) => ref.email.trim().length > 0 && ref.linkedInUrl.trim().length > 0
+          (ref) =>
+            ref.email.trim().length > 0 &&
+            ref.linkedInUrl.trim().length > 0 &&
+            ref.relationship.trim().length > 0
         )),
     [references, step]
   );

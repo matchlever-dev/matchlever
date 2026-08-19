@@ -6,6 +6,7 @@ import { candidateNameForInvite } from "@/lib/auth/display-name";
 import { sendReferenceInviteEmail } from "@/lib/email/resend";
 import { UNSUBSCRIBED_EMAIL_MESSAGE } from "@/lib/email/unsubscribe";
 import { linkedInUrlSchema } from "@/lib/reference/schema";
+import { referenceRelationshipSchema } from "@/lib/reference/relationship";
 import {
   linkedInUrlsMatch,
   REFERRER_LINKEDIN_INVALID_MESSAGE,
@@ -20,9 +21,10 @@ const bodySchema = z
     referenceId: z.string().min(1),
     email: z.string().trim().email("Enter a valid email").optional(),
     linkedInUrl: linkedInUrlSchema.optional(),
+    relationship: referenceRelationshipSchema.optional(),
   })
-  .refine((data) => Boolean(data.email || data.linkedInUrl), {
-    message: "Provide an email and/or LinkedIn URL to update",
+  .refine((data) => Boolean(data.email || data.linkedInUrl || data.relationship), {
+    message: "Provide an email, LinkedIn URL, and/or relationship to update",
   });
 
 function newVerificationToken() {
@@ -41,6 +43,7 @@ export async function PATCH(request: Request) {
 
     const nextEmail = parsed.data.email?.trim().toLowerCase();
     let nextLinkedIn = parsed.data.linkedInUrl?.trim();
+    const nextRelationship = parsed.data.relationship;
     let linkedInFlags: string[] | null = null;
 
     if (nextLinkedIn) {
@@ -71,6 +74,7 @@ export async function PATCH(request: Request) {
         demo: true,
         reference_email: nextEmail,
         reference_linkedin_url: nextLinkedIn,
+        relationship: nextRelationship,
         message: "Demo: reference updated (configure Supabase to persist).",
       });
     }
@@ -106,7 +110,7 @@ export async function PATCH(request: Request) {
     const { data: reference, error } = await supabase
       .from("candidate_references")
       .select(
-        "id, reference_email, reference_linkedin_url, verification_token, status, candidate_profile_id, authenticity_flags"
+        "id, reference_email, reference_linkedin_url, relationship, verification_token, status, candidate_profile_id, authenticity_flags"
       )
       .eq("id", parsed.data.referenceId)
       .eq("candidate_profile_id", profile.id)
@@ -129,12 +133,16 @@ export async function PATCH(request: Request) {
     const linkedInChanged =
       Boolean(nextLinkedIn) &&
       nextLinkedIn !== (reference.reference_linkedin_url || "");
+    const relationshipChanged =
+      Boolean(nextRelationship) &&
+      nextRelationship !== (reference.relationship || "");
 
-    if (!emailChanged && !linkedInChanged) {
+    if (!emailChanged && !linkedInChanged && !relationshipChanged) {
       return NextResponse.json({
         ok: true,
         reference_email: reference.reference_email,
         reference_linkedin_url: reference.reference_linkedin_url,
+        relationship: reference.relationship,
         unchanged: true,
       });
     }
@@ -184,6 +192,7 @@ export async function PATCH(request: Request) {
     const updatePayload: {
       reference_email?: string;
       reference_linkedin_url?: string;
+      relationship?: string;
       verification_token?: string;
       authenticity_flags?: Json;
     } = {};
@@ -197,6 +206,9 @@ export async function PATCH(request: Request) {
       if (linkedInFlags) {
         updatePayload.authenticity_flags = linkedInFlags as Json;
       }
+    }
+    if (relationshipChanged && nextRelationship) {
+      updatePayload.relationship = nextRelationship;
     }
 
     const { error: updateError } = await supabase
@@ -240,6 +252,7 @@ export async function PATCH(request: Request) {
       reference_email: nextEmail ?? reference.reference_email,
       reference_linkedin_url:
         nextLinkedIn ?? reference.reference_linkedin_url,
+      relationship: nextRelationship ?? reference.relationship,
       inviteSent: Boolean(
         invite && !("error" in invite) && !invite.skipped
       ),
