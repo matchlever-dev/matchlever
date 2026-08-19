@@ -87,6 +87,17 @@ export function StepReferences() {
           fine. Each LinkedIn profile URL is checked live and must actually
           open before you can finish this step.
         </p>
+        <div className="mt-4 rounded-xl border border-[#2B5B84]/15 bg-white p-4 text-sm leading-relaxed text-[#2A2D34]">
+          <p className="font-display text-[11px] font-semibold tracking-[0.18em] text-[#E87A5D] uppercase">
+            How this works
+          </p>
+          <p className="mt-2">
+            No one from MatchLever or an employer will call or contact your
+            references directly. They do not need to speak with anyone right
+            away. Each person will get an email with a link and just answer a
+            few questions online.
+          </p>
+        </div>
       </div>
 
       <div className="space-y-5">
