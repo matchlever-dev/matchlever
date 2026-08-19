@@ -1,3 +1,5 @@
+import { ensureAbsoluteHttpUrl } from "@/lib/url";
+
 type AuthIdentityLike = {
   provider?: string;
   identity_data?: Record<string, unknown> | null;
@@ -15,9 +17,7 @@ function asLinkedInProfileUrl(value: unknown): string | null {
   if (!trimmed) return null;
 
   try {
-    const url = new URL(
-      /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
-    );
+    const url = new URL(ensureAbsoluteHttpUrl(trimmed));
     if (url.protocol !== "http:" && url.protocol !== "https:") return null;
     const host = url.hostname.toLowerCase();
     const isLinkedIn = /(^|\.)linkedin\.com$/i.test(host);

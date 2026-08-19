@@ -5,7 +5,10 @@ import {
   candidateNameForInvite,
   displayNameFromAuthUser,
 } from "@/lib/auth/display-name";
-import { linkedinUrlFromAuthUser } from "@/lib/auth/linkedin-url";
+import {
+  linkedinUrlFromAuthUser,
+  normalizePublicLinkedInProfileUrl,
+} from "@/lib/auth/linkedin-url";
 import { sendReferenceInviteEmail } from "@/lib/email/resend";
 import { onboardingFormSchema, resolveOnboardingCity } from "@/lib/onboarding/form-schema";
 import {
@@ -139,7 +142,7 @@ export async function POST(request: Request) {
         ? user.user_metadata.avatar_url
         : null;
     const linkedInUrl =
-      data.candidateLinkedInUrl?.trim() ||
+      normalizePublicLinkedInProfileUrl(data.candidateLinkedInUrl) ||
       linkedinUrlFromAuthUser(user);
 
     const { data: existingUserProfile } = await supabase

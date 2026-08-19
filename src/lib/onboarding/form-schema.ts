@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { OTHER_CITY_VALUE } from "@/lib/onboarding/locations";
 import { linkedInUrlSchema } from "@/lib/reference/schema";
+import { tryParseHttpUrl } from "@/lib/url";
 
 export const ONBOARDING_STEPS = [
   { id: 1, key: "auth", title: "Identity", description: "Sign in privately" },
@@ -70,21 +71,17 @@ export const onboardingFormObjectSchema = z.object({
         }
         seenEmail.add(email);
 
-        try {
-          const key = new URL(ref.linkedInUrl.trim()).pathname
-            .replace(/\/+$/, "")
-            .toLowerCase();
-          if (key && seenLinkedIn.has(key)) {
-            ctx.addIssue({
-              code: "custom",
-              message: "Each reference needs a unique LinkedIn profile",
-              path: [index, "linkedInUrl"],
-            });
-          }
-          seenLinkedIn.add(key);
-        } catch {
-          // linkedInUrlSchema already validates format
+        const parsedUrl = tryParseHttpUrl(ref.linkedInUrl);
+        if (!parsedUrl) return;
+        const key = parsedUrl.pathname.replace(/\/+$/, "").toLowerCase();
+        if (key && seenLinkedIn.has(key)) {
+          ctx.addIssue({
+            code: "custom",
+            message: "Each reference needs a unique LinkedIn profile",
+            path: [index, "linkedInUrl"],
+          });
         }
+        seenLinkedIn.add(key);
       });
     }),
 });

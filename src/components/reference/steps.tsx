@@ -4,6 +4,7 @@ import { Controller, useFormContext } from "react-hook-form";
 
 import type { ReferenceFormValues } from "@/lib/reference/schema";
 import { groupSuperpowersByCategory } from "@/lib/reference/taxonomy";
+import { ensureAbsoluteHttpUrl, urlTextInputProps } from "@/lib/url";
 import { ReferrerCandidateCta } from "@/components/reference/referrer-candidate-cta";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,6 +35,7 @@ export function StepIdentity({
   const {
     register,
     control,
+    setValue,
     formState: { errors },
   } = useFormContext<ReferenceFormValues>();
 
@@ -103,19 +105,23 @@ export function StepIdentity({
         <Label htmlFor="linkedInUrl">Full LinkedIn profile URL</Label>
         <Input
           id="linkedInUrl"
-          type="url"
-          inputMode="url"
-          autoCapitalize="off"
-          autoCorrect="off"
+          {...urlTextInputProps}
           placeholder="https://linkedin.com/in/your-profile"
           className="h-12 text-base"
           readOnly={Boolean(lockedLinkedInUrl)}
-          {...register("linkedInUrl")}
+          {...register("linkedInUrl", {
+            onBlur: (event) => {
+              const completed = ensureAbsoluteHttpUrl(event.target.value);
+              if (completed && completed !== event.target.value) {
+                setValue("linkedInUrl", completed, { shouldValidate: true });
+              }
+            },
+          })}
         />
         <p className="text-xs text-[#5B616B]">
           {lockedLinkedInUrl
             ? "Locked to the LinkedIn URL the candidate submitted for you."
-            : "Must be a profile URL like https://linkedin.com/in/..."}
+            : "A profile URL like linkedin.com/in/... is enough — https:// is added if you leave it off."}
         </p>
         {errors.linkedInUrl && (
           <p className="text-xs text-destructive">{errors.linkedInUrl.message}</p>

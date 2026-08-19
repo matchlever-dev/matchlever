@@ -7,6 +7,7 @@ import { sendReferenceInviteEmail } from "@/lib/email/resend";
 import { UNSUBSCRIBED_EMAIL_MESSAGE } from "@/lib/email/unsubscribe";
 import { linkedInUrlSchema } from "@/lib/reference/schema";
 import {
+  linkedInUrlsMatch,
   REFERRER_LINKEDIN_INVALID_MESSAGE,
   validateReferrerLinkedIn,
 } from "@/lib/reference/linkedin-validation";
@@ -164,15 +165,8 @@ export async function PATCH(request: Request) {
 
       const clash = (duplicates ?? []).some((row) => {
         const existing = row.reference_linkedin_url;
-        if (!existing) return false;
-        try {
-          return (
-            new URL(existing).pathname.replace(/\/+$/, "").toLowerCase() ===
-            new URL(nextLinkedIn).pathname.replace(/\/+$/, "").toLowerCase()
-          );
-        } catch {
-          return false;
-        }
+        if (!existing || !nextLinkedIn) return false;
+        return linkedInUrlsMatch(existing, nextLinkedIn);
       });
 
       if (clash) {

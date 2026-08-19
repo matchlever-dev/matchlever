@@ -23,6 +23,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { ensureAbsoluteHttpUrl, urlTextInputProps } from "@/lib/url";
 
 export function CandidateDashboard() {
   const router = useRouter();
@@ -130,6 +131,7 @@ export function CandidateDashboard() {
       const json = (await res.json()) as { error?: string; url?: string };
       if (!res.ok) throw new Error(json.error || "Unable to save LinkedIn URL");
       setData({ ...data, linkedinUrl: json.url || linkedinDraft.trim() });
+      if (json.url) setLinkedinDraft(json.url);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to save LinkedIn URL");
     } finally {
@@ -306,9 +308,15 @@ export function CandidateDashboard() {
                 </p>
               )}
               <input
-                type="url"
+                {...urlTextInputProps}
                 value={linkedinDraft}
                 onChange={(e) => setLinkedinDraft(e.target.value)}
+                onBlur={() => {
+                  const completed = ensureAbsoluteHttpUrl(linkedinDraft);
+                  if (completed && completed !== linkedinDraft) {
+                    setLinkedinDraft(completed);
+                  }
+                }}
                 placeholder="https://www.linkedin.com/in/your-profile"
                 className="h-10 w-full rounded-md border border-[#2B5B84]/20 bg-white px-2.5 text-sm outline-none focus-visible:border-[#2B5B84] focus-visible:ring-2 focus-visible:ring-[#2B5B84]/20"
               />

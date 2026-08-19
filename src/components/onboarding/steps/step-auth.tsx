@@ -9,6 +9,7 @@ import { setStaySignedInPreference } from "@/lib/auth/stay-signed-in";
 import type { OnboardingFormValues } from "@/lib/onboarding/form-schema";
 import { CANDIDATE_TOS } from "@/lib/legal/candidate-tos";
 import { createClient } from "@/lib/supabase/client";
+import { ensureAbsoluteHttpUrl, urlTextInputProps } from "@/lib/url";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -221,13 +222,23 @@ export function StepAuth() {
             </Label>
             <Input
               id="candidate-linkedin-url"
-              type="url"
+              {...urlTextInputProps}
               placeholder="https://www.linkedin.com/in/your-profile"
-              {...register("candidateLinkedInUrl")}
+              {...register("candidateLinkedInUrl", {
+                onBlur: (event) => {
+                  const completed = ensureAbsoluteHttpUrl(event.target.value);
+                  if (completed && completed !== event.target.value) {
+                    setValue("candidateLinkedInUrl", completed, {
+                      shouldValidate: true,
+                    });
+                  }
+                },
+              })}
             />
             <p className="text-xs text-[#5B616B]">
               LinkedIn sign-in does not always include your public profile link.
-              Paste the URL from your LinkedIn profile so admins can open it.
+              Paste it from your profile — https:// is optional and will be
+              added if missing.
             </p>
             {errors.candidateLinkedInUrl && (
               <p className="text-xs text-destructive">

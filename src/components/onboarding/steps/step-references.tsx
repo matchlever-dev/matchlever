@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 
 import type { OnboardingFormValues } from "@/lib/onboarding/form-schema";
+import { ensureAbsoluteHttpUrl, urlTextInputProps } from "@/lib/url";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -117,11 +118,19 @@ export function StepReferences() {
               </Label>
               <Input
                 id={`ref-linkedin-${slot.index}`}
-                type="url"
+                {...urlTextInputProps}
                 placeholder="https://www.linkedin.com/in/their-profile"
                 {...register(`references.${slot.index}.linkedInUrl`, {
                   onBlur: (event) => {
-                    void checkLinkedInPage(slot.index, event.target.value);
+                    const completed = ensureAbsoluteHttpUrl(event.target.value);
+                    if (completed && completed !== event.target.value) {
+                      setValue(
+                        `references.${slot.index}.linkedInUrl`,
+                        completed,
+                        { shouldDirty: true, shouldValidate: false }
+                      );
+                    }
+                    void checkLinkedInPage(slot.index, completed);
                   },
                 })}
               />

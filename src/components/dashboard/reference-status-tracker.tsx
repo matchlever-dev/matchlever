@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CheckCircle2, Clock3, Pencil, Send, X } from "lucide-react";
 
 import type { CandidateReferenceRow } from "@/lib/dashboard/candidate";
+import { ensureAbsoluteHttpUrl, urlTextInputProps } from "@/lib/url";
 import { ReferrerLinkedInLink } from "@/components/reference/referrer-linkedin-link";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -76,12 +77,16 @@ function EditReferenceForm({
         </Label>
         <input
           id={`ref-linkedin-${reference.id}`}
-          type="text"
-          inputMode="url"
+          {...urlTextInputProps}
           value={draftLinkedIn}
           disabled={disabled}
           onChange={(e) => setDraftLinkedIn(e.target.value)}
-          autoComplete="off"
+          onBlur={() => {
+            const completed = ensureAbsoluteHttpUrl(draftLinkedIn);
+            if (completed && completed !== draftLinkedIn) {
+              setDraftLinkedIn(completed);
+            }
+          }}
           placeholder="https://www.linkedin.com/in/their-profile"
           className="h-10 w-full rounded-md border border-[#2B5B84]/20 bg-white px-2.5 text-sm outline-none focus-visible:border-[#2B5B84] focus-visible:ring-2 focus-visible:ring-[#2B5B84]/20"
         />

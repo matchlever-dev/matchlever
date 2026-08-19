@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { normalizePublicLinkedInProfileUrl } from "@/lib/auth/linkedin-url";
 import { SUPERPOWER_TAXONOMY } from "@/lib/reference/taxonomy";
 
 const superpowerIds = SUPERPOWER_TAXONOMY.map((s) => s.id) as [
@@ -10,10 +11,9 @@ const superpowerIds = SUPERPOWER_TAXONOMY.map((s) => s.id) as [
 export const linkedInUrlSchema = z
   .string()
   .trim()
-  .url("Enter a valid URL")
+  .min(1, "Enter a valid URL")
   .refine(
-    (value) =>
-      /^https:\/\/(www\.)?linkedin\.com\/in\/[A-Za-z0-9\-_%]+\/?$/i.test(value),
+    (value) => Boolean(normalizePublicLinkedInProfileUrl(value)),
     "Use a full LinkedIn profile URL (https://linkedin.com/in/...)"
   );
 

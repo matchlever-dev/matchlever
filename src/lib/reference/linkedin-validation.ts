@@ -5,6 +5,7 @@ import {
   analyzeLinkedInUrlStructure,
   type LinkedInStructureSignals,
 } from "@/lib/reference/authenticity";
+import { ensureAbsoluteHttpUrl } from "@/lib/url";
 
 /** Shown when a referrer LinkedIn URL is missing, malformed, or does not open. */
 export const REFERRER_LINKEDIN_INVALID_MESSAGE =
@@ -28,7 +29,7 @@ export type ReferrerLinkedInValidation = {
 };
 
 function normalizeLinkedInPath(url: string): string {
-  const parsed = new URL(url.trim());
+  const parsed = new URL(ensureAbsoluteHttpUrl(url));
   const parts = parsed.pathname.split("/").filter(Boolean);
   const slug = decodeURIComponent(parts[1] ?? "")
     .replace(/\/+$/, "")
@@ -37,7 +38,7 @@ function normalizeLinkedInPath(url: string): string {
 }
 
 export function normalizeLinkedInProfileUrl(url: string): string {
-  const parsed = new URL(url.trim());
+  const parsed = new URL(ensureAbsoluteHttpUrl(url));
   const parts = parsed.pathname.split("/").filter(Boolean);
   const slug = decodeURIComponent(parts[1] ?? "").replace(/\/+$/, "");
   return `https://www.linkedin.com/in/${slug}`;

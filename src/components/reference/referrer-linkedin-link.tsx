@@ -1,13 +1,5 @@
 import { cn } from "@/lib/utils";
-
-function isSafeHttpUrl(value: string) {
-  try {
-    const parsed = new URL(value);
-    return parsed.protocol === "http:" || parsed.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
+import { tryParseHttpUrl } from "@/lib/url";
 
 export function ReferrerLinkedInLink({
   url,
@@ -16,17 +8,18 @@ export function ReferrerLinkedInLink({
   url: string | null | undefined;
   className?: string;
 }) {
-  const href = url?.trim() || "";
-  if (!href) {
+  const raw = url?.trim() || "";
+  if (!raw) {
     return <span className={className}>No LinkedIn URL</span>;
   }
-  if (!isSafeHttpUrl(href)) {
-    return <span className={className}>{href}</span>;
+  const parsed = tryParseHttpUrl(raw);
+  if (!parsed) {
+    return <span className={className}>{raw}</span>;
   }
 
   return (
     <a
-      href={href}
+      href={parsed.toString()}
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
@@ -34,7 +27,7 @@ export function ReferrerLinkedInLink({
         className
       )}
     >
-      {href}
+      {raw}
     </a>
   );
 }
