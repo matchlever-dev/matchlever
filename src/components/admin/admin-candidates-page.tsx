@@ -134,11 +134,7 @@ function CandidateProfilesPage({
 
   const filtered = useMemo(() => {
     const list = candidates.filter((c) => {
-      if (statusFilter === "incomplete") {
-        const anyMissing =
-          c.missing.resume || c.missing.profile || c.missing.references;
-        if (!anyMissing) return false;
-      } else if (statusFilter !== "all" && c.status !== statusFilter) {
+      if (statusFilter !== "all" && c.status !== statusFilter) {
         return false;
       }
       return matchesKeyword(keyword, [
