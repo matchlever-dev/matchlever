@@ -39,13 +39,27 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: profile, error } = await supabase
+    let { data: profile, error } = await supabase
       .from("candidate_profiles")
       .select(
         "id, headline, selected_tagline, suggested_taglines, verified_skills, global_city, global_country, timezone, timezone_offset, status, raw_resume_text"
       )
       .eq("user_id", user.id)
       .maybeSingle();
+
+    if (error?.message?.includes("timezone")) {
+      const fallback = await supabase
+        .from("candidate_profiles")
+        .select(
+          "id, headline, selected_tagline, suggested_taglines, verified_skills, global_city, global_country, timezone_offset, status, raw_resume_text"
+        )
+        .eq("user_id", user.id)
+        .maybeSingle();
+      profile = fallback.data
+        ? { ...fallback.data, timezone: null as string | null }
+        : null;
+      error = fallback.error;
+    }
 
     if (error) {
       console.error("[candidate dashboard]", error.message);

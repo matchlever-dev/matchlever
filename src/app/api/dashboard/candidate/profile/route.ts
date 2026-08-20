@@ -93,10 +93,19 @@ export async function PATCH(request: Request) {
         : {}),
     };
 
-    const { error } = await supabase
+    let { error } = await supabase
       .from("candidate_profiles")
       .update(update)
       .eq("user_id", user.id);
+
+    // Pre-migration DBs may not have the timezone column yet.
+    if (error?.message?.includes("timezone")) {
+      const { timezone: _timezone, ...withoutTimezone } = update;
+      ({ error } = await supabase
+        .from("candidate_profiles")
+        .update(withoutTimezone)
+        .eq("user_id", user.id));
+    }
 
     if (error) {
       console.error("[candidate edit]", error.message);

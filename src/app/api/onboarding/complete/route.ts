@@ -237,10 +237,17 @@ export async function POST(request: Request) {
     let candidateId = existingCandidate?.id ?? null;
 
     if (candidateId) {
-      const { error: updateError } = await supabase
+      let { error: updateError } = await supabase
         .from("candidate_profiles")
         .update(candidatePayload)
         .eq("id", candidateId);
+      if (updateError?.message?.includes("timezone")) {
+        const { timezone: _timezone, ...withoutTimezone } = candidatePayload;
+        ({ error: updateError } = await supabase
+          .from("candidate_profiles")
+          .update(withoutTimezone)
+          .eq("id", candidateId));
+      }
       if (updateError) {
         console.error(
           "[onboarding candidate update]",
@@ -254,11 +261,19 @@ export async function POST(request: Request) {
         );
       }
     } else {
-      const { data: inserted, error: insertError } = await supabase
+      let { data: inserted, error: insertError } = await supabase
         .from("candidate_profiles")
         .insert(candidatePayload)
         .select("id")
         .single();
+      if (insertError?.message?.includes("timezone")) {
+        const { timezone: _timezone, ...withoutTimezone } = candidatePayload;
+        ({ data: inserted, error: insertError } = await supabase
+          .from("candidate_profiles")
+          .insert(withoutTimezone)
+          .select("id")
+          .single());
+      }
       if (insertError || !inserted) {
         console.error(
           "[onboarding candidate insert]",

@@ -107,14 +107,31 @@ export async function GET() {
 
   const userIds = (users ?? []).map((u) => u.id);
 
-  const { data: profiles, error: profilesError } = userIds.length
+  const profileSelectWithTimezone =
+    "id, user_id, headline, status, global_city, global_country, timezone, timezone_offset, work_hours_start, work_hours_end, location_modes, location_mode, raw_resume_text, sanitized_summary, updated_at";
+  const profileSelectWithoutTimezone =
+    "id, user_id, headline, status, global_city, global_country, timezone_offset, work_hours_start, work_hours_end, location_modes, location_mode, raw_resume_text, sanitized_summary, updated_at";
+
+  let { data: profiles, error: profilesError } = userIds.length
     ? await supabase
         .from("candidate_profiles")
-        .select(
-          "id, user_id, headline, status, global_city, global_country, timezone, timezone_offset, work_hours_start, work_hours_end, location_modes, location_mode, raw_resume_text, sanitized_summary, updated_at"
-        )
+        .select(profileSelectWithTimezone)
         .in("user_id", userIds)
     : { data: [] as never[], error: null };
+
+  if (profilesError?.message?.includes("timezone")) {
+    const fallback = userIds.length
+      ? await supabase
+          .from("candidate_profiles")
+          .select(profileSelectWithoutTimezone)
+          .in("user_id", userIds)
+      : { data: [] as never[], error: null };
+    profiles = (fallback.data ?? []).map((profile) => ({
+      ...profile,
+      timezone: null as string | null,
+    }));
+    profilesError = fallback.error;
+  }
 
   if (profilesError) {
     console.error("[admin candidates profiles]", profilesError.message);
