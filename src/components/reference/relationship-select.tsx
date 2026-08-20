@@ -32,7 +32,7 @@ export function RelationshipSelect({
 
   return (
     <Select
-      value={value || undefined}
+      value={value || null}
       disabled={disabled}
       onValueChange={(next) => {
         if (isReferenceRelationship(next)) onValueChange(next);
@@ -40,7 +40,7 @@ export function RelationshipSelect({
     >
       <SelectTrigger id={id} className={cn("w-full min-w-0", className)}>
         <SelectValue placeholder="Select relationship">
-          {selectedLabel || null}
+          {selectedLabel || undefined}
         </SelectValue>
       </SelectTrigger>
       <SelectContent>

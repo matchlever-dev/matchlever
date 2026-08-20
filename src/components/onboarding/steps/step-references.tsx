@@ -18,7 +18,6 @@ const REFERENCE_SLOTS = [
 
 export function StepReferences() {
   const {
-    register,
     control,
     setError,
     clearErrors,
@@ -106,14 +105,28 @@ export function StepReferences() {
             </p>
             <div className="grid gap-2">
               <Label htmlFor={`ref-email-${slot.index}`}>Email address</Label>
-              <Input
-                id={`ref-email-${slot.index}`}
-                type="email"
-                placeholder="name@gmail.com or name@company.com"
-                {...register(`references.${slot.index}.email`)}
+              <Controller
+                control={control}
+                name={`references.${slot.index}.email`}
+                render={({ field }) => (
+                  <Input
+                    id={`ref-email-${slot.index}`}
+                    type="email"
+                    autoComplete="off"
+                    placeholder="name@gmail.com or name@company.com"
+                    name={field.name}
+                    value={field.value}
+                    onBlur={field.onBlur}
+                    ref={field.ref}
+                    onChange={(event) => field.onChange(event.currentTarget.value)}
+                  />
+                )}
               />
               {errors.references?.[slot.index]?.email && (
-                <p className="text-xs text-destructive">
+                <p
+                  className="text-xs text-destructive"
+                  data-field-error={`references.${slot.index}.email`}
+                >
                   {errors.references[slot.index]?.email?.message}
                 </p>
               )}
@@ -122,23 +135,35 @@ export function StepReferences() {
               <Label htmlFor={`ref-linkedin-${slot.index}`}>
                 LinkedIn profile URL
               </Label>
-              <Input
-                id={`ref-linkedin-${slot.index}`}
-                {...urlTextInputProps}
-                placeholder="https://www.linkedin.com/in/their-profile"
-                {...register(`references.${slot.index}.linkedInUrl`, {
-                  onBlur: (event) => {
-                    const completed = ensureAbsoluteHttpUrl(event.target.value);
-                    if (completed && completed !== event.target.value) {
-                      setValue(
-                        `references.${slot.index}.linkedInUrl`,
-                        completed,
-                        { shouldDirty: true, shouldValidate: false }
+              <Controller
+                control={control}
+                name={`references.${slot.index}.linkedInUrl`}
+                render={({ field }) => (
+                  <Input
+                    id={`ref-linkedin-${slot.index}`}
+                    {...urlTextInputProps}
+                    autoComplete="off"
+                    placeholder="https://www.linkedin.com/in/their-profile"
+                    name={field.name}
+                    value={field.value}
+                    ref={field.ref}
+                    onChange={(event) => field.onChange(event.currentTarget.value)}
+                    onBlur={(event) => {
+                      field.onBlur();
+                      const completed = ensureAbsoluteHttpUrl(
+                        event.currentTarget.value
                       );
-                    }
-                    void checkLinkedInPage(slot.index, completed);
-                  },
-                })}
+                      if (completed && completed !== field.value) {
+                        setValue(
+                          `references.${slot.index}.linkedInUrl`,
+                          completed,
+                          { shouldDirty: true, shouldValidate: false }
+                        );
+                      }
+                      void checkLinkedInPage(slot.index, completed);
+                    }}
+                  />
+                )}
               />
               {checkingIndex === slot.index && (
                 <p className="text-xs text-[#5B616B]" aria-live="polite">
@@ -146,7 +171,10 @@ export function StepReferences() {
                 </p>
               )}
               {errors.references?.[slot.index]?.linkedInUrl && (
-                <p className="text-xs text-destructive">
+                <p
+                  className="text-xs text-destructive"
+                  data-field-error={`references.${slot.index}.linkedInUrl`}
+                >
                   {errors.references[slot.index]?.linkedInUrl?.message}
                 </p>
               )}
@@ -166,7 +194,10 @@ export function StepReferences() {
                 )}
               />
               {errors.references?.[slot.index]?.relationship && (
-                <p className="text-xs text-destructive">
+                <p
+                  className="text-xs text-destructive"
+                  data-field-error={`references.${slot.index}.relationship`}
+                >
                   {errors.references[slot.index]?.relationship?.message}
                 </p>
               )}

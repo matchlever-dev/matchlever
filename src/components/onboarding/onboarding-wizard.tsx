@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { FormProvider, useForm, type FieldPath } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AnimatePresence, motion } from "framer-motion";
@@ -21,6 +21,15 @@ import { StepResume } from "@/components/onboarding/steps/step-resume";
 import { StepPreferences } from "@/components/onboarding/steps/step-preferences";
 import { StepReferences } from "@/components/onboarding/steps/step-references";
 
+function scrollToFirstFieldError() {
+  window.requestAnimationFrame(() => {
+    const el = document.querySelector<HTMLElement>(
+      "[data-field-error], .text-destructive"
+    );
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+}
+
 export function OnboardingWizard() {
   const router = useRouter();
   const [step, setStep] = useState<OnboardingStepId>(1);
@@ -33,20 +42,6 @@ export function OnboardingWizard() {
     defaultValues: defaultOnboardingValues,
     mode: "onTouched",
   });
-  const references = form.watch("references");
-  const referencesReady = useMemo(
-    () =>
-      step !== 4 ||
-      (Array.isArray(references) &&
-        references.length === 3 &&
-        references.every(
-          (ref) =>
-            ref.email.trim().length > 0 &&
-            ref.linkedInUrl.trim().length > 0 &&
-            ref.relationship.trim().length > 0
-        )),
-    [references, step]
-  );
 
   async function validateCurrentStep() {
     const schema = getStepSchema(step);
@@ -64,6 +59,15 @@ export function OnboardingWizard() {
         message: issue.message,
       });
     }
+    const firstPath = parsed.error.issues[0]?.path.join(".");
+    if (firstPath) {
+      try {
+        form.setFocus(firstPath as FieldPath<OnboardingFormValues>);
+      } catch {
+        // Some fields (e.g. selects) may not register a focusable ref.
+      }
+    }
+    scrollToFirstFieldError();
     return false;
   }
 
@@ -110,13 +114,22 @@ export function OnboardingWizard() {
   async function handleNext() {
     setSubmitError(null);
     const ok = await validateCurrentStep();
-    if (!ok) return;
+    if (!ok) {
+      setSubmitError("Please fix the highlighted fields above.");
+      return;
+    }
 
     if (step === 4) {
       setIsCheckingLinkedIn(true);
       try {
         const pagesOpen = await validateReferencePagesOpen();
-        if (!pagesOpen) return;
+        if (!pagesOpen) {
+          setSubmitError(
+            "One or more LinkedIn profile URLs could not be opened. Check the highlighted fields."
+          );
+          scrollToFirstFieldError();
+          return;
+        }
       } catch (err) {
         setSubmitError(
           err instanceof Error
@@ -156,6 +169,10 @@ export function OnboardingWizard() {
               data.error ||
               "This LinkedIn page could not be opened. Check the URL.",
           });
+          setSubmitError(
+            "One or more LinkedIn profile URLs could not be opened. Check the highlighted fields."
+          );
+          scrollToFirstFieldError();
           return;
         }
         throw new Error(data.error || "Could not complete onboarding");
@@ -203,14 +220,11 @@ export function OnboardingWizard() {
               {step === 4 && <StepReferences />}
             </motion.div>
           </AnimatePresence>
-          {submitError && (
-            <p className="mt-6 text-sm text-destructive">{submitError}</p>
-          )}
         </main>
         <WizardFooter
           step={step}
           isSubmitting={isSubmitting || isCheckingLinkedIn}
-          nextDisabled={!referencesReady}
+          error={submitError}
           onBack={handleBack}
           onNext={handleNext}
           nextLabel={
