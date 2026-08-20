@@ -1,17 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FileUp, Loader2 } from "lucide-react";
 
 import {
-  formatTimezoneOffset,
-  offsetHoursInputToMinutes,
-  offsetMinutesToHoursInput,
+  formatTimezoneDisplay,
+  resolveTimezoneId,
   type CandidateDashboardData,
 } from "@/lib/dashboard/candidate";
+import {
+  TIMEZONE_OPTIONS,
+  TIMEZONE_VALUES,
+  timezoneOffsetMinutes,
+} from "@/lib/onboarding/schema";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,6 +27,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
 const editSchema = z.object({
@@ -30,7 +41,7 @@ const editSchema = z.object({
   selectedTagline: z.string().trim().min(8).max(200),
   globalCity: z.string().trim().min(1).max(80),
   globalCountry: z.string().trim().min(1).max(80),
-  timezoneOffset: z.string(),
+  timezone: z.enum(TIMEZONE_VALUES, { error: "Select a timezone" }),
   verifiedSkills: z.string(),
 });
 
@@ -68,11 +79,12 @@ export function EditProfileModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const {
     register,
+    control,
     handleSubmit,
     reset,
     setValue,
     watch,
-    formState: { isSubmitting },
+    formState: { isSubmitting, errors },
   } = useForm<EditValues>({
     resolver: zodResolver(editSchema),
     defaultValues: toFormValues(data),
@@ -158,14 +170,8 @@ export function EditProfileModal({
 
   async function onSubmit(values: EditValues) {
     setError(null);
-    const offset =
-      values.timezoneOffset.trim() === ""
-        ? null
-        : offsetHoursInputToMinutes(values.timezoneOffset);
-    if (values.timezoneOffset.trim() !== "" && offset === null) {
-      setError("Timezone offset must be hours from UTC (e.g. -8 or +5.5).");
-      return;
-    }
+    const timezone = values.timezone;
+    const offset = timezoneOffsetMinutes(timezone);
     const verifiedSkills = values.verifiedSkills
       .split(",")
       .map((s) => s.trim())
@@ -179,7 +185,7 @@ export function EditProfileModal({
         selectedTagline: values.selectedTagline,
         globalCity: values.globalCity,
         globalCountry: values.globalCountry,
-        timezoneOffset: offset,
+        timezone,
         verifiedSkills,
         ...(suggestedTaglines.length > 0
           ? { suggestedTaglines }
@@ -200,8 +206,9 @@ export function EditProfileModal({
       selectedTagline: values.selectedTagline,
       globalCity: values.globalCity,
       globalCountry: values.globalCountry,
+      timezone,
       timezoneOffset: offset,
-      timezoneLabel: formatTimezoneOffset(offset),
+      timezoneLabel: formatTimezoneDisplay(timezone, offset),
       verifiedSkills,
     });
   }
@@ -311,14 +318,35 @@ export function EditProfileModal({
               <Input id="globalCountry" {...register("globalCountry")} />
             </Field>
           </div>
-          <Field label="Timezone offset (hours from UTC)" id="timezoneOffset">
-            <Input
-              id="timezoneOffset"
-              placeholder="-8"
-              inputMode="decimal"
-              {...register("timezoneOffset")}
+          <div className="grid gap-2">
+            <Label htmlFor="timezone">Timezone</Label>
+            <Controller
+              control={control}
+              name="timezone"
+              render={({ field }) => (
+                <Select
+                  value={field.value}
+                  onValueChange={(value) => field.onChange(value ?? field.value)}
+                >
+                  <SelectTrigger id="timezone" className="w-full min-w-0">
+                    <SelectValue placeholder="Select timezone" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIMEZONE_OPTIONS.map((tz) => (
+                      <SelectItem key={tz.value} value={tz.value}>
+                        {tz.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             />
-          </Field>
+            {errors.timezone && (
+              <p className="text-xs text-destructive">
+                {errors.timezone.message}
+              </p>
+            )}
+          </div>
           <Field label="Verified skills (comma-separated)" id="verifiedSkills">
             <Input
               id="verifiedSkills"
@@ -441,7 +469,9 @@ function toFormValues(data: CandidateDashboardData): EditValues {
     selectedTagline: data.selectedTagline,
     globalCity: data.globalCity,
     globalCountry: data.globalCountry,
-    timezoneOffset: offsetMinutesToHoursInput(data.timezoneOffset),
+    timezone:
+      (resolveTimezoneId(data.timezone, data.timezoneOffset) as EditValues["timezone"]) ??
+      "America/New_York",
     verifiedSkills: data.verifiedSkills.join(", "),
   };
 }

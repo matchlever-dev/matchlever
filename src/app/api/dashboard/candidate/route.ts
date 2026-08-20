@@ -4,10 +4,11 @@ import { z } from "zod";
 import { captureCandidateLinkedInUrl } from "@/lib/auth/linkedin-url";
 import {
   DEMO_CANDIDATE_DASHBOARD,
-  formatTimezoneOffset,
+  formatTimezoneDisplay,
   hasCompleteReferences,
   initialsFromName,
   REQUIRED_VERIFIED_REFERENCES,
+  resolveTimezoneId,
   type CandidateDashboardData,
   type CandidateReferenceRow,
 } from "@/lib/dashboard/candidate";
@@ -41,7 +42,7 @@ export async function GET() {
     const { data: profile, error } = await supabase
       .from("candidate_profiles")
       .select(
-        "id, headline, selected_tagline, suggested_taglines, verified_skills, global_city, global_country, timezone_offset, status, raw_resume_text"
+        "id, headline, selected_tagline, suggested_taglines, verified_skills, global_city, global_country, timezone, timezone_offset, status, raw_resume_text"
       )
       .eq("user_id", user.id)
       .maybeSingle();
@@ -153,8 +154,12 @@ export async function GET() {
       verifiedSkills: skillsFromJson(profile.verified_skills),
       globalCity: profile.global_city || "Remote",
       globalCountry: profile.global_country || "Global",
+      timezone: resolveTimezoneId(profile.timezone, profile.timezone_offset),
       timezoneOffset: profile.timezone_offset,
-      timezoneLabel: formatTimezoneOffset(profile.timezone_offset),
+      timezoneLabel: formatTimezoneDisplay(
+        profile.timezone,
+        profile.timezone_offset
+      ),
       status,
       linkedinUrl,
       references: refs,

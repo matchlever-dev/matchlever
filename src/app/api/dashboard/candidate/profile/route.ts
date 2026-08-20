@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import {
+  formatTimezoneDisplay,
+  resolveTimezoneId,
+} from "@/lib/dashboard/candidate";
+import {
+  TIMEZONE_VALUES,
+  timezoneOffsetMinutes,
+} from "@/lib/onboarding/schema";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -19,7 +27,7 @@ const editSchema = z.object({
   selectedTagline: z.string().trim().min(8).max(200),
   globalCity: z.string().trim().min(1).max(80),
   globalCountry: z.string().trim().min(1).max(80),
-  timezoneOffset: z.number().int().min(-720).max(840).nullable(),
+  timezone: z.enum(TIMEZONE_VALUES).nullable(),
   verifiedSkills: z.array(z.string().trim().min(1)).max(20),
   suggestedTaglines: z.array(z.string().trim().min(8).max(200)).max(5).optional(),
   sanitizedSummary: z.string().trim().max(4000).nullable().optional(),
@@ -38,7 +46,16 @@ export async function PATCH(request: Request) {
     }
 
     if (!isSupabaseConfigured()) {
-      return NextResponse.json({ ok: true, demo: true, profile: parsed.data });
+      const timezone = parsed.data.timezone;
+      return NextResponse.json({
+        ok: true,
+        demo: true,
+        profile: {
+          ...parsed.data,
+          timezoneOffset: timezoneOffsetMinutes(timezone),
+          timezoneLabel: formatTimezoneDisplay(timezone),
+        },
+      });
     }
 
     const supabase = await createClient();
@@ -49,12 +66,14 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const timezone = resolveTimezoneId(parsed.data.timezone);
     const update: CandidateProfileUpdate = {
       headline: toPostgresText(parsed.data.headline),
       selected_tagline: toPostgresText(parsed.data.selectedTagline),
       global_city: toPostgresText(parsed.data.globalCity),
       global_country: toPostgresText(parsed.data.globalCountry),
-      timezone_offset: parsed.data.timezoneOffset,
+      timezone: timezone ? toPostgresText(timezone) : null,
+      timezone_offset: timezoneOffsetMinutes(timezone),
       verified_skills: toPostgresStringArray(parsed.data.verifiedSkills),
       ...(parsed.data.suggestedTaglines
         ? { suggested_taglines: toPostgresStringArray(parsed.data.suggestedTaglines) }

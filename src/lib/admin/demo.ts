@@ -33,6 +33,7 @@ export type AdminCandidateRow = {
   status: string;
   global_city: string | null;
   global_country: string | null;
+  timezone: string | null;
   timezone_offset: number | null;
   work_hours_start: string | null;
   work_hours_end: string | null;
@@ -238,6 +239,7 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
     status: "actively_looking",
     global_city: "Austin",
     global_country: "United States",
+    timezone: "America/New_York",
     timezone_offset: -300,
     work_hours_start: "09:00:00",
     work_hours_end: "17:00:00",
@@ -285,6 +287,7 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
     status: "on_hold",
     global_city: "Berlin",
     global_country: "Germany",
+    timezone: "Europe/Athens",
     timezone_offset: 120,
     work_hours_start: "10:00:00",
     work_hours_end: "18:00:00",
@@ -320,6 +323,7 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
     status: "on_hold",
     global_city: "Toronto",
     global_country: "Canada",
+    timezone: null,
     timezone_offset: -240,
     work_hours_start: "09:00:00",
     work_hours_end: "17:00:00",
@@ -342,6 +346,7 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
     status: "incomplete",
     global_city: null,
     global_country: null,
+    timezone: null,
     timezone_offset: null,
     work_hours_start: null,
     work_hours_end: null,

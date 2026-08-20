@@ -111,7 +111,7 @@ export async function GET() {
     ? await supabase
         .from("candidate_profiles")
         .select(
-          "id, user_id, headline, status, global_city, global_country, timezone_offset, work_hours_start, work_hours_end, location_modes, location_mode, raw_resume_text, sanitized_summary, updated_at"
+          "id, user_id, headline, status, global_city, global_country, timezone, timezone_offset, work_hours_start, work_hours_end, location_modes, location_mode, raw_resume_text, sanitized_summary, updated_at"
         )
         .in("user_id", userIds)
     : { data: [] as never[], error: null };
@@ -185,6 +185,7 @@ export async function GET() {
       status: profile?.status ?? "incomplete",
       global_city: base.global_city,
       global_country: base.global_country,
+      timezone: profile?.timezone ?? null,
       timezone_offset: profile?.timezone_offset ?? null,
       work_hours_start: base.work_hours_start,
       work_hours_end: base.work_hours_end,

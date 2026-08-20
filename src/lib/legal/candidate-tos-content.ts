@@ -15,7 +15,7 @@ export const CANDIDATE_TOS_SECTIONS = [
   {
     heading: "3. Account Eligibility & Registration",
     bullets: [
-      "Accuracy of Information: During onboarding, you must provide accurate global preferences, including your location mode (Remote, Hybrid, Onsite), global city and country, timezone offset, work hours start and end times, minimum salary, and work authorization status.",
+      "Accuracy of Information: During onboarding, you must provide accurate global preferences, including your location mode (Remote, Hybrid, Onsite), global city and country, timezone, work hours start and end times, minimum salary, and work authorization status.",
       "LinkedIn Authentication: Account creation requires a secure LinkedIn OAuth sign-in.",
       "Platform Integrity: Fraudulent or duplicate accounts will be subject to immediate deletion by platform Admins.",
     ],

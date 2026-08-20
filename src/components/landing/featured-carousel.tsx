@@ -70,7 +70,7 @@ export function FeaturedCarousel() {
             <OverlapRow
               icon={<Globe2 className="size-4" />}
               label="Timezone"
-              value={`${candidate.timezoneLabel} · ${candidate.timezone}`}
+              value={candidate.timezoneLabel}
             />
             <OverlapRow
               icon={<Clock className="size-4" />}

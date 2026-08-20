@@ -1,3 +1,5 @@
+import { resolveTimezoneOption } from "@/lib/onboarding/schema";
+
 export type CandidateAvailability = "actively_looking" | "on_hold";
 
 /** Candidates must have this many verified references before appearing in searches. */
@@ -34,7 +36,10 @@ export type CandidateDashboardData = {
   verifiedSkills: string[];
   globalCity: string;
   globalCountry: string;
+  /** IANA timezone id when known (e.g. America/New_York). */
+  timezone: string | null;
   timezoneOffset: number | null;
+  /** Display label with zone name and UTC offset, e.g. "US Eastern (UTC−5)". */
   timezoneLabel: string;
   status: CandidateAvailability;
   linkedinUrl: string | null;
@@ -51,27 +56,25 @@ export function formatTimezoneOffset(offsetMinutes: number | null): string {
   return `UTC${sign}${hours}${mins ? `:${String(mins).padStart(2, "0")}` : ""}`;
 }
 
-/** Form value: signed hours from UTC, e.g. "-5" or "+5.5". */
-export function offsetMinutesToHoursInput(
-  offsetMinutes: number | null | undefined
+/** Named timezone + UTC offset for candidate / employer / admin UIs. */
+export function formatTimezoneDisplay(
+  timezone: string | null | undefined,
+  offsetMinutes?: number | null
 ): string {
-  if (offsetMinutes === null || offsetMinutes === undefined) return "";
-  if (Number.isNaN(offsetMinutes)) return "";
-  const hours = offsetMinutes / 60;
-  const rounded = Math.round(hours * 100) / 100;
-  if (rounded === 0) return "0";
-  return rounded > 0 ? `+${rounded}` : String(rounded);
+  const option = resolveTimezoneOption(timezone, offsetMinutes);
+  if (option) return option.label;
+  if (offsetMinutes != null && !Number.isNaN(offsetMinutes)) {
+    return formatTimezoneOffset(offsetMinutes);
+  }
+  return "Timezone TBD";
 }
 
-/** Parse hours-from-UTC input into minutes stored in the DB. */
-export function offsetHoursInputToMinutes(input: string): number | null {
-  const trimmed = input.trim().replace(/^utc/i, "");
-  if (!trimmed) return null;
-  const hours = Number.parseFloat(trimmed);
-  if (!Number.isFinite(hours)) return null;
-  const minutes = Math.round(hours * 60);
-  if (minutes < -720 || minutes > 840) return null;
-  return minutes;
+/** Resolve a stored timezone id, falling back from offset for legacy rows. */
+export function resolveTimezoneId(
+  timezone: string | null | undefined,
+  offsetMinutes?: number | null
+): string | null {
+  return resolveTimezoneOption(timezone, offsetMinutes)?.value ?? null;
 }
 
 export function initialsFromName(name: string | null | undefined): string {
@@ -90,8 +93,9 @@ export const DEMO_CANDIDATE_DASHBOARD: CandidateDashboardData = {
   verifiedSkills: ["Go", "Kubernetes", "Kafka", "TypeScript"],
   globalCity: "Austin",
   globalCountry: "United States",
-  timezoneOffset: -300,
-  timezoneLabel: "UTC-5",
+  timezone: "America/Chicago",
+  timezoneOffset: -360,
+  timezoneLabel: "US Central (UTC−6)",
   status: "on_hold",
   linkedinUrl: "https://www.linkedin.com/in/sam-patel",
   references: [

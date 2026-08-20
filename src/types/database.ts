@@ -60,6 +60,7 @@ export type Database = {
           bio: string | null;
           global_city: string | null;
           global_country: string | null;
+          timezone: string | null;
           timezone_offset: number | null;
           work_hours_start: string | null;
           work_hours_end: string | null;
@@ -88,6 +89,7 @@ export type Database = {
           bio?: string | null;
           global_city?: string | null;
           global_country?: string | null;
+          timezone?: string | null;
           timezone_offset?: number | null;
           work_hours_start?: string | null;
           work_hours_end?: string | null;
@@ -116,6 +118,7 @@ export type Database = {
           bio?: string | null;
           global_city?: string | null;
           global_country?: string | null;
+          timezone?: string | null;
           timezone_offset?: number | null;
           work_hours_start?: string | null;
           work_hours_end?: string | null;

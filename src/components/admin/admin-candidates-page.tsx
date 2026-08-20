@@ -6,7 +6,7 @@ import { AlertTriangle, Send } from "lucide-react";
 import type { AdminCandidateRow, AdminReferenceRow } from "@/lib/admin/demo";
 import {
   REQUIRED_VERIFIED_REFERENCES,
-  formatTimezoneOffset,
+  formatTimezoneDisplay,
 } from "@/lib/dashboard/candidate";
 import { LOCATION_MODES } from "@/lib/onboarding/schema";
 import { relationshipLabel } from "@/lib/reference/relationship";
@@ -227,6 +227,7 @@ function CandidateProfilesPage({
                 status: "incomplete",
                 global_city: null,
                 global_country: null,
+                timezone: null,
                 timezone_offset: null,
                 work_hours_start: null,
                 work_hours_end: null,
@@ -455,9 +456,13 @@ function CandidateProfilesPage({
                       </AuditBlock>
                       <AuditBlock title="Timezone">
                         <p className="text-sm">
-                          {selected.timezone_offset == null
+                          {selected.timezone == null &&
+                          selected.timezone_offset == null
                             ? "To Be Completed"
-                            : formatTimezoneOffset(selected.timezone_offset)}
+                            : formatTimezoneDisplay(
+                                selected.timezone,
+                                selected.timezone_offset
+                              )}
                         </p>
                       </AuditBlock>
                       <AuditBlock title="Working hours">

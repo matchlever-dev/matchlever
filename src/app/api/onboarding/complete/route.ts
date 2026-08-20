@@ -16,7 +16,7 @@ import {
   toPostgresText,
   toPostgresTextOrNull,
 } from "@/lib/postgres-text";
-import { TIMEZONE_OPTIONS } from "@/lib/onboarding/schema";
+import { timezoneOffsetMinutes } from "@/lib/onboarding/schema";
 import {
   REFERRER_LINKEDIN_INVALID_MESSAGE,
   validateReferrerLinkedIn,
@@ -28,12 +28,6 @@ import { createClient } from "@/lib/supabase/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
-
-function timezoneOffsetMinutes(timezone: string): number | null {
-  return (
-    TIMEZONE_OPTIONS.find((tz) => tz.value === timezone)?.offsetMinutes ?? null
-  );
-}
 
 function normalizeTime(value: string): string {
   // Accept "HH:MM" or "HH:MM:SS" → Postgres time
@@ -218,6 +212,7 @@ export async function POST(request: Request) {
       selected_tagline: toPostgresText(data.selectedTagline.trim()),
       global_city: toPostgresText(resolvedCity),
       global_country: toPostgresText(data.globalCountry),
+      timezone: toPostgresText(data.timezone),
       timezone_offset: timezoneOffsetMinutes(data.timezone),
       work_hours_start: normalizeTime(data.workHoursStart),
       work_hours_end: normalizeTime(data.workHoursEnd),
