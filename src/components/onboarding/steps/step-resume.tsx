@@ -34,7 +34,7 @@ export function StepResume() {
   const skills = watch("verifiedSkills");
   const taglines = watch("suggestedTaglines");
   const selectedTagline = watch("selectedTagline");
-  const candidateTosAgreed = watch("candidateTosAgreed");
+  const talentTosAgreed = watch("talentTosAgreed");
 
   function updateTagline(index: number, value: string) {
     const next = [taglines[0] ?? "", taglines[1] ?? "", taglines[2] ?? ""];
@@ -48,10 +48,10 @@ export function StepResume() {
 
   const uploadResume = useCallback(
     async (file: File) => {
-      if (!candidateTosAgreed) {
+      if (!talentTosAgreed) {
         setStatus("error");
         setErrorMessage(
-          "Agree to the Job Candidate Terms of Service before uploading a resume."
+          "Agree to the Talent Terms of Service before uploading a resume."
         );
         return;
       }
@@ -63,7 +63,7 @@ export function StepResume() {
       body.append("resume", file);
 
       try {
-        const res = await fetch("/api/candidate/sanitize", {
+        const res = await fetch("/api/talent/sanitize", {
           method: "POST",
           body,
         });
@@ -104,7 +104,7 @@ export function StepResume() {
         setValue("rawResumeText", "");
       }
     },
-    [setValue, candidateTosAgreed]
+    [setValue, talentTosAgreed]
   );
 
   function onFileChange(fileList: FileList | null) {

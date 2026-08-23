@@ -14,7 +14,7 @@ const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
 export async function GET() {
   return NextResponse.json({
     ok: true,
-    endpoint: "/api/candidate/sanitize",
+    endpoint: "/api/talent/sanitize",
     accepts: ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
     groqConfigured: Boolean(
       process.env.GROQ_API_KEY?.trim() &&
@@ -104,15 +104,15 @@ export async function POST(request: Request) {
           ? "Groq model is unavailable. llama-3.3-70b-versatile was retired on Aug 16, 2026 — set GROQ_MODEL to openai/gpt-oss-120b and redeploy."
           : message;
 
-    console.error("[/api/candidate/sanitize]", message);
+    console.error("[/api/talent/sanitize]", message);
     return NextResponse.json({ error: clientMessage }, { status });
   }
 }
 
 function getResumeFile(formData: FormData): File | null {
-  const candidate = formData.get("resume") ?? formData.get("file");
-  if (candidate instanceof File && candidate.size > 0) {
-    return candidate;
+  const talent = formData.get("resume") ?? formData.get("file");
+  if (talent instanceof File && talent.size > 0) {
+    return talent;
   }
   return null;
 }

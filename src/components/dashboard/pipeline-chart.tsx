@@ -9,7 +9,7 @@ import {
   YAxis,
 } from "recharts";
 
-import type { CandidatePipelineMetric } from "@/lib/dashboard/admin-metrics";
+import type { TalentPipelineMetric } from "@/lib/dashboard/admin-metrics";
 
 type ChartRow = {
   name: string;
@@ -22,10 +22,10 @@ type ChartRow = {
 export function PipelineChart({
   metric,
 }: {
-  metric: CandidatePipelineMetric;
+  metric: TalentPipelineMetric;
 }) {
   const row: ChartRow = {
-    name: "Candidates",
+    name: "Talent",
     Draft: 0,
     "Pending Review": 0,
     Active: 0,
@@ -48,7 +48,7 @@ export function PipelineChart({
             {metric.label}
           </p>
           <p className="mt-2 text-sm text-[#5B616B]">
-            {metric.total} candidates · {metric.periodLabel.toLowerCase()}
+            {metric.total} talent · {metric.periodLabel.toLowerCase()}
           </p>
         </div>
       </div>

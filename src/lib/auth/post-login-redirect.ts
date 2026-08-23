@@ -15,7 +15,7 @@ type AppSupabase = SupabaseClient<Database>;
 /**
  * Decide where a signed-in user should land.
  * Honors a safe `next` path when the user has access; otherwise lands on the
- * candidate profile (or onboarding). Admin/superuser portals are URL-only —
+ * talent profile (or onboarding). Admin/superuser portals are URL-only —
  * they are not the default post-login destination.
  */
 export async function resolvePostLoginPath(
@@ -48,25 +48,25 @@ export async function resolvePostLoginPath(
       safe.startsWith("/onboarding") ||
       safe === "/")
   ) {
-    // Returning candidates who already finished onboarding should land on the
+    // Returning talent who already finished onboarding should land on the
     // dashboard even when OAuth used next=/onboarding.
     if (safe.startsWith("/onboarding")) {
-      const { data: candidate } = await supabase
-        .from("candidate_profiles")
+      const { data: talent } = await supabase
+        .from("talent_profiles")
         .select("id")
         .eq("user_id", user.id)
         .maybeSingle();
-      if (candidate) return "/dashboard/candidate";
+      if (talent) return "/dashboard/talent";
     }
     return safe;
   }
 
-  const { data: candidate } = await supabase
-    .from("candidate_profiles")
+  const { data: talent } = await supabase
+    .from("talent_profiles")
     .select("id")
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (candidate) return "/dashboard/candidate";
+  if (talent) return "/dashboard/talent";
   return "/onboarding";
 }

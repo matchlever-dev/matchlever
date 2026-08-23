@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { candidateNameForInvite } from "@/lib/auth/display-name";
+import { talentNameForInvite } from "@/lib/auth/display-name";
 import { sendReferenceInviteEmail } from "@/lib/email/resend";
 import { UNSUBSCRIBED_EMAIL_MESSAGE } from "@/lib/email/unsubscribe";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
@@ -21,8 +21,8 @@ export async function POST(request: Request) {
     if (!isSupabaseConfigured()) {
       const result = await sendReferenceInviteEmail({
         to: "demo@example.com",
-        candidateName: "Sam Patel",
-        candidateTitle: "Staff Platform Engineer",
+        talentName: "Sam Patel",
+        talentTitle: "Staff Platform Engineer",
         token: "demo-token-ref-three-cccc",
       });
       if (result.skipped) {
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
 
     const [{ data: profile }, { data: userProfile }] = await Promise.all([
       supabase
-        .from("candidate_profiles")
+        .from("talent_profiles")
         .select("id, headline")
         .eq("user_id", user.id)
         .maybeSingle(),
@@ -62,16 +62,16 @@ export async function POST(request: Request) {
 
     if (!profile) {
       return NextResponse.json(
-        { error: "Candidate profile not found" },
+        { error: "Talent profile not found" },
         { status: 404 }
       );
     }
 
     const { data: reference, error } = await supabase
-      .from("candidate_references")
-      .select("id, reference_email, verification_token, status, candidate_profile_id")
+      .from("talent_references")
+      .select("id, reference_email, verification_token, status, talent_profile_id")
       .eq("id", parsed.data.referenceId)
-      .eq("candidate_profile_id", profile.id)
+      .eq("talent_profile_id", profile.id)
       .maybeSingle();
 
     if (error || !reference) {
@@ -87,8 +87,8 @@ export async function POST(request: Request) {
 
     const result = await sendReferenceInviteEmail({
       to: reference.reference_email,
-      candidateName: candidateNameForInvite(user, userProfile?.full_name),
-      candidateTitle: profile.headline || "MatchLever candidate",
+      talentName: talentNameForInvite(user, userProfile?.full_name),
+      talentTitle: profile.headline || "MatchLever talent",
       token: reference.verification_token,
     });
 
@@ -103,7 +103,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to resend link";
-    console.error("[/api/dashboard/candidate/references/resend]", message);
+    console.error("[/api/dashboard/talent/references/resend]", message);
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }

@@ -12,7 +12,7 @@ import {
 } from "@/lib/reference/schema";
 import { isReferenceRelationship } from "@/lib/reference/relationship";
 import { BrandMark } from "@/components/brand/brand-mark";
-import { ReferrerCandidateCta } from "@/components/reference/referrer-candidate-cta";
+import { ReferrerTalentCta } from "@/components/reference/referrer-talent-cta";
 import { Progress } from "@/components/ui/progress";
 import {
   StepEndorsement,
@@ -27,8 +27,8 @@ type Invite = {
   relationship: string | null;
   reference_name: string | null;
   reference_linkedin_url: string | null;
-  candidate_title: string;
-  candidate_tagline: string;
+  talent_title: string;
+  talent_tagline: string;
   demo?: boolean;
 };
 
@@ -225,7 +225,7 @@ export function ReferenceVerificationWizard({ token }: { token: string }) {
               /100.
             </p>
           </div>
-          <ReferrerCandidateCta className="mt-8 text-left" />
+          <ReferrerTalentCta className="mt-8 text-left" />
         </div>
       </div>
     );
@@ -253,7 +253,7 @@ export function ReferenceVerificationWizard({ token }: { token: string }) {
             />
             {invite && (
               <p className="mt-2 truncate text-xs text-[#5B616B]">
-                For {invite.candidate_title}
+                For {invite.talent_title}
               </p>
             )}
           </div>
@@ -269,7 +269,7 @@ export function ReferenceVerificationWizard({ token }: { token: string }) {
             >
               {step === 1 && (
                 <StepIdentity
-                  candidateTitle={invite?.candidate_title}
+                  talentTitle={invite?.talent_title}
                   lockedLinkedInUrl={invite?.reference_linkedin_url}
                 />
               )}

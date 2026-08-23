@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { CandidateDashboard } from "@/components/dashboard/candidate-dashboard";
+import { TalentDashboard } from "@/components/dashboard/talent-dashboard";
 
 export const metadata: Metadata = {
-  title: "Candidate Dashboard · MatchLever",
-  description: "Manage your anonymous MatchLever candidate profile.",
+  title: "Talent Dashboard · MatchLever",
+  description: "Manage your anonymous MatchLever talent profile.",
 };
 
-export default function CandidateDashboardPage() {
+export default function TalentDashboardPage() {
   return (
     <Suspense fallback={null}>
-      <CandidateDashboard />
+      <TalentDashboard />
     </Suspense>
   );
 }

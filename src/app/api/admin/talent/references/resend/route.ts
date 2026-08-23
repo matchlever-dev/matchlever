@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { DEMO_ADMIN_CANDIDATES } from "@/lib/admin/demo";
+import { DEMO_ADMIN_TALENT } from "@/lib/admin/demo";
 import { requireAdminApi } from "@/lib/auth/api-guards";
-import { candidateNameForInvite } from "@/lib/auth/display-name";
+import { talentNameForInvite } from "@/lib/auth/display-name";
 import { sendReferenceInviteEmail } from "@/lib/email/resend";
 import { UNSUBSCRIBED_EMAIL_MESSAGE } from "@/lib/email/unsubscribe";
 import { createClient } from "@/lib/supabase/server";
@@ -23,8 +23,8 @@ export async function POST(request: Request) {
     }
 
     if (auth.actor.demo) {
-      const demoMatch = DEMO_ADMIN_CANDIDATES.flatMap((candidate) =>
-        candidate.references.map((reference) => ({ candidate, reference }))
+      const demoMatch = DEMO_ADMIN_TALENT.flatMap((talent) =>
+        talent.references.map((reference) => ({ talent, reference }))
       ).find(({ reference }) => reference.id === parsed.data.referenceId);
 
       if (!demoMatch) {
@@ -43,12 +43,12 @@ export async function POST(request: Request) {
 
       const result = await sendReferenceInviteEmail({
         to: demoMatch.reference.reference_email,
-        candidateName: candidateNameForInvite(
+        talentName: talentNameForInvite(
           null,
-          demoMatch.candidate.full_name
+          demoMatch.talent.full_name
         ),
-        candidateTitle:
-          demoMatch.candidate.headline || "MatchLever candidate",
+        talentTitle:
+          demoMatch.talent.headline || "MatchLever talent",
         token: `demo-token-${demoMatch.reference.id}`,
         reminder: true,
       });
@@ -70,9 +70,9 @@ export async function POST(request: Request) {
 
     const supabase = await createClient();
     const { data: reference, error: referenceError } = await supabase
-      .from("candidate_references")
+      .from("talent_references")
       .select(
-        "id, reference_email, verification_token, status, candidate_profile_id"
+        "id, reference_email, verification_token, status, talent_profile_id"
       )
       .eq("id", parsed.data.referenceId)
       .maybeSingle();
@@ -92,14 +92,14 @@ export async function POST(request: Request) {
     }
 
     const { data: profile, error: profileError } = await supabase
-      .from("candidate_profiles")
+      .from("talent_profiles")
       .select("id, user_id, headline")
-      .eq("id", reference.candidate_profile_id)
+      .eq("id", reference.talent_profile_id)
       .maybeSingle();
 
     if (profileError || !profile) {
       return NextResponse.json(
-        { error: "Candidate profile not found" },
+        { error: "Talent profile not found" },
         { status: 404 }
       );
     }
@@ -112,8 +112,8 @@ export async function POST(request: Request) {
 
     const result = await sendReferenceInviteEmail({
       to: reference.reference_email,
-      candidateName: candidateNameForInvite(null, userProfile?.full_name),
-      candidateTitle: profile.headline || "MatchLever candidate",
+      talentName: talentNameForInvite(null, userProfile?.full_name),
+      talentTitle: profile.headline || "MatchLever talent",
       token: reference.verification_token,
       reminder: true,
     });
@@ -129,7 +129,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to resend reminder";
-    console.error("[/api/admin/candidates/references/resend]", message);
+    console.error("[/api/admin/talent/references/resend]", message);
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }

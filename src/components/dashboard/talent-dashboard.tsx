@@ -5,30 +5,30 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import {
-  DEMO_CANDIDATE_DASHBOARD,
+  DEMO_TALENT_DASHBOARD,
   hasCompleteReferences,
   REQUIRED_VERIFIED_REFERENCES,
-  type CandidateAvailability,
-  type CandidateDashboardData,
-} from "@/lib/dashboard/candidate";
+  type TalentAvailability,
+  type TalentDashboardData,
+} from "@/lib/dashboard/talent";
 import { BrandMark } from "@/components/brand/brand-mark";
-import { AnonymousCandidateCard } from "@/components/dashboard/anonymous-candidate-card";
+import { AnonymousTalentCard } from "@/components/dashboard/anonymous-talent-card";
 import { ReferenceStatusTracker } from "@/components/dashboard/reference-status-tracker";
 import { ReferrerLinkedInLink } from "@/components/reference/referrer-linkedin-link";
 import {
   DeleteAccountDialog,
   EditProfileModal,
-} from "@/components/dashboard/candidate-modals";
+} from "@/components/dashboard/talent-modals";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { ensureAbsoluteHttpUrl, urlTextInputProps } from "@/lib/url";
 
-export function CandidateDashboard() {
+export function TalentDashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [data, setData] = useState<CandidateDashboardData | null>(null);
+  const [data, setData] = useState<TalentDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusBusy, setStatusBusy] = useState(false);
@@ -49,10 +49,10 @@ export function CandidateDashboard() {
     setError(null);
     setNeedsOnboarding(false);
     try {
-      const res = await fetch("/api/dashboard/candidate");
+      const res = await fetch("/api/dashboard/talent");
       const json = await res.json();
       if (res.status === 401) {
-        router.replace("/login?next=/dashboard/candidate");
+        router.replace("/login?next=/dashboard/talent");
         return;
       }
       if (res.status === 404 && json.code === "PROFILE_MISSING") {
@@ -62,14 +62,14 @@ export function CandidateDashboard() {
         return;
       }
       if (!res.ok) throw new Error(json.error || "Failed to load dashboard");
-      const next = json as CandidateDashboardData;
+      const next = json as TalentDashboardData;
       setData(next);
       setLinkedinDraft(next.linkedinUrl || "");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load dashboard");
       // Demo fixtures only when Supabase itself is not configured.
       if (!isSupabaseConfigured()) {
-        setData(DEMO_CANDIDATE_DASHBOARD);
+        setData(DEMO_TALENT_DASHBOARD);
       } else {
         setData(null);
       }
@@ -84,7 +84,7 @@ export function CandidateDashboard() {
 
   async function toggleStatus(nextChecked: boolean) {
     if (!data) return;
-    const nextStatus: CandidateAvailability = nextChecked
+    const nextStatus: TalentAvailability = nextChecked
       ? "actively_looking"
       : "on_hold";
     if (
@@ -101,7 +101,7 @@ export function CandidateDashboard() {
     setData({ ...data, status: nextStatus });
     setStatusBusy(true);
     try {
-      const res = await fetch("/api/dashboard/candidate", {
+      const res = await fetch("/api/dashboard/talent", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: nextStatus }),
@@ -162,7 +162,7 @@ export function CandidateDashboard() {
       <div className="flex min-h-[60svh] flex-col items-center justify-center gap-4 px-5 text-center">
         <p className="max-w-md text-sm text-[#5B616B]">
           {error ||
-            "Finish candidate onboarding to create your anonymous profile and invite references."}
+            "Finish talent onboarding to create your anonymous profile and invite references."}
         </p>
         <Link
           href="/onboarding"
@@ -181,7 +181,7 @@ export function CandidateDashboard() {
           {error || "Unable to load dashboard"}
         </p>
         <Link
-          href="/login?next=/dashboard/candidate"
+          href="/login?next=/dashboard/talent"
           className="text-sm font-medium text-[#2B5B84] underline underline-offset-2"
         >
           Log in again
@@ -202,7 +202,7 @@ export function CandidateDashboard() {
           <Link href="/" className="flex items-center gap-2">
             <BrandMark className="h-8 w-auto" />
             <span className="font-display text-xs font-bold tracking-[0.16em] uppercase">
-              Candidate Dashboard
+              Talent Dashboard
             </span>
           </Link>
           <div className="flex items-center gap-4">
@@ -219,7 +219,7 @@ export function CandidateDashboard() {
 
       <main className="mx-auto grid w-full max-w-5xl flex-1 gap-6 px-5 py-8 sm:px-8 lg:grid-cols-[1.15fr_0.85fr]">
         <div className="space-y-6">
-          <AnonymousCandidateCard data={data} />
+          <AnonymousTalentCard data={data} />
 
           <section className="border border-[#2B5B84]/15 bg-white p-5 sm:p-6">
             <p className="font-display text-[11px] font-semibold tracking-[0.22em] text-[#E87A5D] uppercase">
@@ -232,7 +232,7 @@ export function CandidateDashboard() {
               {!canGoActive
                 ? `Your profile stays hidden until all ${REQUIRED_VERIFIED_REFERENCES} references are verified — then you can turn Actively Looking on.`
                 : activelyLooking
-                  ? "Your anonymous card is visible to matched recruiters."
+                  ? "Your anonymous card is visible to matched employers."
                   : "Your profile is hidden from all searches until you turn looking back on."}
             </p>
             {error && (

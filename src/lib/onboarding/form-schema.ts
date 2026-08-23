@@ -27,9 +27,9 @@ function needsCommuteFields(modes: LocationModeValue[]) {
 }
 
 export const onboardingFormObjectSchema = z.object({
-  candidateTosAgreed: z.boolean(),
+  talentTosAgreed: z.boolean(),
   linkedInConnected: z.boolean(),
-  candidateLinkedInUrl: z.string(),
+  talentLinkedInUrl: z.string(),
   incognitoAgreed: z.boolean(),
   resumeFileName: z.string(),
   anonymousTitle: z.string().optional(),
@@ -153,20 +153,20 @@ function refinePreferences(
 
 export const onboardingFormSchema = onboardingFormObjectSchema
   .superRefine((data, ctx) => {
-    if (!data.candidateTosAgreed) {
+    if (!data.talentTosAgreed) {
       ctx.addIssue({
         code: "custom",
-        message: "Agree to the Job Candidate Terms of Service to continue",
-        path: ["candidateTosAgreed"],
+        message: "Agree to the Talent Terms of Service to continue",
+        path: ["talentTosAgreed"],
       });
     }
-    const linkedIn = linkedInUrlSchema.safeParse(data.candidateLinkedInUrl);
+    const linkedIn = linkedInUrlSchema.safeParse(data.talentLinkedInUrl);
     if (!linkedIn.success) {
       ctx.addIssue({
         code: "custom",
         message:
           "Add your public LinkedIn profile URL (https://www.linkedin.com/in/...)",
-        path: ["candidateLinkedInUrl"],
+        path: ["talentLinkedInUrl"],
       });
     }
     refinePreferences(data, ctx);
@@ -175,9 +175,9 @@ export const onboardingFormSchema = onboardingFormObjectSchema
 export type OnboardingFormValues = z.infer<typeof onboardingFormObjectSchema>;
 
 export const defaultOnboardingValues: OnboardingFormValues = {
-  candidateTosAgreed: false,
+  talentTosAgreed: false,
   linkedInConnected: false,
-  candidateLinkedInUrl: "",
+  talentLinkedInUrl: "",
   incognitoAgreed: false,
   resumeFileName: "",
   anonymousTitle: "",
@@ -220,17 +220,17 @@ export function getStepSchema(step: OnboardingStepId) {
     case 1:
       return z
         .object({
-          candidateTosAgreed: z.boolean(),
+          talentTosAgreed: z.boolean(),
           linkedInConnected: z.boolean(),
-          candidateLinkedInUrl: z.string(),
+          talentLinkedInUrl: z.string(),
           incognitoAgreed: z.boolean(),
         })
         .superRefine((data, ctx) => {
-          if (!data.candidateTosAgreed) {
+          if (!data.talentTosAgreed) {
             ctx.addIssue({
               code: "custom",
-              message: "Agree to the Job Candidate Terms of Service to continue",
-              path: ["candidateTosAgreed"],
+              message: "Agree to the Talent Terms of Service to continue",
+              path: ["talentTosAgreed"],
             });
           }
           if (!data.linkedInConnected) {
@@ -240,13 +240,13 @@ export function getStepSchema(step: OnboardingStepId) {
               path: ["linkedInConnected"],
             });
           }
-          const linkedIn = linkedInUrlSchema.safeParse(data.candidateLinkedInUrl);
+          const linkedIn = linkedInUrlSchema.safeParse(data.talentLinkedInUrl);
           if (!linkedIn.success) {
             ctx.addIssue({
               code: "custom",
               message:
                 "Add your public LinkedIn profile URL (https://www.linkedin.com/in/...)",
-              path: ["candidateLinkedInUrl"],
+              path: ["talentLinkedInUrl"],
             });
           }
           if (!data.incognitoAgreed) {

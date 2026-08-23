@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 const ICONS = {
   "/admin/dashboard": LayoutDashboard,
   "/admin/users": Users,
-  "/admin/candidates": UserSquare2,
+  "/admin/talent": UserSquare2,
   "/admin/contact": MessageSquare,
 } as const;
 

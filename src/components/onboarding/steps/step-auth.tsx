@@ -7,7 +7,7 @@ import { FileText } from "lucide-react";
 
 import { setStaySignedInPreference } from "@/lib/auth/stay-signed-in";
 import type { OnboardingFormValues } from "@/lib/onboarding/form-schema";
-import { CANDIDATE_TOS } from "@/lib/legal/candidate-tos";
+import { TALENT_TOS } from "@/lib/legal/talent-tos";
 import { createClient } from "@/lib/supabase/client";
 import { ensureAbsoluteHttpUrl, urlTextInputProps } from "@/lib/url";
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,7 @@ export function StepAuth() {
     formState: { errors },
   } = useFormContext<OnboardingFormValues>();
 
-  const candidateTosAgreed = watch("candidateTosAgreed");
+  const talentTosAgreed = watch("talentTosAgreed");
   const linkedInConnected = watch("linkedInConnected");
   const incognitoAgreed = watch("incognitoAgreed");
   const [oauthError, setOauthError] = useState<string | null>(null);
@@ -52,7 +52,7 @@ export function StepAuth() {
           const res = await fetch("/api/me/linkedin");
           const json = (await res.json()) as { url?: string | null };
           if (active && json.url) {
-            setValue("candidateLinkedInUrl", json.url, { shouldValidate: true });
+            setValue("talentLinkedInUrl", json.url, { shouldValidate: true });
           }
         }
       } catch {
@@ -66,8 +66,8 @@ export function StepAuth() {
   }, [setValue]);
 
   async function connectLinkedIn() {
-    if (!candidateTosAgreed) {
-      setValue("candidateTosAgreed", false, { shouldValidate: true });
+    if (!talentTosAgreed) {
+      setValue("talentTosAgreed", false, { shouldValidate: true });
       return;
     }
 
@@ -116,7 +116,7 @@ export function StepAuth() {
         </h2>
         <p className="mt-2 text-sm text-[#2A2D34]/70 sm:text-base">
           Before you create an account or upload a resume, review and agree to
-          the Job Candidate Terms of Service.
+          the Talent Terms of Service.
         </p>
       </div>
 
@@ -124,24 +124,24 @@ export function StepAuth() {
         <div className="flex items-start gap-3">
           <FileText className="mt-0.5 size-5 shrink-0 text-[#E87A5D]" />
           <div className="min-w-0 flex-1">
-            <Label htmlFor="candidate-tos" className="text-base text-[#2A2D34]">
-              Job Candidate Terms of Service
+            <Label htmlFor="talent-tos" className="text-base text-[#2A2D34]">
+              Talent Terms of Service
             </Label>
             <p className="mt-1 text-sm text-[#2A2D34]/65">
-              Effective {CANDIDATE_TOS.effectiveDate}. Operated by{" "}
-              {CANDIDATE_TOS.owner}. You must accept these Terms before LinkedIn
+              Effective {TALENT_TOS.effectiveDate}. Operated by{" "}
+              {TALENT_TOS.owner}. You must accept these Terms before LinkedIn
               sign-in, account creation, or resume upload.
             </p>
             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm">
               <Link
-                href={CANDIDATE_TOS.pagePath}
+                href={TALENT_TOS.pagePath}
                 target="_blank"
                 className="font-medium text-[#2B5B84] underline underline-offset-2"
               >
                 Read Terms
               </Link>
               <a
-                href={CANDIDATE_TOS.pdfPath}
+                href={TALENT_TOS.pdfPath}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-medium text-[#2B5B84] underline underline-offset-2"
@@ -153,15 +153,15 @@ export function StepAuth() {
         </div>
 
         <label
-          htmlFor="candidate-tos"
+          htmlFor="talent-tos"
           className="mt-5 flex cursor-pointer items-start gap-3 border-t border-[#2B5B84]/10 pt-4"
         >
           <input
-            id="candidate-tos"
+            id="talent-tos"
             type="checkbox"
-            checked={candidateTosAgreed}
+            checked={talentTosAgreed}
             onChange={(e) =>
-              setValue("candidateTosAgreed", e.target.checked, {
+              setValue("talentTosAgreed", e.target.checked, {
                 shouldValidate: true,
               })
             }
@@ -170,18 +170,18 @@ export function StepAuth() {
           <span className="text-sm leading-relaxed text-[#2A2D34]">
             I have read and agree to the{" "}
             <Link
-              href={CANDIDATE_TOS.pagePath}
+              href={TALENT_TOS.pagePath}
               target="_blank"
               className="font-semibold text-[#2B5B84] underline underline-offset-2"
             >
-              MatchLever Job Candidate Terms of Service
+              MatchLever Talent Terms of Service
             </Link>
             .
           </span>
         </label>
-        {errors.candidateTosAgreed && (
+        {errors.talentTosAgreed && (
           <p className="mt-3 text-xs text-destructive">
-            {errors.candidateTosAgreed.message}
+            {errors.talentTosAgreed.message}
           </p>
         )}
       </div>
@@ -190,14 +190,14 @@ export function StepAuth() {
         <Button
           type="button"
           size="lg"
-          disabled={!candidateTosAgreed}
+          disabled={!talentTosAgreed}
           onClick={connectLinkedIn}
           className="h-11 w-full gap-2 bg-[#0A66C2] text-white hover:bg-[#004182] disabled:opacity-50 sm:w-auto"
         >
           <LinkedInIcon className="size-4" />
           {linkedInConnected ? "LinkedIn connected" : "Continue with LinkedIn"}
         </Button>
-        {!candidateTosAgreed && (
+        {!talentTosAgreed && (
           <p className="text-xs text-[#5B616B]">
             Accept the Terms of Service to unlock LinkedIn account creation.
           </p>
@@ -212,23 +212,23 @@ export function StepAuth() {
         )}
         {linkedInConnected && (
           <p className="text-xs font-medium text-[#2B5B84]">
-            Identity verified. Your name stays off the public candidate card.
+            Identity verified. Your name stays off the public talent card.
           </p>
         )}
         {linkedInConnected && (
           <div className="grid gap-2">
-            <Label htmlFor="candidate-linkedin-url">
+            <Label htmlFor="talent-linkedin-url">
               Your LinkedIn profile URL
             </Label>
             <Input
-              id="candidate-linkedin-url"
+              id="talent-linkedin-url"
               {...urlTextInputProps}
               placeholder="https://www.linkedin.com/in/your-profile"
-              {...register("candidateLinkedInUrl", {
+              {...register("talentLinkedInUrl", {
                 onBlur: (event) => {
                   const completed = ensureAbsoluteHttpUrl(event.target.value);
                   if (completed && completed !== event.target.value) {
-                    setValue("candidateLinkedInUrl", completed, {
+                    setValue("talentLinkedInUrl", completed, {
                       shouldValidate: true,
                     });
                   }
@@ -240,9 +240,9 @@ export function StepAuth() {
               Paste it from your profile — https:// is optional and will be
               added if missing.
             </p>
-            {errors.candidateLinkedInUrl && (
+            {errors.talentLinkedInUrl && (
               <p className="text-xs text-destructive">
-                {errors.candidateLinkedInUrl.message}
+                {errors.talentLinkedInUrl.message}
               </p>
             )}
           </div>
@@ -257,14 +257,14 @@ export function StepAuth() {
             </Label>
             <p className="mt-1 text-sm text-[#2A2D34]/65">
               I agree that MatchLever will strip PII from my resume, keep my
-              identity anonymous to recruiters by default, and only share contact
+              identity anonymous to employers by default, and only share contact
               details after mutual interest.
             </p>
           </div>
           <Switch
             id="incognito"
             checked={incognitoAgreed}
-            disabled={!candidateTosAgreed}
+            disabled={!talentTosAgreed}
             onCheckedChange={(checked) =>
               setValue("incognitoAgreed", checked, { shouldValidate: true })
             }

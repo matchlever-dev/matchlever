@@ -112,7 +112,7 @@ export function LandingHero() {
               href="/onboarding"
               className="inline-flex h-12 w-full items-center justify-center rounded-md bg-[#2B5B84] px-6 font-display text-xs font-semibold tracking-[0.14em] text-white uppercase transition hover:bg-[#244e71] sm:w-auto"
             >
-              Start as a Candidate
+              Start as a Talent
             </Link>
             <a
               href="#featured"

@@ -4,11 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Send } from "lucide-react";
 
 import { ADMIN_LINKS } from "@/lib/admin/admin-nav";
-import type { AdminCandidateRow, AdminReferenceRow } from "@/lib/admin/demo";
+import type { AdminTalentRow, AdminReferenceRow } from "@/lib/admin/demo";
 import {
   REQUIRED_VERIFIED_REFERENCES,
   formatTimezoneDisplay,
-} from "@/lib/dashboard/candidate";
+} from "@/lib/dashboard/talent";
 import { LOCATION_MODES } from "@/lib/onboarding/schema";
 import { relationshipLabel } from "@/lib/reference/relationship";
 import {
@@ -23,18 +23,18 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const SUPERUSER_LINKS = [
-  { href: "/superuser/candidates", label: "Candidates" },
+  { href: "/superuser/talent", label: "Talent" },
   { href: "/superuser/manual-match", label: "Manual Match" },
 ];
 
-const CANDIDATE_STATUS_OPTIONS = [
+const TALENT_STATUS_OPTIONS = [
   { value: "all", label: "All statuses" },
   { value: "actively_looking", label: "Active" },
   { value: "on_hold", label: "On Hold" },
   { value: "incomplete", label: "Incomplete" },
 ];
 
-function missingLabels(missing: AdminCandidateRow["missing"]): string[] {
+function missingLabels(missing: AdminTalentRow["missing"]): string[] {
   const labels: string[] = [];
   if (missing.resume) labels.push("Resume");
   if (missing.profile) labels.push("Profile");
@@ -60,9 +60,9 @@ function formatLocationPreference(modes: string[]) {
   return labels.length ? labels.join(", ") : "To Be Completed";
 }
 
-export function AdminCandidatesPage() {
+export function AdminTalentsPage() {
   return (
-    <CandidateProfilesPage
+    <TalentProfilesPage
       portalTitle="Admin Portal"
       links={ADMIN_LINKS}
       accent="admin"
@@ -71,9 +71,9 @@ export function AdminCandidatesPage() {
   );
 }
 
-export function SuperuserCandidatesPage() {
+export function SuperuserTalentPage() {
   return (
-    <CandidateProfilesPage
+    <TalentProfilesPage
       portalTitle="Superuser Portal"
       links={SUPERUSER_LINKS}
       accent="superuser"
@@ -82,7 +82,7 @@ export function SuperuserCandidatesPage() {
   );
 }
 
-function CandidateProfilesPage({
+function TalentProfilesPage({
   portalTitle,
   links,
   accent,
@@ -93,7 +93,7 @@ function CandidateProfilesPage({
   accent: "admin" | "superuser";
   allowDelete: boolean;
 }) {
-  const [candidates, setCandidates] = useState<AdminCandidateRow[]>([]);
+  const [talent, setTalent] = useState<AdminTalentRow[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [demo, setDemo] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -107,11 +107,11 @@ function CandidateProfilesPage({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/admin/candidates");
+      const res = await fetch("/api/admin/talent");
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Failed to load candidates");
-      const list = (json.candidates ?? []) as AdminCandidateRow[];
-      setCandidates(list);
+      if (!res.ok) throw new Error(json.error || "Failed to load talent");
+      const list = (json.talent ?? []) as AdminTalentRow[];
+      setTalent(list);
       setDemo(Boolean(json.demo));
       setSelectedId((prev) => {
         if (prev && list.some((c) => c.id === prev)) return prev;
@@ -129,7 +129,7 @@ function CandidateProfilesPage({
   }, [load]);
 
   const filtered = useMemo(() => {
-    const list = candidates.filter((c) => {
+    const list = talent.filter((c) => {
       if (statusFilter !== "all" && c.status !== statusFilter) {
         return false;
       }
@@ -155,7 +155,7 @@ function CandidateProfilesPage({
         new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
       );
     });
-  }, [candidates, keyword, sort, statusFilter]);
+  }, [talent, keyword, sort, statusFilter]);
 
   const selected = filtered.find((c) => c.id === selectedId) ?? null;
 
@@ -167,22 +167,22 @@ function CandidateProfilesPage({
   }, [filtered, selectedId]);
 
   async function setStatus(status: "actively_looking" | "on_hold") {
-    if (!selected?.has_candidate_profile) return;
+    if (!selected?.has_talent_profile) return;
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/admin/candidates", {
+      const res = await fetch("/api/admin/talent", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "set_status",
-          candidateId: selected.id,
+          talentId: selected.id,
           status,
         }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Status update failed");
-      setCandidates((prev) =>
+      setTalent((prev) =>
         prev.map((c) => (c.id === selected.id ? { ...c, status } : c))
       );
     } catch (err) {
@@ -192,32 +192,32 @@ function CandidateProfilesPage({
     }
   }
 
-  async function deleteCandidate() {
-    if (!allowDelete || !selected?.has_candidate_profile) return;
+  async function deleteTalent() {
+    if (!allowDelete || !selected?.has_talent_profile) return;
     if (
       !window.confirm(
-        `Delete candidate profile for ${selected.full_name || selected.headline}?`
+        `Delete talent profile for ${selected.full_name || selected.headline}?`
       )
     ) {
       return;
     }
     setBusy(true);
     try {
-      const res = await fetch("/api/admin/candidates", {
+      const res = await fetch("/api/admin/talent", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "delete", candidateId: selected.id }),
+        body: JSON.stringify({ action: "delete", talentId: selected.id }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Delete failed");
-      // Keep the login user in the list, now without a candidate profile.
-      setCandidates((prev) =>
+      // Keep the login user in the list, now without a talent profile.
+      setTalent((prev) =>
         prev.map((c) =>
           c.id === selected.id
             ? {
                 ...c,
                 id: c.user_id,
-                has_candidate_profile: false,
+                has_talent_profile: false,
                 headline: null,
                 status: "incomplete",
                 global_city: null,
@@ -252,7 +252,7 @@ function CandidateProfilesPage({
             Operations
           </p>
           <h1 className="mt-2 font-display text-2xl font-semibold text-[#2B5B84]">
-            Candidate profiles
+            Talent profiles
           </h1>
           <p className="mt-2 text-sm text-[#5B616B]">
             Every logged-in user, with missing resume, profile, or references
@@ -271,7 +271,7 @@ function CandidateProfilesPage({
         onSortChange={setSort}
         status={statusFilter}
         onStatusChange={setStatusFilter}
-        statusOptions={CANDIDATE_STATUS_OPTIONS}
+        statusOptions={TALENT_STATUS_OPTIONS}
         keyword={keyword}
         onKeywordChange={setKeyword}
         keywordPlaceholder="Search name, email, headline, missing items…"
@@ -280,7 +280,7 @@ function CandidateProfilesPage({
       {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
 
       {loading ? (
-        <p className="text-sm text-[#5B616B]">Loading candidates…</p>
+        <p className="text-sm text-[#5B616B]">Loading talent…</p>
       ) : (
         <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
           <aside className="space-y-2 border border-[#2B5B84]/15 bg-white p-3">
@@ -302,7 +302,7 @@ function CandidateProfilesPage({
                   </p>
                   <p className="truncate text-xs text-[#5B616B]">
                     {c.headline ||
-                      (c.has_candidate_profile
+                      (c.has_talent_profile
                         ? "No headline"
                         : "Onboarding not started")}
                   </p>
@@ -335,9 +335,9 @@ function CandidateProfilesPage({
             })}
             {filtered.length === 0 && (
               <p className="p-2 text-sm text-[#5B616B]">
-                {candidates.length === 0
+                {talent.length === 0
                   ? "No users yet."
-                  : "No candidates match these filters."}
+                  : "No talent match these filters."}
               </p>
             )}
           </aside>
@@ -369,7 +369,7 @@ function CandidateProfilesPage({
                     size="sm"
                     disabled={
                       busy ||
-                      !selected.has_candidate_profile ||
+                      !selected.has_talent_profile ||
                       selected.status === "actively_looking"
                     }
                     className="bg-[#2B5B84] text-white hover:bg-[#244e71]"
@@ -383,7 +383,7 @@ function CandidateProfilesPage({
                     variant="outline"
                     disabled={
                       busy ||
-                      !selected.has_candidate_profile ||
+                      !selected.has_talent_profile ||
                       selected.status === "on_hold"
                     }
                     onClick={() => void setStatus("on_hold")}
@@ -395,9 +395,9 @@ function CandidateProfilesPage({
                       type="button"
                       size="sm"
                       variant="outline"
-                      disabled={busy || !selected.has_candidate_profile}
+                      disabled={busy || !selected.has_talent_profile}
                       className="border-destructive/40 text-destructive"
-                      onClick={() => void deleteCandidate()}
+                      onClick={() => void deleteTalent()}
                     >
                       Delete
                     </Button>
@@ -435,10 +435,10 @@ function CandidateProfilesPage({
                 </TabsContent>
 
                 <TabsContent value="location" className="mt-4">
-                  {!selected.has_candidate_profile ? (
+                  {!selected.has_talent_profile ? (
                     <p className="text-sm text-[#5B616B]">
                       To Be Completed — this user has not finished onboarding,
-                      so there is no candidate profile yet.
+                      so there is no talent profile yet.
                     </p>
                   ) : (
                     <div className="grid gap-3 sm:grid-cols-2">
@@ -507,7 +507,7 @@ function CandidateProfilesPage({
 function MissingChecklist({
   missing,
 }: {
-  missing: AdminCandidateRow["missing"];
+  missing: AdminTalentRow["missing"];
 }) {
   const items = [
     { key: "resume", label: "Resume", missing: missing.resume },
@@ -561,7 +561,7 @@ function ReferenceCard({ refRow }: { refRow: AdminReferenceRow }) {
     setMessage(null);
     setError(null);
     try {
-      const res = await fetch("/api/admin/candidates/references/resend", {
+      const res = await fetch("/api/admin/talent/references/resend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ referenceId: refRow.id }),

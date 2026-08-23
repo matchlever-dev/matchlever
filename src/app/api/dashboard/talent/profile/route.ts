@@ -4,7 +4,7 @@ import { z } from "zod";
 import {
   formatTimezoneDisplay,
   resolveTimezoneId,
-} from "@/lib/dashboard/candidate";
+} from "@/lib/dashboard/talent";
 import {
   TIMEZONE_VALUES,
   timezoneOffsetMinutes,
@@ -19,8 +19,8 @@ import {
 } from "@/lib/postgres-text";
 import type { Database } from "@/types/database";
 
-type CandidateProfileUpdate =
-  Database["public"]["Tables"]["candidate_profiles"]["Update"];
+type TalentProfileUpdate =
+  Database["public"]["Tables"]["talent_profiles"]["Update"];
 
 const editSchema = z.object({
   headline: z.string().trim().min(2).max(120),
@@ -67,7 +67,7 @@ export async function PATCH(request: Request) {
     }
 
     const timezone = resolveTimezoneId(parsed.data.timezone);
-    const update: CandidateProfileUpdate = {
+    const update: TalentProfileUpdate = {
       headline: toPostgresText(parsed.data.headline),
       selected_tagline: toPostgresText(parsed.data.selectedTagline),
       global_city: toPostgresText(parsed.data.globalCity),
@@ -94,7 +94,7 @@ export async function PATCH(request: Request) {
     };
 
     let { error } = await supabase
-      .from("candidate_profiles")
+      .from("talent_profiles")
       .update(update)
       .eq("user_id", user.id);
 
@@ -102,13 +102,13 @@ export async function PATCH(request: Request) {
     if (error?.message?.includes("timezone")) {
       const { timezone: _timezone, ...withoutTimezone } = update;
       ({ error } = await supabase
-        .from("candidate_profiles")
+        .from("talent_profiles")
         .update(withoutTimezone)
         .eq("user_id", user.id));
     }
 
     if (error) {
-      console.error("[candidate edit]", error.message);
+      console.error("[talent edit]", error.message);
       return NextResponse.json(
         { error: "Unable to update profile" },
         { status: 500 }
@@ -119,7 +119,7 @@ export async function PATCH(request: Request) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to update profile";
-    console.error("[/api/dashboard/candidate/profile PATCH]", message);
+    console.error("[/api/dashboard/talent/profile PATCH]", message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -144,14 +144,14 @@ export async function DELETE() {
 
     // Remove app profile data (cascades references via FK).
     const { error: profileError } = await supabase
-      .from("candidate_profiles")
+      .from("talent_profiles")
       .delete()
       .eq("user_id", user.id);
 
     if (profileError) {
-      console.error("[candidate delete profile]", profileError.message);
+      console.error("[talent delete profile]", profileError.message);
       return NextResponse.json(
-        { error: "Unable to delete candidate profile" },
+        { error: "Unable to delete talent profile" },
         { status: 500 }
       );
     }
@@ -162,7 +162,7 @@ export async function DELETE() {
       .eq("id", user.id);
 
     if (userProfileError) {
-      console.error("[candidate delete user_profile]", userProfileError.message);
+      console.error("[talent delete user_profile]", userProfileError.message);
     }
 
     // Auth user deletion requires service role.
@@ -170,7 +170,7 @@ export async function DELETE() {
     if (admin) {
       const { error: authError } = await admin.auth.admin.deleteUser(user.id);
       if (authError) {
-        console.error("[candidate delete auth]", authError.message);
+        console.error("[talent delete auth]", authError.message);
         return NextResponse.json(
           {
             ok: true,
@@ -186,7 +186,7 @@ export async function DELETE() {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to delete account";
-    console.error("[/api/dashboard/candidate/profile DELETE]", message);
+    console.error("[/api/dashboard/talent/profile DELETE]", message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

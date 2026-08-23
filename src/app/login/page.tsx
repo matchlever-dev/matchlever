@@ -5,7 +5,7 @@ import { LoginForm } from "@/components/auth/login-form";
 
 export const metadata: Metadata = {
   title: "Log in · MatchLever",
-  description: "Sign in to your MatchLever candidate dashboard or staff portal.",
+  description: "Sign in to your MatchLever talent dashboard or staff portal.",
 };
 
 export default function LoginPage() {

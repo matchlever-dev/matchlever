@@ -2,7 +2,7 @@ import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { candidateNameForInvite } from "@/lib/auth/display-name";
+import { talentNameForInvite } from "@/lib/auth/display-name";
 import { sendReferenceInviteEmail } from "@/lib/email/resend";
 import { UNSUBSCRIBED_EMAIL_MESSAGE } from "@/lib/email/unsubscribe";
 import { linkedInUrlSchema } from "@/lib/reference/schema";
@@ -62,7 +62,7 @@ export async function PATCH(request: Request) {
       }
       nextLinkedIn = validation.normalizedUrl;
       linkedInFlags = [
-        "seeker_provided_linkedin",
+        "talent_provided_linkedin",
         `validation_mode:${validation.mode}`,
         ...validation.flags,
       ];
@@ -89,7 +89,7 @@ export async function PATCH(request: Request) {
 
     const [{ data: profile }, { data: userProfile }] = await Promise.all([
       supabase
-        .from("candidate_profiles")
+        .from("talent_profiles")
         .select("id, headline")
         .eq("user_id", user.id)
         .maybeSingle(),
@@ -102,18 +102,18 @@ export async function PATCH(request: Request) {
 
     if (!profile) {
       return NextResponse.json(
-        { error: "Candidate profile not found" },
+        { error: "Talent profile not found" },
         { status: 404 }
       );
     }
 
     const { data: reference, error } = await supabase
-      .from("candidate_references")
+      .from("talent_references")
       .select(
-        "id, reference_email, reference_linkedin_url, relationship, verification_token, status, candidate_profile_id, authenticity_flags"
+        "id, reference_email, reference_linkedin_url, relationship, verification_token, status, talent_profile_id, authenticity_flags"
       )
       .eq("id", parsed.data.referenceId)
-      .eq("candidate_profile_id", profile.id)
+      .eq("talent_profile_id", profile.id)
       .maybeSingle();
 
     if (error || !reference) {
@@ -149,9 +149,9 @@ export async function PATCH(request: Request) {
 
     if (emailChanged && nextEmail) {
       const { data: duplicate } = await supabase
-        .from("candidate_references")
+        .from("talent_references")
         .select("id")
-        .eq("candidate_profile_id", profile.id)
+        .eq("talent_profile_id", profile.id)
         .eq("reference_email", nextEmail)
         .neq("id", reference.id)
         .maybeSingle();
@@ -166,9 +166,9 @@ export async function PATCH(request: Request) {
 
     if (linkedInChanged && nextLinkedIn) {
       const { data: duplicates } = await supabase
-        .from("candidate_references")
+        .from("talent_references")
         .select("id, reference_linkedin_url")
-        .eq("candidate_profile_id", profile.id)
+        .eq("talent_profile_id", profile.id)
         .neq("id", reference.id);
 
       const clash = (duplicates ?? []).some((row) => {
@@ -212,10 +212,10 @@ export async function PATCH(request: Request) {
     }
 
     const { error: updateError } = await supabase
-      .from("candidate_references")
+      .from("talent_references")
       .update(updatePayload)
       .eq("id", reference.id)
-      .eq("candidate_profile_id", profile.id);
+      .eq("talent_profile_id", profile.id);
 
     if (updateError) {
       console.error("[references update]", updateError.message);
@@ -234,8 +234,8 @@ export async function PATCH(request: Request) {
       try {
         const sent = await sendReferenceInviteEmail({
           to: nextEmail,
-          candidateName: candidateNameForInvite(user, userProfile?.full_name),
-          candidateTitle: profile.headline || "MatchLever candidate",
+          talentName: talentNameForInvite(user, userProfile?.full_name),
+          talentTitle: profile.headline || "MatchLever talent",
           token,
         });
         invite = sent;
@@ -267,7 +267,7 @@ export async function PATCH(request: Request) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to update reference";
-    console.error("[/api/dashboard/candidate/references]", message);
+    console.error("[/api/dashboard/talent/references]", message);
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }

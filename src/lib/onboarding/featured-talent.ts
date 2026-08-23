@@ -1,4 +1,4 @@
-export type FeaturedCandidate = {
+export type FeaturedTalent = {
   id: string;
   anonymousTitle: string;
   tagline: string;
@@ -12,7 +12,7 @@ export type FeaturedCandidate = {
   locationMode: "Remote" | "Hybrid" | "Onsite";
 };
 
-export const FEATURED_CANDIDATES: FeaturedCandidate[] = [
+export const FEATURED_TALENT: FeaturedTalent[] = [
   {
     id: "1",
     anonymousTitle: "Staff Platform Engineer",

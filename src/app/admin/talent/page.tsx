@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 
-import { AdminCandidatesPage } from "@/components/admin/admin-candidates-page";
+import { AdminTalentsPage } from "@/components/admin/admin-talent-page";
 
 export const metadata: Metadata = {
-  title: "Admin Candidates · MatchLever",
+  title: "Admin Talent · MatchLever",
 };
 
 export default function Page() {
-  return <AdminCandidatesPage />;
+  return <AdminTalentsPage />;
 }

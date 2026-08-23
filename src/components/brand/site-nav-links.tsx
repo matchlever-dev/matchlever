@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 export const SITE_NAV_LINKS = [
   { href: "/why-matchlever", label: "Why MatchLever" },
-  { href: "/legal/candidates", label: "Candidate Terms" },
+  { href: "/legal/talent", label: "Talent Terms" },
   { href: "/contact", label: "Contact Us" },
   { href: "/login", label: "Login" },
 ] as const;

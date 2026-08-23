@@ -60,8 +60,8 @@ export async function POST(request: Request) {
     }
 
     const { data: reference, error: refError } = await admin
-      .from("candidate_references")
-      .select("id, candidate_profile_id, status, reference_linkedin_url")
+      .from("talent_references")
+      .select("id, talent_profile_id, status, reference_linkedin_url")
       .eq("verification_token", input.token)
       .maybeSingle();
 
@@ -118,7 +118,7 @@ export async function POST(request: Request) {
     }));
 
     const { error: updateError } = await admin
-      .from("candidate_references")
+      .from("talent_references")
       .update({
         reference_name: input.managerName,
         relationship: input.relationship,
@@ -144,9 +144,9 @@ export async function POST(request: Request) {
     }
 
     const { data: verifiedRows, error: listError } = await admin
-      .from("candidate_references")
+      .from("talent_references")
       .select("superpowers")
-      .eq("candidate_profile_id", reference.candidate_profile_id)
+      .eq("talent_profile_id", reference.talent_profile_id)
       .eq("status", "verified");
 
     if (listError) {
@@ -184,14 +184,14 @@ export async function POST(request: Request) {
     );
 
     const { error: profileError } = await admin
-      .from("candidate_profiles")
+      .from("talent_profiles")
       .update({ verified_superpowers: aggregated as Json })
-      .eq("id", reference.candidate_profile_id);
+      .eq("id", reference.talent_profile_id);
 
     if (profileError) {
       console.error("[reference verify] profile", profileError.message);
       return NextResponse.json(
-        { error: "Saved reference but failed to update candidate profile" },
+        { error: "Saved reference but failed to update talent profile" },
         { status: 500 }
       );
     }

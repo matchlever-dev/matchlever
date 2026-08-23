@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import {
-  captureCandidateLinkedInUrl,
+  captureTalentLinkedInUrl,
   normalizePublicLinkedInProfileUrl,
 } from "@/lib/auth/linkedin-url";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -34,7 +34,7 @@ async function persistLinkedInUrl(
     const { error: insertError } = await db.from("user_profiles").insert({
       id: userId,
       linkedin_url: url,
-      role: "candidate",
+      role: "talent",
     });
     if (insertError) {
       console.error("[/api/me/linkedin persist insert]", insertError.message);
@@ -77,7 +77,7 @@ export async function GET() {
       .eq("id", user.id)
       .maybeSingle();
 
-    const url = await captureCandidateLinkedInUrl({
+    const url = await captureTalentLinkedInUrl({
       stored: profile?.linkedin_url,
       authUser: user,
       accessToken: session?.provider_token,

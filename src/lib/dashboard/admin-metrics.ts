@@ -28,7 +28,7 @@ export type VisitorVolumeMetric = {
 export type NewRegistrationsMetric = {
   label: string;
   total: number;
-  candidates: number;
+  talent: number;
   employers: number;
   /** Percent change vs the previous equivalent period. */
   changePct: number;
@@ -36,7 +36,7 @@ export type NewRegistrationsMetric = {
   periodLabel: string;
 };
 
-export type CandidatePipelineMetric = {
+export type TalentPipelineMetric = {
   label: string;
   segments: PipelineSegment[];
   total: number;
@@ -57,7 +57,7 @@ export type AdminDashboardData = {
   generatedAt: string;
   visitorVolume: VisitorVolumeMetric;
   newRegistrations: NewRegistrationsMetric;
-  candidatePipeline: CandidatePipelineMetric;
+  talentPipeline: TalentPipelineMetric;
   activeMatches: ActiveMatchesMetric;
 };
 
@@ -173,7 +173,7 @@ type RangeScale = {
   viewsBase: number;
   viewsVol: number;
   registrations: number;
-  candidateShare: number;
+  talentShare: number;
   changePct: number;
   draft: number;
   pending: number;
@@ -189,7 +189,7 @@ const RANGE_SCALE: Record<ChartRangeKey, RangeScale> = {
     viewsBase: 1700,
     viewsVol: 320,
     registrations: 214,
-    candidateShare: 0.68,
+    talentShare: 0.68,
     changePct: 8.4,
     draft: 42,
     pending: 28,
@@ -203,7 +203,7 @@ const RANGE_SCALE: Record<ChartRangeKey, RangeScale> = {
     viewsBase: 9800,
     viewsVol: 1800,
     registrations: 1180,
-    candidateShare: 0.71,
+    talentShare: 0.71,
     changePct: 14.2,
     draft: 58,
     pending: 41,
@@ -217,7 +217,7 @@ const RANGE_SCALE: Record<ChartRangeKey, RangeScale> = {
     viewsBase: 48_000,
     viewsVol: 9000,
     registrations: 2480,
-    candidateShare: 0.69,
+    talentShare: 0.69,
     changePct: 22.6,
     draft: 71,
     pending: 52,
@@ -231,7 +231,7 @@ const RANGE_SCALE: Record<ChartRangeKey, RangeScale> = {
     viewsBase: 62_000,
     viewsVol: 12_000,
     registrations: 5120,
-    candidateShare: 0.7,
+    talentShare: 0.7,
     changePct: 31.1,
     draft: 86,
     pending: 64,
@@ -248,8 +248,8 @@ export function getAdminDashboardMock(
 ): AdminDashboardData {
   const scale = RANGE_SCALE[range];
   const copy = RANGE_COPY[range];
-  const candidates = Math.round(scale.registrations * scale.candidateShare);
-  const employers = scale.registrations - candidates;
+  const talent = Math.round(scale.registrations * scale.talentShare);
+  const employers = scale.registrations - talent;
   const segments: PipelineSegment[] = [
     { status: "Draft", count: scale.draft, color: PIPELINE_COLORS.Draft },
     {
@@ -273,14 +273,14 @@ export function getAdminDashboardMock(
     newRegistrations: {
       label: "New Registrations",
       total: scale.registrations,
-      candidates,
+      talent,
       employers,
       changePct: scale.changePct,
       changeLabel: copy.changeLabel,
       periodLabel: copy.periodLabel,
     },
-    candidatePipeline: {
-      label: "Candidate Pipeline",
+    talentPipeline: {
+      label: "Talent Pipeline",
       segments,
       total: segments.reduce((sum, s) => sum + s.count, 0),
       periodLabel: copy.periodLabel,

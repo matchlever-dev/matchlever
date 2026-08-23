@@ -2,7 +2,7 @@
 export const ADMIN_LINKS = [
   { href: "/admin/dashboard", label: "Dashboard" },
   { href: "/admin/users", label: "Users" },
-  { href: "/admin/candidates", label: "Candidates" },
+  { href: "/admin/talent", label: "Talent" },
   { href: "/admin/contact", label: "Contact" },
 ] as const;
 

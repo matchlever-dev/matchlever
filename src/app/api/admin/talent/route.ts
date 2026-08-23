@@ -4,15 +4,15 @@ import { z } from "zod";
 import { requireAdminApi } from "@/lib/auth/api-guards";
 import {
   linkedinUrlFromAuthUser,
-  resolveCandidateLinkedInUrl,
+  resolveTalentLinkedInUrl,
 } from "@/lib/auth/linkedin-url";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
-  DEMO_ADMIN_CANDIDATES,
+  DEMO_ADMIN_TALENT,
   averageAuthenticityScore,
-  computeCandidateMissing,
+  computeTalentMissing,
   isLowTrustScore,
-  type AdminCandidateRow,
+  type AdminTalentRow,
   type AdminReferenceRow,
 } from "@/lib/admin/demo";
 import { createClient } from "@/lib/supabase/server";
@@ -42,13 +42,13 @@ export async function GET() {
   if (auth.actor.demo) {
     return NextResponse.json({
       demo: true,
-      candidates: DEMO_ADMIN_CANDIDATES,
+      talent: DEMO_ADMIN_TALENT,
     });
   }
 
   const supabase = await createClient();
 
-  // Every logged-in user has a user_profiles row; candidate_profiles may be absent
+  // Every logged-in user has a user_profiles row; talent_profiles may be absent
   // until onboarding completes.
   let { data: users, error: usersError } = await supabase
     .from("user_profiles")
@@ -68,9 +68,9 @@ export async function GET() {
   }
 
   if (usersError) {
-    console.error("[admin candidates users]", usersError.message);
+    console.error("[admin talent users]", usersError.message);
     return NextResponse.json(
-      { error: "Unable to load candidates" },
+      { error: "Unable to load talent" },
       { status: 500 }
     );
   }
@@ -114,7 +114,7 @@ export async function GET() {
 
   let { data: profiles, error: profilesError } = userIds.length
     ? await supabase
-        .from("candidate_profiles")
+        .from("talent_profiles")
         .select(profileSelectWithTimezone)
         .in("user_id", userIds)
     : { data: [] as never[], error: null };
@@ -122,7 +122,7 @@ export async function GET() {
   if (profilesError?.message?.includes("timezone")) {
     const fallback = userIds.length
       ? await supabase
-          .from("candidate_profiles")
+          .from("talent_profiles")
           .select(profileSelectWithoutTimezone)
           .in("user_id", userIds)
       : { data: [] as never[], error: null };
@@ -134,9 +134,9 @@ export async function GET() {
   }
 
   if (profilesError) {
-    console.error("[admin candidates profiles]", profilesError.message);
+    console.error("[admin talent profiles]", profilesError.message);
     return NextResponse.json(
-      { error: "Unable to load candidates" },
+      { error: "Unable to load talent" },
       { status: 500 }
     );
   }
@@ -146,14 +146,14 @@ export async function GET() {
 
   const { data: references } = profileIds.length
     ? await supabase
-        .from("candidate_references")
+        .from("talent_references")
         .select(
-          "id, candidate_profile_id, reference_email, reference_name, relationship, reference_linkedin_url, authenticity_score, authenticity_flags, status"
+          "id, talent_profile_id, reference_email, reference_name, relationship, reference_linkedin_url, authenticity_score, authenticity_flags, status"
         )
-        .in("candidate_profile_id", profileIds)
+        .in("talent_profile_id", profileIds)
     : { data: [] as never[] };
 
-  const refsByCandidate = new Map<string, AdminReferenceRow[]>();
+  const refsByTalent = new Map<string, AdminReferenceRow[]>();
 
   for (const ref of references ?? []) {
     const flags = flagsFromJson(ref.authenticity_flags);
@@ -172,17 +172,17 @@ export async function GET() {
       status: ref.status,
       lowTrust: isLowTrustScore(score, flags),
     };
-    const list = refsByCandidate.get(ref.candidate_profile_id) ?? [];
+    const list = refsByTalent.get(ref.talent_profile_id) ?? [];
     list.push(row);
-    refsByCandidate.set(ref.candidate_profile_id, list);
+    refsByTalent.set(ref.talent_profile_id, list);
   }
 
-  const candidates: AdminCandidateRow[] = (users ?? []).map((user) => {
+  const talent: AdminTalentRow[] = (users ?? []).map((user) => {
     const profile = profileByUser.get(user.id) ?? null;
-    const refs = profile ? refsByCandidate.get(profile.id) ?? [] : [];
+    const refs = profile ? refsByTalent.get(profile.id) ?? [] : [];
     const hasProfile = Boolean(profile);
     const base = {
-      has_candidate_profile: hasProfile,
+      has_talent_profile: hasProfile,
       headline: profile?.headline ?? null,
       global_city: profile?.global_city ?? null,
       global_country: profile?.global_country ?? null,
@@ -194,10 +194,10 @@ export async function GET() {
     };
 
     return {
-      // Prefer candidate profile id when present; otherwise key by user id.
+      // Prefer talent profile id when present; otherwise key by user id.
       id: profile?.id ?? user.id,
       user_id: user.id,
-      has_candidate_profile: hasProfile,
+      has_talent_profile: hasProfile,
       headline: base.headline,
       status: profile?.status ?? "incomplete",
       global_city: base.global_city,
@@ -211,18 +211,18 @@ export async function GET() {
       sanitized_summary: base.sanitized_summary,
       email: user.email,
       full_name: user.full_name,
-      linkedin_url: resolveCandidateLinkedInUrl({
+      linkedin_url: resolveTalentLinkedInUrl({
         stored: user.linkedin_url || linkedInFromAuth.get(user.id) || null,
         resumeText: profile?.raw_resume_text,
       }),
       updated_at: profile?.updated_at ?? user.updated_at ?? user.created_at,
       avg_authenticity_score: averageAuthenticityScore(refs),
       references: refs,
-      missing: computeCandidateMissing(base),
+      missing: computeTalentMissing(base),
     };
   });
 
-  candidates.sort(
+  talent.sort(
     (a, b) =>
       new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
   );
@@ -232,7 +232,7 @@ export async function GET() {
       (users ?? []).map((row) => [row.id, row.linkedin_url])
     );
     void Promise.all(
-      candidates
+      talent
         .filter(
           (row) =>
             Boolean(row.linkedin_url) &&
@@ -247,18 +247,18 @@ export async function GET() {
     );
   }
 
-  return NextResponse.json({ demo: false, candidates });
+  return NextResponse.json({ demo: false, talent });
 }
 
 const actionSchema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("set_status"),
-    candidateId: z.string().min(1),
+    talentId: z.string().min(1),
     status: z.enum(["actively_looking", "on_hold"]),
   }),
   z.object({
     action: z.literal("delete"),
-    candidateId: z.string().min(1),
+    talentId: z.string().min(1),
   }),
 ]);
 
@@ -281,19 +281,19 @@ export async function PATCH(request: Request) {
     // Destructive deletes are admin-only (Admin Portal). Superuser portal has no delete UI.
     if (!auth.actor.demo && !auth.actor.hasAdminFlag) {
       return NextResponse.json(
-        { error: "Only admins can delete candidate profiles" },
+        { error: "Only admins can delete talent profiles" },
         { status: 403 }
       );
     }
 
     const { error } = await supabase
-      .from("candidate_profiles")
+      .from("talent_profiles")
       .delete()
-      .eq("id", parsed.data.candidateId);
+      .eq("id", parsed.data.talentId);
     if (error) {
-      console.error("[admin candidate delete]", error.message);
+      console.error("[admin talent delete]", error.message);
       return NextResponse.json(
-        { error: "Unable to delete candidate" },
+        { error: "Unable to delete talent" },
         { status: 500 }
       );
     }
@@ -301,12 +301,12 @@ export async function PATCH(request: Request) {
   }
 
   const { error } = await supabase
-    .from("candidate_profiles")
+    .from("talent_profiles")
     .update({ status: parsed.data.status })
-    .eq("id", parsed.data.candidateId);
+    .eq("id", parsed.data.talentId);
 
   if (error) {
-    console.error("[admin candidate status]", error.message);
+    console.error("[admin talent status]", error.message);
     return NextResponse.json(
       { error: "Unable to update status" },
       { status: 500 }

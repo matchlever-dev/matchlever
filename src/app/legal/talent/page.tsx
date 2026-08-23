@@ -2,16 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { BrandMark } from "@/components/brand/brand-mark";
-import { CANDIDATE_TOS } from "@/lib/legal/candidate-tos";
-import { CANDIDATE_TOS_SECTIONS } from "@/lib/legal/candidate-tos-content";
+import { TALENT_TOS } from "@/lib/legal/talent-tos";
+import { TALENT_TOS_SECTIONS } from "@/lib/legal/talent-tos-content";
 
 export const metadata: Metadata = {
-  title: "Candidate Terms of Service · MatchLever",
+  title: "Talent Terms of Service · MatchLever",
   description:
-    "Job Candidate Terms of Service for the MatchLever talent exchange.",
+    "Talent Terms of Service for the MatchLever talent exchange.",
 };
 
-export default function CandidateTermsPage() {
+export default function TalentTermsPage() {
   return (
     <div className="flex min-h-[100svh] flex-col bg-[#F7F6F3] text-[#2A2D34]">
       <header className="border-b border-[#2B5B84]/10 bg-white/90">
@@ -23,7 +23,7 @@ export default function CandidateTermsPage() {
             </span>
           </Link>
           <a
-            href={CANDIDATE_TOS.pdfPath}
+            href={TALENT_TOS.pdfPath}
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs font-medium text-[#2B5B84] hover:underline"
@@ -38,25 +38,25 @@ export default function CandidateTermsPage() {
           Arise Solutions LLC
         </p>
         <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-[#2B5B84]">
-          {CANDIDATE_TOS.title}
+          {TALENT_TOS.title}
         </h1>
         <p className="mt-2 text-sm text-[#5B616B]">
-          Effective Date: {CANDIDATE_TOS.effectiveDate}
+          Effective Date: {TALENT_TOS.effectiveDate}
         </p>
         <p className="mt-6 text-sm leading-relaxed text-[#2A2D34]/80">
           Welcome to MatchLever. MatchLever is a bias-free enterprise talent
-          exchange connecting top-tier candidates and hiring organizations. The
+          exchange connecting top-tier talent and hiring organizations. The
           MatchLever platform, including all associated code, database schemas,
           and data, is wholly owned and operated by Arise Solutions LLC.
         </p>
         <p className="mt-4 text-sm leading-relaxed text-[#2A2D34]/80">
-          By registering as a &quot;Candidate&quot; and using the MatchLever
-          platform to unlock your potential, you agree to these Job Candidate Terms
+          By registering as a &quot;Talent&quot; and using the MatchLever
+          platform to unlock your potential, you agree to these Talent Terms
           of Service (&quot;Terms&quot;).
         </p>
 
         <div className="mt-10 space-y-8">
-          {CANDIDATE_TOS_SECTIONS.map((section) => (
+          {TALENT_TOS_SECTIONS.map((section) => (
             <section key={section.heading}>
               <h2 className="font-display text-lg font-semibold text-[#2B5B84]">
                 {section.heading}
@@ -85,7 +85,7 @@ export default function CandidateTermsPage() {
         <p className="mt-12 text-xs text-[#5B616B]">
           The{" "}
           <a
-            href={CANDIDATE_TOS.pdfPath}
+            href={TALENT_TOS.pdfPath}
             className="font-medium text-[#2B5B84] underline underline-offset-2"
             target="_blank"
             rel="noopener noreferrer"

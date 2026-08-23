@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "db:query": "node scripts/run-sql.mjs",
-    "db:delete-candidate": "node scripts/delete-candidate-by-name.mjs"
+    "db:delete-talent": "node scripts/delete-talent-by-name.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

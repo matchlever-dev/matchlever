@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { captureCandidateLinkedInUrl } from "@/lib/auth/linkedin-url";
+import { captureTalentLinkedInUrl } from "@/lib/auth/linkedin-url";
 import {
   resolvePostLoginPath,
   sanitizeNextPath,
@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * OAuth return handler. Exchanges the auth code for a session, then routes
- * candidates / admins / superusers to the right surface.
+ * talent / admins / superusers to the right surface.
  */
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -29,7 +29,7 @@ export async function GET(request: Request) {
   }
 
   if (!isSupabaseConfigured()) {
-    return NextResponse.redirect(new URL(next || "/dashboard/candidate", url.origin));
+    return NextResponse.redirect(new URL(next || "/dashboard/talent", url.origin));
   }
 
   try {
@@ -54,7 +54,7 @@ export async function GET(request: Request) {
     } = await supabase.auth.getSession();
     const user = session?.user;
     const linkedInUrl = user
-      ? await captureCandidateLinkedInUrl({
+      ? await captureTalentLinkedInUrl({
           authUser: user,
           accessToken: providerToken || session?.provider_token,
         })

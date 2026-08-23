@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { captureCandidateLinkedInUrl } from "@/lib/auth/linkedin-url";
+import { captureTalentLinkedInUrl } from "@/lib/auth/linkedin-url";
 import {
-  DEMO_CANDIDATE_DASHBOARD,
+  DEMO_TALENT_DASHBOARD,
   formatTimezoneDisplay,
   hasCompleteReferences,
   initialsFromName,
   REQUIRED_VERIFIED_REFERENCES,
   resolveTimezoneId,
-  type CandidateDashboardData,
-  type CandidateReferenceRow,
-} from "@/lib/dashboard/candidate";
+  type TalentDashboardData,
+  type TalentReferenceRow,
+} from "@/lib/dashboard/talent";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
@@ -24,7 +24,7 @@ function skillsFromJson(value: Json): string[] {
 export async function GET() {
   try {
     if (!isSupabaseConfigured()) {
-      return NextResponse.json(DEMO_CANDIDATE_DASHBOARD);
+      return NextResponse.json(DEMO_TALENT_DASHBOARD);
     }
 
     const supabase = await createClient();
@@ -40,7 +40,7 @@ export async function GET() {
     }
 
     let { data: profile, error } = await supabase
-      .from("candidate_profiles")
+      .from("talent_profiles")
       .select(
         "id, headline, selected_tagline, suggested_taglines, verified_skills, global_city, global_country, timezone, timezone_offset, status, raw_resume_text"
       )
@@ -49,7 +49,7 @@ export async function GET() {
 
     if (error?.message?.includes("timezone")) {
       const fallback = await supabase
-        .from("candidate_profiles")
+        .from("talent_profiles")
         .select(
           "id, headline, selected_tagline, suggested_taglines, verified_skills, global_city, global_country, timezone_offset, status, raw_resume_text"
         )
@@ -62,9 +62,9 @@ export async function GET() {
     }
 
     if (error) {
-      console.error("[candidate dashboard]", error.message);
+      console.error("[talent dashboard]", error.message);
       return NextResponse.json(
-        { error: "Unable to load candidate dashboard" },
+        { error: "Unable to load talent dashboard" },
         { status: 500 }
       );
     }
@@ -72,7 +72,7 @@ export async function GET() {
     if (!profile) {
       return NextResponse.json(
         {
-          error: "Candidate profile not found",
+          error: "Talent profile not found",
           code: "PROFILE_MISSING",
           redirectTo: "/onboarding",
         },
@@ -81,15 +81,15 @@ export async function GET() {
     }
 
     const { data: references, error: refError } = await supabase
-      .from("candidate_references")
+      .from("talent_references")
       .select(
         "id, reference_email, reference_linkedin_url, reference_name, relationship, status, verification_token"
       )
-      .eq("candidate_profile_id", profile.id)
+      .eq("talent_profile_id", profile.id)
       .order("created_at", { ascending: true });
 
     if (refError) {
-      console.error("[candidate dashboard refs]", refError.message);
+      console.error("[talent dashboard refs]", refError.message);
       return NextResponse.json(
         { error: "Unable to load references" },
         { status: 500 }
@@ -106,10 +106,10 @@ export async function GET() {
       .eq("id", user.id)
       .maybeSingle();
     if (userProfileError && !userProfileError.message.includes("linkedin_url")) {
-      console.error("[candidate dashboard user_profiles]", userProfileError.message);
+      console.error("[talent dashboard user_profiles]", userProfileError.message);
     }
 
-    const linkedinUrl = await captureCandidateLinkedInUrl({
+    const linkedinUrl = await captureTalentLinkedInUrl({
       stored: userProfileError ? null : userProfile?.linkedin_url,
       authUser: user,
       resumeText: profile.raw_resume_text,
@@ -125,7 +125,7 @@ export async function GET() {
         .update({ linkedin_url: linkedinUrl })
         .eq("id", user.id);
       if (linkedInError) {
-        console.error("[candidate dashboard linkedin_url]", linkedInError.message);
+        console.error("[talent dashboard linkedin_url]", linkedInError.message);
       }
     }
 
@@ -138,29 +138,29 @@ export async function GET() {
         : null) ||
       user.email;
 
-    const refs = ((references ?? []) as CandidateReferenceRow[]).map((ref) => ({
+    const refs = ((references ?? []) as TalentReferenceRow[]).map((ref) => ({
       ...ref,
       reference_email: ref.reference_email,
       reference_linkedin_url: ref.reference_linkedin_url ?? null,
     }));
     const refsComplete = hasCompleteReferences(refs);
-    let status: CandidateDashboardData["status"] =
+    let status: TalentDashboardData["status"] =
       profile.status === "on_hold" ? "on_hold" : "actively_looking";
 
     // Never surface as actively looking until all references are verified.
     if (status === "actively_looking" && !refsComplete) {
       status = "on_hold";
       void supabase
-        .from("candidate_profiles")
+        .from("talent_profiles")
         .update({ status: "on_hold" })
         .eq("id", profile.id);
     }
 
-    const payload: CandidateDashboardData = {
+    const payload: TalentDashboardData = {
       demo: false,
       profileId: profile.id,
       initials: initialsFromName(fullName),
-      headline: profile.headline || "MatchLever Candidate",
+      headline: profile.headline || "MatchLever Talent",
       selectedTagline:
         profile.selected_tagline ||
         taglines[0] ||
@@ -184,9 +184,9 @@ export async function GET() {
     const message =
       error instanceof Error ? error.message : "Unable to load dashboard";
     if (message.includes("Supabase is not configured")) {
-      return NextResponse.json(DEMO_CANDIDATE_DASHBOARD);
+      return NextResponse.json(DEMO_TALENT_DASHBOARD);
     }
-    console.error("[/api/dashboard/candidate]", message);
+    console.error("[/api/dashboard/talent]", message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -221,26 +221,26 @@ export async function PATCH(request: Request) {
     }
 
     const { data: profile, error: profileError } = await supabase
-      .from("candidate_profiles")
+      .from("talent_profiles")
       .select("id")
       .eq("user_id", user.id)
       .maybeSingle();
 
     if (profileError || !profile) {
       return NextResponse.json(
-        { error: "Candidate profile not found" },
+        { error: "Talent profile not found" },
         { status: 404 }
       );
     }
 
     if (parsed.data.status === "actively_looking") {
       const { data: references, error: refError } = await supabase
-        .from("candidate_references")
+        .from("talent_references")
         .select("status")
-        .eq("candidate_profile_id", profile.id);
+        .eq("talent_profile_id", profile.id);
 
       if (refError) {
-        console.error("[candidate status refs]", refError.message);
+        console.error("[talent status refs]", refError.message);
         return NextResponse.json(
           { error: "Unable to verify references" },
           { status: 500 }
@@ -258,12 +258,12 @@ export async function PATCH(request: Request) {
     }
 
     const { error } = await supabase
-      .from("candidate_profiles")
+      .from("talent_profiles")
       .update({ status: parsed.data.status })
       .eq("id", profile.id);
 
     if (error) {
-      console.error("[candidate status]", error.message);
+      console.error("[talent status]", error.message);
       return NextResponse.json(
         { error: "Unable to update status" },
         { status: 500 }
@@ -274,7 +274,7 @@ export async function PATCH(request: Request) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to update status";
-    console.error("[/api/dashboard/candidate PATCH]", message);
+    console.error("[/api/dashboard/talent PATCH]", message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

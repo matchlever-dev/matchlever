@@ -159,12 +159,12 @@ export function AdminOpsDashboard() {
             <StatCard
               label={data.newRegistrations.label}
               value={data.newRegistrations.total.toLocaleString()}
-              subtitle={`${data.newRegistrations.candidates.toLocaleString()} candidates · ${data.newRegistrations.employers.toLocaleString()} employers · ${data.newRegistrations.periodLabel.toLowerCase()}`}
+              subtitle={`${data.newRegistrations.talent.toLocaleString()} talent · ${data.newRegistrations.employers.toLocaleString()} employers · ${data.newRegistrations.periodLabel.toLowerCase()}`}
               changePct={data.newRegistrations.changePct}
               changeLabel={data.newRegistrations.changeLabel}
             />
 
-            <PipelineChart metric={data.candidatePipeline} />
+            <PipelineChart metric={data.talentPipeline} />
 
             <StatCard
               label={data.activeMatches.label}

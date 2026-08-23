@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 
-import { SuperuserCandidatesPage } from "@/components/admin/admin-candidates-page";
+import { SuperuserTalentPage } from "@/components/admin/admin-talent-page";
 
 export const metadata: Metadata = {
-  title: "Superuser Candidates · MatchLever",
+  title: "Superuser Talent · MatchLever",
 };
 
 export default function Page() {
-  return <SuperuserCandidatesPage />;
+  return <SuperuserTalentPage />;
 }

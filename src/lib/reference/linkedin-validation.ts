@@ -271,7 +271,7 @@ async function probePublicProfile(linkedInUrl: string): Promise<{
 }
 
 /**
- * Validate a referrer LinkedIn profile for candidate intake / edits.
+ * Validate a referrer LinkedIn profile for talent intake / edits.
  * Rejects malformed URLs and definitive missing-profile responses.
  * LinkedIn often blocks datacenter fetches (999 / auth wall); those are
  * inconclusive, so a well-formed public /in/ URL is still accepted.

@@ -47,7 +47,7 @@ Session refresh runs in `src/middleware.ts`.
 
 ## Resume sanitize API
 
-`POST /api/candidate/sanitize` accepts multipart form field `resume` (PDF or DOCX), strips PII via Groq, and returns:
+`POST /api/talent/sanitize` accepts multipart form field `resume` (PDF or DOCX), strips PII via Groq, and returns:
 
 ```json
 {
@@ -60,7 +60,7 @@ Session refresh runs in `src/middleware.ts`.
 ```
 
 ```bash
-curl -X POST http://localhost:3000/api/candidate/sanitize \
+curl -X POST http://localhost:3000/api/talent/sanitize \
   -F "resume=@./path/to/resume.pdf"
 ```
 
@@ -68,15 +68,15 @@ Requires `GROQ_API_KEY` in `.env.local`.
 
 ## Landing & onboarding
 
-- `/` — hero, featured candidate carousel (timezone / work-hour overlap), seeker + hirer CTAs, hirer waitlist modal
-- `/onboarding` — 4-step seeker wizard (Terms of Service → LinkedIn + Incognito → resume sanitize → global prefs + taglines → references)
-- `/legal/seekers` — Job Seeker Terms of Service (PDF + readable page; required before account creation)
+- `/` — hero, featured talent carousel (timezone / work-hour overlap), talent + employer CTAs, employer waitlist modal
+- `/onboarding` — 4-step talent wizard (Terms of Service → LinkedIn + Incognito → resume sanitize → global prefs + taglines → references)
+- `/legal/talent` — Talent Terms of Service (PDF + readable page; required before account creation)
 - `/reference/[token]` — mobile reference verification (identity → 7 superpowers → ratings → endorsement)
-- `/dashboard/seeker` — anonymous employer card, availability toggle, reference tracker + Resend, edit/delete
+- `/dashboard/talent` — anonymous employer card, availability toggle, reference tracker + Resend, edit/delete
 
-## Seeker dashboard
+## Talent dashboard
 
-`/dashboard/seeker` shows the employer-facing anonymous card (initials, AI tagline, verified skills, location/timezone, reference progress), an **Actively Looking / On Hold** toggle (writes `candidate_profiles.status`), Resend-powered **Resend Link** for pending references, plus Edit Profile and Delete Account.
+`/dashboard/talent` shows the employer-facing anonymous card (initials, AI tagline, verified skills, location/timezone, reference progress), an **Actively Looking / On Hold** toggle (writes `talent_profiles.status`), Resend-powered **Resend Link** for pending references, plus Edit Profile and Delete Account.
 
 Env for invite email:
 
@@ -89,11 +89,11 @@ Optional LinkedIn enrichment (full connection / job / photo / activity checks):
 - `LINKEDIN_ENRICHMENT_URL`
 - `LINKEDIN_ENRICHMENT_API_KEY`
 
-Without an enrichment provider, referrer LinkedIn checks use public probes plus structural gates. Failures always surface as the opaque message **Referrer LinkedIn profile invalid**. At verification time, the referrer’s LinkedIn must also match the URL the seeker provided.
+Without an enrichment provider, referrer LinkedIn checks use public probes plus structural gates. Failures always surface as the opaque message **Referrer LinkedIn profile invalid**. At verification time, the referrer’s LinkedIn must also match the URL the talent provided.
 
 Without Supabase auth configured, the page runs in demo mode with sample data.
 
-Onboarding completion (`POST /api/onboarding/complete`) requires a signed-in user, upserts `candidate_profiles`, creates 3 `candidate_references` with email + LinkedIn URL + tokens, validates LinkedIn profiles, and emails invite links via Resend.
+Onboarding completion (`POST /api/onboarding/complete`) requires a signed-in user, upserts `talent_profiles`, creates 3 `talent_references` with email + LinkedIn URL + tokens, validates LinkedIn profiles, and emails invite links via Resend.
 
 ## Admin & Superuser portals
 
@@ -105,17 +105,17 @@ Middleware gates:
 Routes:
 
 - `/admin/users` — toggle `is_admin` / `is_superuser` switches
-- `/admin/candidates` — resume vs sanitized tabs, location/hours, reference authenticity audit, status override / delete
-- `/superuser/directory` — searchable Seekers + Hirers directory
+- `/admin/talent` — resume vs sanitized tabs, location/hours, reference authenticity audit, status override / delete
+- `/superuser/directory` — searchable Talent + Employers directory
 - `/superuser/manual-match` — Concierge Match into a job Kanban (`match_handshakes.is_manual_match = true`)
 
-Apply `supabase/migrations/20260723030000_admin_superuser_portals.sql` for hirers, jobs, handshakes, and resume audit fields. Without Supabase, portals run in demo mode.
+Apply `supabase/migrations/20260723030000_admin_superuser_portals.sql` for employers, jobs, handshakes, and resume audit fields. Without Supabase, portals run in demo mode.
 
 ## Schema (Phase 1)
 
 - `user_profiles` — `is_admin`, `is_superuser`, `role`
-- `candidate_profiles` — location, timezone, work hours, `suggested_taglines` JSONB, `status`, `selected_tagline`, `verified_skills`, `raw_resume_text`, `sanitized_summary`
-- `candidate_references` — email, LinkedIn, authenticity score/flags
-- `hirer_profiles`, `job_postings`, `match_handshakes` (`is_manual_match`)
+- `talent_profiles` — location, timezone, work hours, `suggested_taglines` JSONB, `status`, `selected_tagline`, `verified_skills`, `raw_resume_text`, `sanitized_summary`
+- `talent_references` — email, LinkedIn, authenticity score/flags
+- `employer_profiles`, `job_postings`, `match_handshakes` (`is_manual_match`)
 - Helpers: `is_admin()`, `is_superuser()`
-- RLS: candidate profiles editable by owner **or** `is_admin = true`
+- RLS: talent profiles editable by owner **or** `is_admin = true`

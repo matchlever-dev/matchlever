@@ -9,8 +9,8 @@ import { FileUp, Loader2 } from "lucide-react";
 import {
   formatTimezoneDisplay,
   resolveTimezoneId,
-  type CandidateDashboardData,
-} from "@/lib/dashboard/candidate";
+  type TalentDashboardData,
+} from "@/lib/dashboard/talent";
 import {
   TIMEZONE_OPTIONS,
   TIMEZONE_VALUES,
@@ -65,8 +65,8 @@ export function EditProfileModal({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  data: CandidateDashboardData;
-  onSaved: (next: Partial<CandidateDashboardData>) => void;
+  data: TalentDashboardData;
+  onSaved: (next: Partial<TalentDashboardData>) => void;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [resumeName, setResumeName] = useState<string | null>(null);
@@ -115,7 +115,7 @@ export function EditProfileModal({
     body.append("resume", file);
 
     try {
-      const res = await fetch("/api/candidate/sanitize", {
+      const res = await fetch("/api/talent/sanitize", {
         method: "POST",
         body,
       });
@@ -177,7 +177,7 @@ export function EditProfileModal({
       .map((s) => s.trim())
       .filter(Boolean);
 
-    const res = await fetch("/api/dashboard/candidate/profile", {
+    const res = await fetch("/api/dashboard/talent/profile", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -387,7 +387,7 @@ export function DeleteAccountDialog({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/dashboard/candidate/profile", {
+      const res = await fetch("/api/dashboard/talent/profile", {
         method: "DELETE",
       });
       const json = await res.json();
@@ -413,7 +413,7 @@ export function DeleteAccountDialog({
         <DialogHeader>
           <DialogTitle className="text-[#2B5B84]">Delete account</DialogTitle>
           <DialogDescription>
-            This permanently removes your candidate profile and reference data.
+            This permanently removes your talent profile and reference data.
             Type <strong>DELETE</strong> to confirm.
           </DialogDescription>
         </DialogHeader>
@@ -463,7 +463,7 @@ function Field({
   );
 }
 
-function toFormValues(data: CandidateDashboardData): EditValues {
+function toFormValues(data: TalentDashboardData): EditValues {
   return {
     headline: data.headline,
     selectedTagline: data.selectedTagline,

@@ -5,7 +5,7 @@ import { Controller, useFormContext } from "react-hook-form";
 import type { ReferenceFormValues } from "@/lib/reference/schema";
 import { groupSuperpowersByCategory } from "@/lib/reference/taxonomy";
 import { ensureAbsoluteHttpUrl, urlTextInputProps } from "@/lib/url";
-import { ReferrerCandidateCta } from "@/components/reference/referrer-candidate-cta";
+import { ReferrerTalentCta } from "@/components/reference/referrer-talent-cta";
 import { RelationshipSelect } from "@/components/reference/relationship-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,10 +13,10 @@ import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 
 export function StepIdentity({
-  candidateTitle,
+  talentTitle,
   lockedLinkedInUrl,
 }: {
-  candidateTitle?: string;
+  talentTitle?: string;
   lockedLinkedInUrl?: string | null;
 }) {
   const {
@@ -38,9 +38,9 @@ export function StepIdentity({
         <p className="mt-2 text-sm leading-relaxed text-[#5B616B]">
           You&apos;re verifying{" "}
           <span className="font-medium text-[#2A2D34]">
-            {candidateTitle || "a MatchLever candidate"}
+            {talentTitle || "a MatchLever talent"}
           </span>
-          . LinkedIn must match the profile the candidate provided.
+          . LinkedIn must match the profile the talent provided.
         </p>
       </div>
 
@@ -59,7 +59,7 @@ export function StepIdentity({
       </div>
 
       <div className="grid gap-2">
-        <Label>Relationship to candidate</Label>
+        <Label>Relationship to talent</Label>
         <Controller
           control={control}
           name="relationship"
@@ -95,7 +95,7 @@ export function StepIdentity({
         />
         <p className="text-xs text-[#5B616B]">
           {lockedLinkedInUrl
-            ? "Locked to the LinkedIn URL the candidate submitted for you."
+            ? "Locked to the LinkedIn URL the talent submitted for you."
             : "A profile URL like linkedin.com/in/... is enough — https:// is added if you leave it off."}
         </p>
         {errors.linkedInUrl && (
@@ -275,7 +275,7 @@ export function StepEndorsement() {
           One sentence that matters
         </h2>
         <p className="mt-2 text-sm text-[#5B616B]">
-          Write a single high-signal endorsement recruiters can trust.
+          Write a single high-signal endorsement employers can trust.
         </p>
       </div>
 
@@ -298,7 +298,7 @@ export function StepEndorsement() {
         )}
       </div>
 
-      <ReferrerCandidateCta />
+      <ReferrerTalentCta />
     </div>
   );
 }

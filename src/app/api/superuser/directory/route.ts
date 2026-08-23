@@ -22,14 +22,14 @@ export async function GET(request: Request) {
 
   const supabase = await createClient();
 
-  const [{ data: candidates }, { data: hirers }] = await Promise.all([
+  const [{ data: talent }, { data: employers }] = await Promise.all([
     supabase
-      .from("candidate_profiles")
+      .from("talent_profiles")
       .select(
         "id, headline, status, global_city, global_country, created_at, user_id"
       ),
     supabase
-      .from("hirer_profiles")
+      .from("employer_profiles")
       .select(
         "id, company_name, title, global_city, global_country, created_at, user_id"
       ),
@@ -37,11 +37,11 @@ export async function GET(request: Request) {
 
   const userIds = [
     ...new Set([
-      ...(candidates ?? []).map((c) => c.user_id),
-      ...(hirers ?? []).map((h) => h.user_id),
+      ...(talent ?? []).map((c) => c.user_id),
+      ...(employers ?? []).map((h) => h.user_id),
     ]),
   ];
-  const candidateIds = (candidates ?? []).map((c) => c.id);
+  const talentIds = (talent ?? []).map((c) => c.id);
 
   const [{ data: users }, { data: references }] = await Promise.all([
     userIds.length
@@ -56,45 +56,45 @@ export async function GET(request: Request) {
             full_name: string | null;
           }[],
         }),
-    candidateIds.length
+    talentIds.length
       ? supabase
-          .from("candidate_references")
-          .select("candidate_profile_id, authenticity_score")
-          .in("candidate_profile_id", candidateIds)
+          .from("talent_references")
+          .select("talent_profile_id, authenticity_score")
+          .in("talent_profile_id", talentIds)
       : Promise.resolve({
           data: [] as {
-            candidate_profile_id: string;
+            talent_profile_id: string;
             authenticity_score: number | null;
           }[],
         }),
   ]);
 
   const userMap = new Map((users ?? []).map((u) => [u.id, u]));
-  const refsByCandidate = new Map<
+  const refsByTalent = new Map<
     string,
     { authenticity_score: number | null }[]
   >();
   for (const ref of references ?? []) {
-    const list = refsByCandidate.get(ref.candidate_profile_id) ?? [];
+    const list = refsByTalent.get(ref.talent_profile_id) ?? [];
     list.push({
       authenticity_score:
         ref.authenticity_score === null
           ? null
           : Number(ref.authenticity_score),
     });
-    refsByCandidate.set(ref.candidate_profile_id, list);
+    refsByTalent.set(ref.talent_profile_id, list);
   }
 
   const people: DirectoryPerson[] = [
-    ...(candidates ?? []).map((c) => {
+    ...(talent ?? []).map((c) => {
       const user = userMap.get(c.user_id);
       const location = [c.global_city, c.global_country]
         .filter(Boolean)
         .join(", ");
-      const refs = refsByCandidate.get(c.id) ?? [];
+      const refs = refsByTalent.get(c.id) ?? [];
       return {
         id: c.id,
-        kind: "seeker" as const,
+        kind: "talent" as const,
         email: user?.email ?? null,
         full_name: user?.full_name ?? null,
         title: c.headline,
@@ -105,14 +105,14 @@ export async function GET(request: Request) {
         avg_authenticity_score: averageAuthenticityScore(refs),
       };
     }),
-    ...(hirers ?? []).map((h) => {
+    ...(employers ?? []).map((h) => {
       const user = userMap.get(h.user_id);
       const location = [h.global_city, h.global_country]
         .filter(Boolean)
         .join(", ");
       return {
         id: h.id,
-        kind: "hirer" as const,
+        kind: "employer" as const,
         email: user?.email ?? null,
         full_name: user?.full_name ?? null,
         title: h.title,

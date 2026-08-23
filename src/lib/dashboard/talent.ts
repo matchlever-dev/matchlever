@@ -1,11 +1,11 @@
 import { resolveTimezoneOption } from "@/lib/onboarding/schema";
 
-export type CandidateAvailability = "actively_looking" | "on_hold";
+export type TalentAvailability = "actively_looking" | "on_hold";
 
-/** Candidates must have this many verified references before appearing in searches. */
+/** Talent must have this many verified references before appearing in searches. */
 export const REQUIRED_VERIFIED_REFERENCES = 3;
 
-export type CandidateReferenceRow = {
+export type TalentReferenceRow = {
   id: string;
   reference_email: string;
   reference_linkedin_url: string | null;
@@ -16,18 +16,18 @@ export type CandidateReferenceRow = {
 };
 
 export function countVerifiedReferences(
-  references: Pick<CandidateReferenceRow, "status">[]
+  references: Pick<TalentReferenceRow, "status">[]
 ): number {
   return references.filter((r) => r.status === "verified").length;
 }
 
 export function hasCompleteReferences(
-  references: Pick<CandidateReferenceRow, "status">[]
+  references: Pick<TalentReferenceRow, "status">[]
 ): boolean {
   return countVerifiedReferences(references) >= REQUIRED_VERIFIED_REFERENCES;
 }
 
-export type CandidateDashboardData = {
+export type TalentDashboardData = {
   demo: boolean;
   profileId: string;
   initials: string;
@@ -41,9 +41,9 @@ export type CandidateDashboardData = {
   timezoneOffset: number | null;
   /** Display label with zone name and UTC offset, e.g. "US Eastern (UTC−5)". */
   timezoneLabel: string;
-  status: CandidateAvailability;
+  status: TalentAvailability;
   linkedinUrl: string | null;
-  references: CandidateReferenceRow[];
+  references: TalentReferenceRow[];
 };
 
 /** Display offset as UTC±H or UTC±H:MM (never raw minutes). */
@@ -56,7 +56,7 @@ export function formatTimezoneOffset(offsetMinutes: number | null): string {
   return `UTC${sign}${hours}${mins ? `:${String(mins).padStart(2, "0")}` : ""}`;
 }
 
-/** Named timezone + UTC offset for candidate / employer / admin UIs. */
+/** Named timezone + UTC offset for talent / employer / admin UIs. */
 export function formatTimezoneDisplay(
   timezone: string | null | undefined,
   offsetMinutes?: number | null
@@ -84,7 +84,7 @@ export function initialsFromName(name: string | null | undefined): string {
   return `${parts[0][0] ?? ""}${parts[parts.length - 1][0] ?? ""}`.toUpperCase();
 }
 
-export const DEMO_CANDIDATE_DASHBOARD: CandidateDashboardData = {
+export const DEMO_TALENT_DASHBOARD: TalentDashboardData = {
   demo: true,
   profileId: "demo-profile",
   initials: "SP",

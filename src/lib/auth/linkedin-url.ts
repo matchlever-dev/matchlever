@@ -132,7 +132,7 @@ export function linkedinUrlFromText(text: string | null | undefined): string | n
   return null;
 }
 
-export function resolveCandidateLinkedInUrl(input: {
+export function resolveTalentLinkedInUrl(input: {
   stored?: string | null;
   authUser?: AuthUserLike | null;
   resumeText?: string | null;
@@ -199,13 +199,13 @@ export async function fetchLinkedInProfileUrlFromAccessToken(
   return null;
 }
 
-export async function captureCandidateLinkedInUrl(input: {
+export async function captureTalentLinkedInUrl(input: {
   stored?: string | null;
   authUser?: AuthUserLike | null;
   resumeText?: string | null;
   accessToken?: string | null;
 }): Promise<string | null> {
-  const local = resolveCandidateLinkedInUrl(input);
+  const local = resolveTalentLinkedInUrl(input);
   if (local) return local;
   return fetchLinkedInProfileUrlFromAccessToken(input.accessToken);
 }

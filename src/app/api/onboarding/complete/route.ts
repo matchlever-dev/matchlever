@@ -2,7 +2,7 @@ import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 
 import {
-  candidateNameForInvite,
+  talentNameForInvite,
   displayNameFromAuthUser,
 } from "@/lib/auth/display-name";
 import {
@@ -92,7 +92,7 @@ export async function POST(request: Request) {
         linkedInUrl: validation.normalizedUrl,
         relationship: ref.relationship,
         flags: [
-          "seeker_provided_linkedin",
+          "talent_provided_linkedin",
           `validation_mode:${validation.mode}`,
           ...validation.flags,
         ],
@@ -136,7 +136,7 @@ export async function POST(request: Request) {
         ? user.user_metadata.avatar_url
         : null;
     const linkedInUrl =
-      normalizePublicLinkedInProfileUrl(data.candidateLinkedInUrl) ||
+      normalizePublicLinkedInProfileUrl(data.talentLinkedInUrl) ||
       linkedinUrlFromAuthUser(user);
 
     const { data: existingUserProfile } = await supabase
@@ -152,7 +152,7 @@ export async function POST(request: Request) {
           email: user.email ?? null,
           full_name: fullName,
           avatar_url: avatarUrl,
-          role: "candidate",
+          role: "talent",
           ...(linkedInUrl ? { linkedin_url: linkedInUrl } : {}),
         })
         .eq("id", user.id);
@@ -181,7 +181,7 @@ export async function POST(request: Request) {
           email: user.email ?? null,
           full_name: fullName,
           avatar_url: avatarUrl,
-          role: "candidate",
+          role: "talent",
           linkedin_url: linkedInUrl,
         });
       if (profileInsertError) {
@@ -200,11 +200,11 @@ export async function POST(request: Request) {
       orderedModes.includes("hybrid") || orderedModes.includes("onsite");
     const resolvedCity = resolveOnboardingCity(data);
 
-    const candidatePayload = {
+    const talentPayload = {
       user_id: user.id,
       headline:
         toPostgresText(data.anonymousTitle?.trim() || "") ||
-        "MatchLever Candidate",
+        "MatchLever Talent",
       sanitized_summary: toPostgresTextOrNull(data.sanitizedSummary),
       raw_resume_text: toPostgresTextOrNull(data.rawResumeText)?.slice(0, 60_000) ?? null,
       verified_skills: toPostgresStringArray(data.verifiedSkills),
@@ -223,77 +223,77 @@ export async function POST(request: Request) {
       min_salary: data.minSalary,
       visa_status: toPostgresText(data.visaStatus),
       years_experience: data.yearsExperience ?? null,
-      seeker_tos_accepted_at: new Date().toISOString(),
+      talent_tos_accepted_at: new Date().toISOString(),
       // Hidden until all three references are verified.
       status: "on_hold",
     };
 
-    const { data: existingCandidate } = await supabase
-      .from("candidate_profiles")
+    const { data: existingTalent } = await supabase
+      .from("talent_profiles")
       .select("id")
       .eq("user_id", user.id)
       .maybeSingle();
 
-    let candidateId = existingCandidate?.id ?? null;
+    let talentId = existingTalent?.id ?? null;
 
-    if (candidateId) {
+    if (talentId) {
       let { error: updateError } = await supabase
-        .from("candidate_profiles")
-        .update(candidatePayload)
-        .eq("id", candidateId);
+        .from("talent_profiles")
+        .update(talentPayload)
+        .eq("id", talentId);
       if (updateError?.message?.includes("timezone")) {
-        const { timezone: _timezone, ...withoutTimezone } = candidatePayload;
+        const { timezone: _timezone, ...withoutTimezone } = talentPayload;
         ({ error: updateError } = await supabase
-          .from("candidate_profiles")
+          .from("talent_profiles")
           .update(withoutTimezone)
-          .eq("id", candidateId));
+          .eq("id", talentId));
       }
       if (updateError) {
         console.error(
-          "[onboarding candidate update]",
+          "[onboarding talent update]",
           updateError.message,
           updateError.code,
           updateError.details
         );
         return NextResponse.json(
-          { error: "Unable to update candidate profile" },
+          { error: "Unable to update talent profile" },
           { status: 500 }
         );
       }
     } else {
       let { data: inserted, error: insertError } = await supabase
-        .from("candidate_profiles")
-        .insert(candidatePayload)
+        .from("talent_profiles")
+        .insert(talentPayload)
         .select("id")
         .single();
       if (insertError?.message?.includes("timezone")) {
-        const { timezone: _timezone, ...withoutTimezone } = candidatePayload;
+        const { timezone: _timezone, ...withoutTimezone } = talentPayload;
         ({ data: inserted, error: insertError } = await supabase
-          .from("candidate_profiles")
+          .from("talent_profiles")
           .insert(withoutTimezone)
           .select("id")
           .single());
       }
       if (insertError || !inserted) {
         console.error(
-          "[onboarding candidate insert]",
+          "[onboarding talent insert]",
           insertError?.message,
           insertError?.code,
           insertError?.details
         );
         return NextResponse.json(
-          { error: "Unable to create candidate profile" },
+          { error: "Unable to create talent profile" },
           { status: 500 }
         );
       }
-      candidateId = inserted.id;
+      talentId = inserted.id;
     }
 
     // Replace reference invites on (re)completion.
     const { error: deleteRefsError } = await supabase
-      .from("candidate_references")
+      .from("talent_references")
       .delete()
-      .eq("candidate_profile_id", candidateId);
+      .eq("talent_profile_id", talentId);
 
     if (deleteRefsError) {
       console.error("[onboarding refs delete]", deleteRefsError.message);
@@ -304,7 +304,7 @@ export async function POST(request: Request) {
     }
 
     const referenceRows = validatedRefs.map((ref) => ({
-      candidate_profile_id: candidateId!,
+      talent_profile_id: talentId!,
       reference_email: ref.email,
       reference_linkedin_url: ref.linkedInUrl,
       relationship: ref.relationship,
@@ -314,7 +314,7 @@ export async function POST(request: Request) {
     }));
 
     const { data: insertedRefs, error: insertRefsError } = await supabase
-      .from("candidate_references")
+      .from("talent_references")
       .insert(referenceRows)
       .select("id, reference_email, verification_token");
 
@@ -326,9 +326,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const candidateTitle =
-      data.anonymousTitle?.trim() || "a MatchLever candidate";
-    const candidateName = candidateNameForInvite(user, fullName);
+    const talentTitle =
+      data.anonymousTitle?.trim() || "a MatchLever talent";
+    const talentName = talentNameForInvite(user, fullName);
 
     const emailResults: {
       email: string;
@@ -342,8 +342,8 @@ export async function POST(request: Request) {
       try {
         const sent = await sendReferenceInviteEmail({
           to: ref.reference_email,
-          candidateName,
-          candidateTitle,
+          talentName,
+          talentTitle,
           token: ref.verification_token,
         });
         emailResults.push({
@@ -383,7 +383,7 @@ export async function POST(request: Request) {
     // Profile + invites are already saved; never block onboarding completion on email delivery.
     return NextResponse.json({
       ok: true,
-      candidateId,
+      talentId,
       referencesCreated: insertedRefs.length,
       emailsSent: emailResults.filter((r) => !r.error && !r.demo).length,
       emailResults,

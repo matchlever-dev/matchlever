@@ -10,7 +10,7 @@ export const REFERENCE_RELATIONSHIP_VALUES = [
 export type ReferenceRelationship =
   (typeof REFERENCE_RELATIONSHIP_VALUES)[number];
 
-/** Empty select value for forms before the candidate chooses a relationship. */
+/** Empty select value for forms before the talent chooses a relationship. */
 export const UNSELECTED_RELATIONSHIP = "" as ReferenceRelationship;
 
 export const REFERENCE_RELATIONSHIP_OPTIONS: ReadonlyArray<{

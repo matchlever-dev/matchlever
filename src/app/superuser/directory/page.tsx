@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-/** Legacy Directory route → Candidates profiles. */
+/** Legacy Directory route → Talent profiles. */
 export default function Page() {
-  redirect("/superuser/candidates");
+  redirect("/superuser/talent");
 }

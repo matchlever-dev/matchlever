@@ -1,14 +1,14 @@
-import { computeCandidateMissing } from "@/lib/admin/demo";
-import { REQUIRED_VERIFIED_REFERENCES } from "@/lib/dashboard/candidate";
+import { computeTalentMissing } from "@/lib/admin/demo";
+import { REQUIRED_VERIFIED_REFERENCES } from "@/lib/dashboard/talent";
 import {
-  getCandidateProfileReminderUrl,
+  getTalentProfileReminderUrl,
   sendIncompleteProfileReminderEmail,
 } from "@/lib/email/resend";
 import { listUnsubscribedEmails, normalizeEmail } from "@/lib/email/unsubscribe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
-const CANDIDATE_ROLES = new Set(["candidate", "both"]);
+const TALENT_ROLES = new Set(["talent", "both"]);
 const PAGE_SIZE = 1000;
 
 type ReminderUser = {
@@ -41,7 +41,7 @@ export type IncompleteProfileReminderResult = {
 };
 
 function incompleteItemLabels(input: {
-  missing: ReturnType<typeof computeCandidateMissing>;
+  missing: ReturnType<typeof computeTalentMissing>;
   verifiedReferenceCount: number;
 }): string[] {
   const items: string[] = [];
@@ -108,7 +108,7 @@ export async function runIncompleteProfileReminders(): Promise<IncompleteProfile
 
   const profiles = await fetchAllRows<ReminderProfile>((from, to) =>
     admin
-      .from("candidate_profiles")
+      .from("talent_profiles")
       .select(
         "id, user_id, headline, global_city, global_country, work_hours_start, work_hours_end, raw_resume_text, sanitized_summary"
       )
@@ -118,23 +118,23 @@ export async function runIncompleteProfileReminders(): Promise<IncompleteProfile
   const profileByUser = new Map(profiles.map((profile) => [profile.user_id, profile]));
   const profileIds = profiles.map((profile) => profile.id);
 
-  const references: { candidate_profile_id: string; status: string }[] = [];
+  const references: { talent_profile_id: string; status: string }[] = [];
   for (let i = 0; i < profileIds.length; i += PAGE_SIZE) {
     const chunk = profileIds.slice(i, i + PAGE_SIZE);
     if (chunk.length === 0) continue;
     const { data, error } = await admin
-      .from("candidate_references")
-      .select("candidate_profile_id, status")
-      .in("candidate_profile_id", chunk);
+      .from("talent_references")
+      .select("talent_profile_id, status")
+      .in("talent_profile_id", chunk);
     if (error) throw new Error(error.message);
     references.push(...(data ?? []));
   }
 
-  const refsByCandidate = new Map<string, { status: string }[]>();
+  const refsByTalent = new Map<string, { status: string }[]>();
   for (const ref of references) {
-    const list = refsByCandidate.get(ref.candidate_profile_id) ?? [];
+    const list = refsByTalent.get(ref.talent_profile_id) ?? [];
     list.push({ status: ref.status });
-    refsByCandidate.set(ref.candidate_profile_id, list);
+    refsByTalent.set(ref.talent_profile_id, list);
   }
 
   const unsubscribed = await listUnsubscribedEmails();
@@ -145,12 +145,12 @@ export async function runIncompleteProfileReminders(): Promise<IncompleteProfile
     if (unsubscribed.has(normalizeEmail(email))) return [];
 
     const profile = profileByUser.get(user.id) ?? null;
-    const isCandidateRole = CANDIDATE_ROLES.has(user.role);
-    if (!isCandidateRole && !profile) return [];
+    const isTalentRole = TALENT_ROLES.has(user.role);
+    if (!isTalentRole && !profile) return [];
 
-    const refs = profile ? refsByCandidate.get(profile.id) ?? [] : [];
-    const missing = computeCandidateMissing({
-      has_candidate_profile: Boolean(profile),
+    const refs = profile ? refsByTalent.get(profile.id) ?? [] : [];
+    const missing = computeTalentMissing({
+      has_talent_profile: Boolean(profile),
       headline: profile?.headline ?? null,
       global_city: profile?.global_city ?? null,
       global_country: profile?.global_country ?? null,
@@ -172,7 +172,7 @@ export async function runIncompleteProfileReminders(): Promise<IncompleteProfile
       {
         email,
         fullName: user.full_name,
-        hasCandidateProfile: Boolean(profile),
+        hasTalentProfile: Boolean(profile),
         incompleteItems: incompleteItemLabels({
           missing,
           verifiedReferenceCount,
@@ -191,9 +191,9 @@ export async function runIncompleteProfileReminders(): Promise<IncompleteProfile
     try {
       const result = await sendIncompleteProfileReminderEmail({
         to: recipient.email,
-        candidateName: recipient.fullName,
+        talentName: recipient.fullName,
         incompleteItems: recipient.incompleteItems,
-        profileUrl: getCandidateProfileReminderUrl(recipient.hasCandidateProfile),
+        profileUrl: getTalentProfileReminderUrl(recipient.hasTalentProfile),
       });
       if (result.skipped) {
         skipped += 1;

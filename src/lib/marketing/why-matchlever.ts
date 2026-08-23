@@ -4,11 +4,11 @@ export const WHY_MATCHLEVER = {
   sections: [
     {
       heading: "About Us",
-      body: "At Arise Solutions, we believe hiring and job hunting shouldn’t feel like searching for a needle in a haystack. Traditional recruitment is broken—hiring managers spend endless hours sifting through hundreds of unqualified resumes, while talented candidates send their applications into a black hole of automated rejection systems. That's why we created MatchLever.",
+      body: "At Arise Solutions, we believe hiring and job hunting shouldn’t feel like searching for a needle in a haystack. Traditional recruitment is broken—hiring managers spend endless hours sifting through hundreds of unqualified resumes, while talented talent send their applications into a black hole of automated rejection systems. That's why we created MatchLever.",
     },
     {
       heading: "Our Mission",
-      body: "We partner with top-tier companies and highly qualified, vetted job candidates to make finding the right match faster, easier, and smarter.",
+      body: "We partner with top-tier companies and highly qualified, vetted talent to make finding the right match faster, easier, and smarter.",
       after:
         "By cutting through the noise and focusing on true alignment—skills, culture, and mutual expectations—we eliminate the exhaustion of reviewing hundreds of mismatched applications or endless job boards.",
     },
@@ -16,7 +16,7 @@ export const WHY_MATCHLEVER = {
       heading: "How We Make the Difference",
       bullets: [
         {
-          label: "For Job Candidates",
+          label: "For Talent",
           text: "Skip the frustration of endless blind applications. MatchLever connects you directly with opportunities that match your specific talents, experience, and career goals, saving you time and energy.",
         },
         {

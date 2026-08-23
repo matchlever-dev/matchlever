@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * Delete all app + auth data for a candidate matched by display name.
+ * Delete all app + auth data for a talent matched by display name.
  *
  * Usage:
- *   node scripts/delete-candidate-by-name.mjs "Anna Duterte"           # dry run
- *   node scripts/delete-candidate-by-name.mjs "Anna Duterte" --execute
+ *   node scripts/delete-talent-by-name.mjs "Anna Duterte"           # dry run
+ *   node scripts/delete-talent-by-name.mjs "Anna Duterte" --execute
  *
  * Requires SUPABASE_SERVICE_ROLE_KEY and NEXT_PUBLIC_SUPABASE_URL in .env.local
  */
@@ -42,7 +42,7 @@ const execute = args.includes("--execute");
 const name = args.find((a) => !a.startsWith("--"))?.trim() ?? "Anna Duterte";
 
 if (!name) {
-  console.error("Usage: node scripts/delete-candidate-by-name.mjs \"Full Name\" [--execute]");
+  console.error("Usage: node scripts/delete-talent-by-name.mjs \"Full Name\" [--execute]");
   process.exit(1);
 }
 
@@ -115,7 +115,7 @@ async function loadAllAuthUsers() {
 
 async function loadRelated(userId) {
   const { data: cp } = await admin
-    .from("candidate_profiles")
+    .from("talent_profiles")
     .select("id")
     .eq("user_id", userId)
     .maybeSingle();
@@ -124,33 +124,33 @@ async function loadRelated(userId) {
   let handshakeCount = 0;
   if (cp?.id) {
     const { count: refCount } = await admin
-      .from("candidate_references")
+      .from("talent_references")
       .select("id", { count: "exact", head: true })
-      .eq("candidate_profile_id", cp.id);
+      .eq("talent_profile_id", cp.id);
     referenceCount = refCount ?? 0;
 
     const { count: hsCount } = await admin
       .from("match_handshakes")
       .select("id", { count: "exact", head: true })
-      .eq("candidate_profile_id", cp.id);
+      .eq("talent_profile_id", cp.id);
     handshakeCount = hsCount ?? 0;
   }
 
-  const { count: hirerCount } = await admin
-    .from("hirer_profiles")
+  const { count: employerCount } = await admin
+    .from("employer_profiles")
     .select("id", { count: "exact", head: true })
     .eq("user_id", userId);
 
   return {
-    candidate_profile_id: cp?.id ?? null,
+    talent_profile_id: cp?.id ?? null,
     reference_count: referenceCount,
     handshake_count: handshakeCount,
-    hirer_profile_count: hirerCount ?? 0,
+    employer_profile_count: employerCount ?? 0,
   };
 }
 
 try {
-  console.log(`Looking for candidate (exact name, case-insensitive): "${name}"\n`);
+  console.log(`Looking for talent (exact name, case-insensitive): "${name}"\n`);
 
   const [{ data: profiles, error: profileError }, authUsers] = await Promise.all([
     admin.from("user_profiles").select("id, email, full_name"),

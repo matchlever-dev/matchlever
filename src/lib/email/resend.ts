@@ -23,17 +23,17 @@ export function getReferenceInviteUrl(token: string) {
   return `${getAppBaseUrl()}/reference/${token}`;
 }
 
-export function getCandidateOnboardingUrl() {
+export function getTalentOnboardingUrl() {
   return `${getAppBaseUrl()}/onboarding`;
 }
 
-export function getCandidateDashboardUrl() {
-  return `${getAppBaseUrl()}/dashboard/candidate`;
+export function getTalentDashboardUrl() {
+  return `${getAppBaseUrl()}/dashboard/talent`;
 }
 
-/** Email CTA: login, then continue onboarding or open the candidate profile. */
-export function getCandidateProfileReminderUrl(hasCandidateProfile: boolean) {
-  const next = hasCandidateProfile ? "/dashboard/candidate" : "/onboarding";
+/** Email CTA: login, then continue onboarding or open the talent profile. */
+export function getTalentProfileReminderUrl(hasTalentProfile: boolean) {
+  const next = hasTalentProfile ? "/dashboard/talent" : "/onboarding";
   return `${getAppBaseUrl()}/login?next=${encodeURIComponent(next)}`;
 }
 
@@ -128,12 +128,12 @@ function oneLine(value: string) {
 }
 
 export function referenceInviteSubject(
-  candidateName: string,
+  talentName: string,
   reminder = false
 ) {
-  const name = oneLine(candidateName);
+  const name = oneLine(talentName);
   const prefix = reminder ? "Reminder: please verify" : "Please verify";
-  if (!name || name === "a MatchLever candidate") {
+  if (!name || name === "a MatchLever talent") {
     return `${prefix} a MatchLever reference`;
   }
   return `${prefix} a MatchLever reference for ${name}`;
@@ -141,22 +141,22 @@ export function referenceInviteSubject(
 
 export async function sendReferenceInviteEmail(args: {
   to: string;
-  candidateName: string;
-  candidateTitle: string;
+  talentName: string;
+  talentTitle: string;
   token: string;
   reminder?: boolean;
 }) {
   const inviteUrl = getReferenceInviteUrl(args.token);
-  const onboardingUrl = getCandidateOnboardingUrl();
-  const candidateName = oneLine(args.candidateName) || "a MatchLever candidate";
-  const candidateTitle = oneLine(args.candidateTitle);
+  const onboardingUrl = getTalentOnboardingUrl();
+  const talentName = oneLine(args.talentName) || "a MatchLever talent";
+  const talentTitle = oneLine(args.talentTitle);
   const reminder = Boolean(args.reminder);
-  const subject = referenceInviteSubject(candidateName, reminder);
-  const nameHtml = escapeHtml(candidateName);
-  const titleHtml = candidateTitle ? escapeHtml(candidateTitle) : "";
+  const subject = referenceInviteSubject(talentName, reminder);
+  const nameHtml = escapeHtml(talentName);
+  const titleHtml = talentTitle ? escapeHtml(talentTitle) : "";
   const whoHtml =
-    candidateName === "a MatchLever candidate"
-      ? `a MatchLever candidate${titleHtml ? ` (<strong>${titleHtml}</strong>)` : ""}`
+    talentName === "a MatchLever talent"
+      ? `a MatchLever talent${titleHtml ? ` (<strong>${titleHtml}</strong>)` : ""}`
       : `<strong>${nameHtml}</strong>${titleHtml ? ` (${titleHtml})` : ""}`;
   const intro = reminder
     ? `This is a reminder to complete your reference for ${whoHtml}.`
@@ -182,13 +182,13 @@ export async function sendReferenceInviteEmail(args: {
             Your turn?
           </p>
           <p style="margin:0 0 8px;font-size:16px;font-weight:700;color:#2B5B84;line-height:1.35">
-            Go incognito and get matched with openings from recruiters who are already looking.
+            Go incognito and get matched with openings from employers who are already looking.
           </p>
           <p style="margin:0 0 14px;font-size:13px;color:#5B616B;line-height:1.5">
-            Join MatchLever as a job candidate — stay anonymous, publish verified signal, and let eager recruiters find you.
+            Join MatchLever as talent — stay anonymous, publish verified signal, and let eager employers find you.
           </p>
           <a href="${onboardingUrl}" style="background:#E87A5D;color:#fff;padding:10px 16px;text-decoration:none;border-radius:6px;display:inline-block;font-weight:600">
-            Start as an incognito candidate
+            Start as an incognito talent
           </a>
         </div>
     `,
@@ -199,11 +199,11 @@ export async function sendReferenceInviteEmail(args: {
 
 export async function sendIncompleteProfileReminderEmail(args: {
   to: string;
-  candidateName: string | null;
+  talentName: string | null;
   incompleteItems: string[];
   profileUrl: string;
 }) {
-  const firstName = oneLine(args.candidateName || "").split(/\s+/)[0] || "";
+  const firstName = oneLine(args.talentName || "").split(/\s+/)[0] || "";
   const greeting = firstName ? `Hi ${escapeHtml(firstName)},` : "Hi,";
   const items = args.incompleteItems
     .map((item) => oneLine(item))
@@ -221,7 +221,7 @@ export async function sendIncompleteProfileReminderEmail(args: {
     subject,
     html: `
         <p>${greeting}</p>
-        <p>Your MatchLever candidate profile is still incomplete, so recruiters
+        <p>Your MatchLever talent profile is still incomplete, so employers
         cannot find you yet. Please finish the items below:</p>
         <ul>${itemsHtml}</ul>
         <p>

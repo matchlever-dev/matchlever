@@ -43,7 +43,7 @@ function withAriseSolutionsLinks(text: string): ReactNode {
 export const metadata: Metadata = {
   title: "Why MatchLever · Arise Solutions",
   description:
-    "Why we built MatchLever — faster, smarter matching for vetted seekers and hiring teams.",
+    "Why we built MatchLever — faster, smarter matching for vetted talent and hiring teams.",
 };
 
 export default function WhyMatchLeverPage() {
@@ -62,7 +62,7 @@ export default function WhyMatchLeverPage() {
               href="/onboarding"
               className="text-[#E87A5D] hover:underline"
             >
-              Start as a Seeker
+              Start as a Talent
             </Link>
           </div>
         </div>
@@ -118,7 +118,7 @@ export default function WhyMatchLeverPage() {
             href="/onboarding"
             className="inline-flex h-11 items-center justify-center rounded-md bg-[#2B5B84] px-5 font-display text-xs font-semibold tracking-[0.14em] text-white uppercase transition hover:bg-[#244e71]"
           >
-            Start as a Seeker
+            Start as a Talent
           </Link>
           <Link
             href="/"

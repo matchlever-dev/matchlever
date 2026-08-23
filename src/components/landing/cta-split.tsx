@@ -29,13 +29,13 @@ export function CtaSplit() {
         <div className="group flex min-h-[220px] flex-col justify-between border border-white/20 p-6 transition hover:border-[#E87A5D] sm:min-h-0 sm:p-10">
           <div>
             <p className="font-display text-[11px] font-semibold tracking-[0.28em] text-[#E87A5D] uppercase">
-              Candidates
+              Talent
             </p>
             <p className="mt-3 font-display text-xl font-semibold tracking-tight sm:mt-4 sm:text-2xl md:text-3xl">
               I&apos;m Looking for Opportunities
             </p>
             <p className="mt-3 max-w-md text-sm leading-relaxed text-white/75 sm:mt-4 sm:text-base">
-              Join incognito, sanitize your resume, and publish the signal recruiters
+              Join incognito, sanitize your resume, and publish the signal employers
               actually use.
             </p>
           </div>
@@ -48,10 +48,10 @@ export function CtaSplit() {
               <ArrowRight className="size-4 transition group-hover:translate-x-1" />
             </Link>
             <Link
-              href="/login?next=/dashboard/candidate"
+              href="/login?next=/dashboard/talent"
               className="font-display text-[11px] font-medium tracking-wide text-white/70 underline underline-offset-2 transition hover:text-white"
             >
-              Already a candidate? Log in
+              Already a talent? Log in
             </Link>
           </div>
         </div>
@@ -62,7 +62,7 @@ export function CtaSplit() {
           </span>
           <div className="pr-16 sm:pr-24">
             <p className="font-display text-[11px] font-semibold tracking-[0.28em] text-white/60 uppercase">
-              Recruiters
+              Employers
             </p>
             <p className="mt-3 max-w-sm font-display text-xl font-semibold tracking-tight sm:mt-4 sm:text-2xl md:text-3xl">
               I&apos;m Hiring Top Talent

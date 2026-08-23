@@ -28,8 +28,8 @@ import { Badge } from "@/components/ui/badge";
 
 const USER_STATUS_OPTIONS = [
   { value: "all", label: "All roles" },
-  { value: "candidate", label: "Candidate" },
-  { value: "recruiter", label: "Recruiter" },
+  { value: "talent", label: "Talent" },
+  { value: "employer", label: "Employer" },
   { value: "staff", label: "Staff" },
   { value: "admin", label: "Admin" },
   { value: "superuser", label: "Superuser" },
@@ -81,8 +81,8 @@ export function AdminUsersPage() {
       return matchesKeyword(keyword, [
         u.full_name,
         u.email,
-        types.candidate,
-        types.recruiter,
+        types.talent,
+        types.employer,
       ]);
     });
 
@@ -171,8 +171,8 @@ export function AdminUsersPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>User</TableHead>
-                <TableHead>Candidate</TableHead>
-                <TableHead>Recruiter</TableHead>
+                <TableHead>Talent</TableHead>
+                <TableHead>Employer</TableHead>
                 <TableHead>Admin</TableHead>
                 <TableHead>Superuser</TableHead>
               </TableRow>
@@ -189,10 +189,10 @@ export function AdminUsersPage() {
                       <div className="text-xs text-[#5B616B]">{user.email}</div>
                     </TableCell>
                     <TableCell className="text-[#2A2D34]">
-                      {types.candidate ?? ""}
+                      {types.talent ?? ""}
                     </TableCell>
                     <TableCell className="text-[#2A2D34]">
-                      {types.recruiter ?? ""}
+                      {types.employer ?? ""}
                     </TableCell>
                     <TableCell>
                       <Switch

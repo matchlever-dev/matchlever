@@ -180,11 +180,11 @@ export function OnboardingWizard() {
       if (data.warning) {
         // Keep a soft signal in the URL so the dashboard can surface it.
         router.push(
-          `/dashboard/candidate?onboarding=complete&warning=${encodeURIComponent(data.warning)}`
+          `/dashboard/talent?onboarding=complete&warning=${encodeURIComponent(data.warning)}`
         );
         return;
       }
-      router.push("/dashboard/candidate?onboarding=complete");
+      router.push("/dashboard/talent?onboarding=complete");
     } catch (err) {
       setSubmitError(
         err instanceof Error ? err.message : "Could not complete onboarding"

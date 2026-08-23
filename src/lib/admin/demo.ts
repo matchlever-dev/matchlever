@@ -1,4 +1,4 @@
-import { REQUIRED_VERIFIED_REFERENCES } from "@/lib/dashboard/candidate";
+import { REQUIRED_VERIFIED_REFERENCES } from "@/lib/dashboard/talent";
 
 /** Shared demo payloads + helpers for admin / superuser portals. */
 
@@ -24,11 +24,11 @@ export type AdminReferenceRow = {
   lowTrust: boolean;
 };
 
-export type AdminCandidateRow = {
+export type AdminTalentRow = {
   id: string;
   user_id: string;
-  /** False when the user has logged in but never finished creating a candidate_profiles row. */
-  has_candidate_profile: boolean;
+  /** False when the user has logged in but never finished creating a talent_profiles row. */
+  has_talent_profile: boolean;
   headline: string | null;
   status: string;
   global_city: string | null;
@@ -54,8 +54,8 @@ export type AdminCandidateRow = {
   };
 };
 
-export function computeCandidateMissing(input: {
-  has_candidate_profile: boolean;
+export function computeTalentMissing(input: {
+  has_talent_profile: boolean;
   headline: string | null;
   global_city: string | null;
   global_country: string | null;
@@ -64,12 +64,12 @@ export function computeCandidateMissing(input: {
   raw_resume_text: string | null;
   sanitized_summary: string | null;
   references: Pick<AdminReferenceRow, "status">[];
-}): AdminCandidateRow["missing"] {
+}): AdminTalentRow["missing"] {
   const hasResume = Boolean(
     input.raw_resume_text?.trim() || input.sanitized_summary?.trim()
   );
   const hasProfileInfo =
-    input.has_candidate_profile &&
+    input.has_talent_profile &&
     Boolean(input.headline?.trim()) &&
     Boolean(input.global_city?.trim()) &&
     Boolean(input.global_country?.trim()) &&
@@ -92,22 +92,22 @@ export function userPrivilegeScore(user: Pick<AdminUserRow, "is_admin" | "is_sup
   return 0;
 }
 
-/** Display-only account types for the admin Users table. A user can be Candidate and Recruiter. */
+/** Display-only account types for the admin Users table. A user can be Talent and Employer. */
 export function userAccountTypeLabels(role: string): {
-  candidate: string | null;
-  recruiter: string | null;
+  talent: string | null;
+  employer: string | null;
 } {
   switch (role.trim().toLowerCase()) {
     case "both":
-      return { candidate: "Candidate", recruiter: "Recruiter" };
-    case "candidate":
-      return { candidate: "Candidate", recruiter: null };
-    case "recruiter":
-      return { candidate: null, recruiter: "Recruiter" };
+      return { talent: "Talent", employer: "Employer" };
+    case "talent":
+      return { talent: "Talent", employer: null };
+    case "employer":
+      return { talent: null, employer: "Employer" };
     case "staff":
-      return { candidate: "Staff", recruiter: null };
+      return { talent: "Staff", employer: null };
     default:
-      return { candidate: role || null, recruiter: null };
+      return { talent: role || null, employer: null };
   }
 }
 
@@ -115,8 +115,8 @@ export function userMatchesAccountTypeFilter(
   role: string,
   filter: string
 ): boolean {
-  if (filter === "candidate") return role === "candidate" || role === "both";
-  if (filter === "recruiter") return role === "recruiter" || role === "both";
+  if (filter === "talent") return role === "talent" || role === "both";
+  if (filter === "employer") return role === "employer" || role === "both";
   if (filter === "staff") return role === "staff";
   return true;
 }
@@ -133,7 +133,7 @@ export function averageAuthenticityScore(
 
 export type DirectoryPerson = {
   id: string;
-  kind: "seeker" | "hirer";
+  kind: "talent" | "employer";
   email: string | null;
   full_name: string | null;
   title: string | null;
@@ -141,7 +141,7 @@ export type DirectoryPerson = {
   location: string | null;
   status: string | null;
   created_at: string;
-  /** Mean authenticity score for seekers; null for hirers / unscored. */
+  /** Mean authenticity score for talent; null for employers / unscored. */
   avg_authenticity_score: number | null;
 };
 
@@ -151,10 +151,10 @@ export type ActiveJobPosting = {
   company_name: string | null;
   status: string;
   kanban_columns: string[];
-  hirer_name: string | null;
+  employer_name: string | null;
 };
 
-export type ActiveCandidateOption = {
+export type ActiveTalentOption = {
   id: string;
   headline: string | null;
   email: string | null;
@@ -185,18 +185,18 @@ export const DEMO_ADMIN_USERS: AdminUserRow[] = [
   },
   {
     id: "user-2",
-    email: "sam.seeker@example.com",
+    email: "sam.talent@example.com",
     full_name: "Sam Patel",
-    role: "candidate",
+    role: "talent",
     is_admin: false,
     is_superuser: false,
     created_at: "2026-06-12T15:30:00.000Z",
   },
   {
     id: "user-3",
-    email: "jordan.hirer@acme.io",
+    email: "jordan.employer@acme.io",
     full_name: "Jordan Lee",
-    role: "recruiter",
+    role: "employer",
     is_admin: false,
     is_superuser: false,
     created_at: "2026-06-18T09:10:00.000Z",
@@ -230,11 +230,11 @@ export const DEMO_ADMIN_USERS: AdminUserRow[] = [
   },
 ];
 
-export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
+export const DEMO_ADMIN_TALENT: AdminTalentRow[] = [
   {
     id: "cand-1",
     user_id: "user-2",
-    has_candidate_profile: true,
+    has_talent_profile: true,
     headline: "Staff Platform Engineer",
     status: "actively_looking",
     global_city: "Austin",
@@ -245,10 +245,10 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
     work_hours_end: "17:00:00",
     location_modes: ["remote", "hybrid"],
     raw_resume_text:
-      "Sam Patel\nsam.seeker@example.com\n+1 512-555-0199\nBuilt Kafka pipelines at Acme…",
+      "Sam Patel\nsam.talent@example.com\n+1 512-555-0199\nBuilt Kafka pipelines at Acme…",
     sanitized_summary:
       "Staff platform engineer who cut p99 latency 62% on a multi-region event bus.",
-    email: "sam.seeker@example.com",
+    email: "sam.talent@example.com",
     full_name: "Sam Patel",
     linkedin_url: "https://www.linkedin.com/in/sam-patel",
     updated_at: "2026-07-20T16:00:00.000Z",
@@ -282,7 +282,7 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
   {
     id: "cand-2",
     user_id: "user-5",
-    has_candidate_profile: true,
+    has_talent_profile: true,
     headline: "Senior Backend Engineer",
     status: "on_hold",
     global_city: "Berlin",
@@ -318,7 +318,7 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
   {
     id: "cand-3",
     user_id: "user-6",
-    has_candidate_profile: true,
+    has_talent_profile: true,
     headline: "Product Designer",
     status: "on_hold",
     global_city: "Toronto",
@@ -341,7 +341,7 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
   {
     id: "user-7",
     user_id: "user-7",
-    has_candidate_profile: false,
+    has_talent_profile: false,
     headline: null,
     status: "incomplete",
     global_city: null,
@@ -366,8 +366,8 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
 export const DEMO_DIRECTORY: DirectoryPerson[] = [
   {
     id: "dir-s1",
-    kind: "seeker",
-    email: "sam.seeker@example.com",
+    kind: "talent",
+    email: "sam.talent@example.com",
     full_name: "Sam Patel",
     title: "Staff Platform Engineer",
     company: null,
@@ -378,7 +378,7 @@ export const DEMO_DIRECTORY: DirectoryPerson[] = [
   },
   {
     id: "dir-s2",
-    kind: "seeker",
+    kind: "talent",
     email: "taylor@example.com",
     full_name: "Taylor Nguyen",
     title: "Senior Backend Engineer",
@@ -390,8 +390,8 @@ export const DEMO_DIRECTORY: DirectoryPerson[] = [
   },
   {
     id: "dir-h1",
-    kind: "hirer",
-    email: "jordan.hirer@acme.io",
+    kind: "employer",
+    email: "jordan.employer@acme.io",
     full_name: "Jordan Lee",
     title: "VP Engineering",
     company: "Acme Systems",
@@ -402,7 +402,7 @@ export const DEMO_DIRECTORY: DirectoryPerson[] = [
   },
   {
     id: "dir-h2",
-    kind: "hirer",
+    kind: "employer",
     email: "priya@northwind.dev",
     full_name: "Priya Shah",
     title: "Head of Talent",
@@ -421,7 +421,7 @@ export const DEMO_ACTIVE_JOBS: ActiveJobPosting[] = [
     company_name: "Acme Systems",
     status: "active",
     kanban_columns: ["sourced", "screening", "interview", "offer", "hired"],
-    hirer_name: "Jordan Lee",
+    employer_name: "Jordan Lee",
   },
   {
     id: "job-2",
@@ -429,12 +429,12 @@ export const DEMO_ACTIVE_JOBS: ActiveJobPosting[] = [
     company_name: "Northwind",
     status: "active",
     kanban_columns: ["sourced", "screening", "interview", "offer", "hired"],
-    hirer_name: "Priya Shah",
+    employer_name: "Priya Shah",
   },
 ];
 
-export const DEMO_ACTIVE_CANDIDATES: ActiveCandidateOption[] =
-  DEMO_ADMIN_CANDIDATES.filter((c) => c.status === "actively_looking").map(
+export const DEMO_ACTIVE_TALENT: ActiveTalentOption[] =
+  DEMO_ADMIN_TALENT.filter((c) => c.status === "actively_looking").map(
     (c) => ({
       id: c.id,
       headline: c.headline,
@@ -476,7 +476,7 @@ export const DEMO_CONTACT_REQUESTS: DemoContactRequest[] = [
     email: "ops@acme.io",
     topic: "Partnership",
     message:
-      "We're a 40-person hiring team interested in early hirer access this quarter.",
+      "We're a 40-person hiring team interested in early employer access this quarter.",
     attachment_url: null,
     attachment_download_url: null,
     admin_notes: "Forwarded to partnerships — waiting on calendar hold.",
@@ -486,9 +486,9 @@ export const DEMO_CONTACT_REQUESTS: DemoContactRequest[] = [
   },
   {
     id: "contact-3",
-    email: "sam.seeker@example.com",
+    email: "sam.talent@example.com",
     topic: "Account help",
-    message: "Please confirm whether deleting my seeker profile also removes references.",
+    message: "Please confirm whether deleting my talent profile also removes references.",
     attachment_url: null,
     attachment_download_url: null,
     admin_notes: "Replied with privacy FAQ link.",

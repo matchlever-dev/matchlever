@@ -6,7 +6,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 export type ApiActor = {
   userId: string | null;
   isAdmin: boolean;
-  /** Raw `user_profiles.is_admin` — required for destructive admin actions like candidate delete. */
+  /** Raw `user_profiles.is_admin` — required for destructive admin actions like talent delete. */
   hasAdminFlag: boolean;
   isSuperuser: boolean;
   demo: boolean;

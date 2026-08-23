@@ -26,13 +26,13 @@ export function displayNameFromAuthUser(user: AuthUserLike): string | null {
   return combined || null;
 }
 
-export function candidateNameForInvite(
+export function talentNameForInvite(
   user?: AuthUserLike | null,
   storedName?: string | null
 ): string {
   return (
     stringOrNull(storedName) ||
     (user ? displayNameFromAuthUser(user) : null) ||
-    "a MatchLever candidate"
+    "a MatchLever talent"
   );
 }

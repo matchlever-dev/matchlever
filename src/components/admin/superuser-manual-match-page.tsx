@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type {
-  ActiveCandidateOption,
+  ActiveTalentOption,
   ActiveJobPosting,
 } from "@/lib/admin/demo";
 import { PortalShell } from "@/components/admin/portal-shell";
@@ -20,14 +20,14 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 
 const SUPER_LINKS = [
-  { href: "/superuser/candidates", label: "Candidates" },
+  { href: "/superuser/talent", label: "Talent" },
   { href: "/superuser/manual-match", label: "Manual Match" },
 ];
 
 export function SuperuserManualMatchPage() {
-  const [candidates, setCandidates] = useState<ActiveCandidateOption[]>([]);
+  const [talent, setTalent] = useState<ActiveTalentOption[]>([]);
   const [jobs, setJobs] = useState<ActiveJobPosting[]>([]);
-  const [candidateId, setCandidateId] = useState<string>("");
+  const [talentId, setTalentId] = useState<string>("");
   const [jobId, setJobId] = useState<string>("");
   const [column, setColumn] = useState("sourced");
   const [notes, setNotes] = useState("Concierge Match");
@@ -44,12 +44,12 @@ export function SuperuserManualMatchPage() {
       const res = await fetch("/api/superuser/manual-match");
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to load match tools");
-      const nextCandidates = (json.candidates ?? []) as ActiveCandidateOption[];
+      const nextTalent = (json.talent ?? []) as ActiveTalentOption[];
       const nextJobs = (json.jobs ?? []) as ActiveJobPosting[];
-      setCandidates(nextCandidates);
+      setTalent(nextTalent);
       setJobs(nextJobs);
       setDemo(Boolean(json.demo));
-      setCandidateId((prev) => prev || nextCandidates[0]?.id || "");
+      setTalentId((prev) => prev || nextTalent[0]?.id || "");
       setJobId((prev) => prev || nextJobs[0]?.id || "");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load");
@@ -76,7 +76,7 @@ export function SuperuserManualMatchPage() {
   }, [selectedJob, column]);
 
   async function pushMatch() {
-    if (!candidateId || !jobId) return;
+    if (!talentId || !jobId) return;
     setBusy(true);
     setError(null);
     setMessage(null);
@@ -85,7 +85,7 @@ export function SuperuserManualMatchPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          candidateProfileId: candidateId,
+          talentProfileId: talentId,
           jobPostingId: jobId,
           kanbanColumn: column,
           notes,
@@ -116,7 +116,7 @@ export function SuperuserManualMatchPage() {
             Manual match
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-[#5B616B]">
-            Select any active candidate and push them into an active job
+            Select any active talent and push them into an active job
             posting Kanban as a Concierge Match (`is_manual_match = true`).
           </p>
         </div>
@@ -131,16 +131,16 @@ export function SuperuserManualMatchPage() {
         <p className="text-sm text-[#5B616B]">Loading match tools…</p>
       ) : (
         <div className="grid max-w-2xl gap-5 border border-[#2B5B84]/15 bg-white p-5 sm:p-6">
-          <Field label="Active candidate">
+          <Field label="Active talent">
             <Select
-              value={candidateId}
-              onValueChange={(value) => setCandidateId(value ?? "")}
+              value={talentId}
+              onValueChange={(value) => setTalentId(value ?? "")}
             >
               <SelectTrigger className="h-11 w-full">
-                <SelectValue placeholder="Select candidate" />
+                <SelectValue placeholder="Select talent" />
               </SelectTrigger>
               <SelectContent>
-                {candidates.map((c) => (
+                {talent.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {(c.full_name || c.headline || c.id) +
                       (c.headline ? ` — ${c.headline}` : "")}
@@ -197,7 +197,7 @@ export function SuperuserManualMatchPage() {
 
           <Button
             type="button"
-            disabled={busy || !candidateId || !jobId}
+            disabled={busy || !talentId || !jobId}
             className="h-11 bg-[#E87A5D] text-white hover:bg-[#d96b4f]"
             onClick={() => void pushMatch()}
           >

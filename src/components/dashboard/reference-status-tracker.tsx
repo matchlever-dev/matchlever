@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { CheckCircle2, Clock3, Pencil, Send, X } from "lucide-react";
 
-import type { CandidateReferenceRow } from "@/lib/dashboard/candidate";
+import type { TalentReferenceRow } from "@/lib/dashboard/talent";
 import {
   isReferenceRelationship,
   relationshipLabel,
@@ -21,7 +21,7 @@ function EditReferenceForm({
   onCancel,
   onSaved,
 }: {
-  reference: CandidateReferenceRow;
+  reference: TalentReferenceRow;
   busy: boolean;
   onCancel: () => void;
   onSaved: (payload: {
@@ -47,7 +47,7 @@ function EditReferenceForm({
     setSaving(true);
     setLocalError(null);
     try {
-      const res = await fetch("/api/dashboard/candidate/references", {
+      const res = await fetch("/api/dashboard/talent/references", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -153,7 +153,7 @@ export function ReferenceStatusTracker({
   references,
   onChanged,
 }: {
-  references: CandidateReferenceRow[];
+  references: TalentReferenceRow[];
   onChanged?: () => void;
 }) {
   const verified = references.filter((r) => r.status === "verified").length;
@@ -166,7 +166,7 @@ export function ReferenceStatusTracker({
     setBusyId(referenceId);
     setMessage(null);
     try {
-      const res = await fetch("/api/dashboard/candidate/references/resend", {
+      const res = await fetch("/api/dashboard/talent/references/resend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ referenceId }),

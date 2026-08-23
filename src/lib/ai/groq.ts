@@ -126,8 +126,8 @@ function parseJsonContent(content: string): unknown {
   const raw = fenced?.[1]?.trim() ?? trimmed;
   const start = raw.indexOf("{");
   const end = raw.lastIndexOf("}");
-  const candidate = start >= 0 && end > start ? raw.slice(start, end + 1) : raw;
-  return JSON.parse(candidate);
+  const talent = start >= 0 && end > start ? raw.slice(start, end + 1) : raw;
+  return JSON.parse(talent);
 }
 
 /** Coerce common LLM quirks before Zod validation. */

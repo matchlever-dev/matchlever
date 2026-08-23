@@ -69,14 +69,14 @@ export function WaitlistModal({
             Join Exclusive Beta Waitlist
           </DialogTitle>
           <DialogDescription>
-            Hirer access is invite-only for Phase 1. Leave your details and
+            Employer access is invite-only for Phase 1. Leave your details and
             we&apos;ll reach out when seats open.
           </DialogDescription>
         </DialogHeader>
 
         {submitted ? (
           <p className="rounded-lg bg-[#2B5B84]/10 px-3 py-3 text-sm text-[#2B5B84]">
-            You&apos;re on the list. We&apos;ll email you when the hirer beta
+            You&apos;re on the list. We&apos;ll email you when the employer beta
             opens.
           </p>
         ) : (
