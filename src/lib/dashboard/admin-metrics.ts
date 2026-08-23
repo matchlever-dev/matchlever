@@ -1,75 +1,82 @@
-export type DateRangeKey = "today" | "7d" | "30d";
-
-export type HealthStatus = "healthy" | "watch" | "critical";
+export type ChartRangeKey = "30d" | "180d" | "1y" | "lifetime";
 
 export type SparkPoint = {
-  t: string;
-  v: number;
+  day: string;
+  views: number;
 };
 
-export type MetricSection =
-  | "users"
-  | "health"
-  | "conversions"
-  | "revenue";
+export type PipelineStatus =
+  | "Draft"
+  | "Pending Review"
+  | "Active"
+  | "Placed";
 
-export type StatMetric = {
-  id: string;
-  section: MetricSection;
+export type PipelineSegment = {
+  status: PipelineStatus;
+  count: number;
+  color: string;
+};
+
+export type VisitorVolumeMetric = {
   label: string;
-  value: string;
-  unit?: string;
-  /** Positive = up vs prior period. */
-  deltaPct: number;
-  health: HealthStatus;
+  /** Total views in the selected range. */
+  total: number;
+  periodLabel: string;
   sparkline: SparkPoint[];
-  subtitle?: string;
 };
 
-export type SystemAlert = {
-  id: string;
-  severity: "info" | "warning" | "critical";
-  title: string;
-  detail: string;
-  count?: number;
-};
-
-export type AdminDashboardSnapshot = {
-  range: DateRangeKey;
-  generatedAt: string;
-  metrics: StatMetric[];
-  alerts: SystemAlert[];
-};
-
-export const DATE_RANGE_OPTIONS: ReadonlyArray<{
-  value: DateRangeKey;
+export type NewRegistrationsMetric = {
   label: string;
+  total: number;
+  candidates: number;
+  employers: number;
+  /** Percent change vs the previous equivalent period. */
+  changePct: number;
+  changeLabel: string;
+  periodLabel: string;
+};
+
+export type CandidatePipelineMetric = {
+  label: string;
+  segments: PipelineSegment[];
+  total: number;
+  periodLabel: string;
+};
+
+export type ActiveMatchesMetric = {
+  label: string;
+  matchesInPeriod: number;
+  periodTarget: number;
+  periodProgress: number;
+  periodLabel: string;
+  targetLabel: string;
+};
+
+export type AdminDashboardData = {
+  range: ChartRangeKey;
+  generatedAt: string;
+  visitorVolume: VisitorVolumeMetric;
+  newRegistrations: NewRegistrationsMetric;
+  candidatePipeline: CandidatePipelineMetric;
+  activeMatches: ActiveMatchesMetric;
+};
+
+export const CHART_RANGE_OPTIONS: ReadonlyArray<{
+  value: ChartRangeKey;
+  label: string;
+  shortLabel: string;
 }> = [
-  { value: "today", label: "Today" },
-  { value: "7d", label: "7D" },
-  { value: "30d", label: "30D" },
+  { value: "30d", label: "30 days", shortLabel: "30D" },
+  { value: "180d", label: "180 days", shortLabel: "180D" },
+  { value: "1y", label: "1 year", shortLabel: "1Y" },
+  { value: "lifetime", label: "Lifetime", shortLabel: "Life" },
 ];
 
-export const SECTION_META: Record<
-  MetricSection,
-  { title: string; description: string }
-> = {
-  users: {
-    title: "Active Users",
-    description: "Real-time presence and engagement trend",
-  },
-  health: {
-    title: "System Health",
-    description: "Core Web Vitals and error-rate dials",
-  },
-  conversions: {
-    title: "Core Conversions",
-    description: "DAU target, match volume, and signup funnel",
-  },
-  revenue: {
-    title: "Revenue & Safety",
-    description: "Daily revenue, ARR pulse, and moderation queue",
-  },
+const PIPELINE_COLORS: Record<PipelineStatus, string> = {
+  Draft: "#94A3B8",
+  "Pending Review": "#C4922A",
+  Active: "#2B5B84",
+  Placed: "#2F6F4E",
 };
 
 function hashSeed(input: string): number {
@@ -91,203 +98,200 @@ function mulberry32(seed: number) {
   };
 }
 
-function sparkline(
-  seedKey: string,
-  points: number,
+function buildSparkline(
+  range: ChartRangeKey,
   base: number,
   volatility: number
 ): SparkPoint[] {
-  const rand = mulberry32(hashSeed(seedKey));
+  const rand = mulberry32(hashSeed(`views:${range}`));
+  const configs: Record<
+    ChartRangeKey,
+    { points: number; label: (i: number) => string }
+  > = {
+    "30d": {
+      points: 30,
+      label: (i) => `D${i + 1}`,
+    },
+    "180d": {
+      points: 26,
+      label: (i) => `W${i + 1}`,
+    },
+    "1y": {
+      points: 12,
+      label: (i) =>
+        ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"][i] ??
+        `M${i + 1}`,
+    },
+    lifetime: {
+      points: 16,
+      label: (i) => `Q${i + 1}`,
+    },
+  };
+
+  const { points, label } = configs[range];
   const out: SparkPoint[] = [];
   let value = base;
   for (let i = 0; i < points; i += 1) {
-    value = Math.max(0, value + (rand() - 0.48) * volatility);
-    out.push({ t: String(i), v: Math.round(value * 10) / 10 });
+    value = Math.max(40, value + (rand() - 0.45) * volatility);
+    out.push({ day: label(i), views: Math.round(value) });
   }
   return out;
 }
 
-function formatCompact(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(n >= 10_000 ? 0 : 1)}k`;
-  return String(Math.round(n));
-}
-
-function formatCurrency(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1_000) return `$${Math.round(n / 100) / 10}k`;
-  return `$${Math.round(n)}`;
-}
-
-const RANGE_POINTS: Record<DateRangeKey, number> = {
-  today: 24,
-  "7d": 28,
-  "30d": 30,
+const RANGE_COPY: Record<
+  ChartRangeKey,
+  {
+    periodLabel: string;
+    changeLabel: string;
+    targetLabel: string;
+  }
+> = {
+  "30d": {
+    periodLabel: "Last 30 days",
+    changeLabel: "vs prior 30 days",
+    targetLabel: "30-day target",
+  },
+  "180d": {
+    periodLabel: "Last 180 days",
+    changeLabel: "vs prior 180 days",
+    targetLabel: "180-day target",
+  },
+  "1y": {
+    periodLabel: "Last 12 months",
+    changeLabel: "vs prior year",
+    targetLabel: "Annual target",
+  },
+  lifetime: {
+    periodLabel: "Lifetime",
+    changeLabel: "vs prior half of lifetime",
+    targetLabel: "Lifetime goal",
+  },
 };
 
-const RANGE_SCALE: Record<DateRangeKey, number> = {
-  today: 1,
-  "7d": 1.08,
-  "30d": 1.18,
+type RangeScale = {
+  viewsTotal: number;
+  viewsBase: number;
+  viewsVol: number;
+  registrations: number;
+  candidateShare: number;
+  changePct: number;
+  draft: number;
+  pending: number;
+  active: number;
+  placed: number;
+  matches: number;
+  matchTarget: number;
 };
 
-/**
- * Deterministic mock ops metrics for the Admin Dashboard.
- * Swap for live API payloads later without changing card components.
- */
-export function buildAdminDashboardSnapshot(
-  range: DateRangeKey,
-  refreshToken = 0
-): AdminDashboardSnapshot {
+const RANGE_SCALE: Record<ChartRangeKey, RangeScale> = {
+  "30d": {
+    viewsTotal: 58_420,
+    viewsBase: 1700,
+    viewsVol: 320,
+    registrations: 214,
+    candidateShare: 0.68,
+    changePct: 8.4,
+    draft: 42,
+    pending: 28,
+    active: 67,
+    placed: 19,
+    matches: 38,
+    matchTarget: 45,
+  },
+  "180d": {
+    viewsTotal: 312_800,
+    viewsBase: 9800,
+    viewsVol: 1800,
+    registrations: 1180,
+    candidateShare: 0.71,
+    changePct: 14.2,
+    draft: 58,
+    pending: 41,
+    active: 124,
+    placed: 63,
+    matches: 186,
+    matchTarget: 200,
+  },
+  "1y": {
+    viewsTotal: 641_200,
+    viewsBase: 48_000,
+    viewsVol: 9000,
+    registrations: 2480,
+    candidateShare: 0.69,
+    changePct: 22.6,
+    draft: 71,
+    pending: 52,
+    active: 198,
+    placed: 112,
+    matches: 412,
+    matchTarget: 480,
+  },
+  lifetime: {
+    viewsTotal: 1_284_500,
+    viewsBase: 62_000,
+    viewsVol: 12_000,
+    registrations: 5120,
+    candidateShare: 0.7,
+    changePct: 31.1,
+    draft: 86,
+    pending: 64,
+    active: 246,
+    placed: 168,
+    matches: 890,
+    matchTarget: 1000,
+  },
+};
+
+/** Typed mock snapshot for the selected chart range. */
+export function getAdminDashboardMock(
+  range: ChartRangeKey = "30d"
+): AdminDashboardData {
   const scale = RANGE_SCALE[range];
-  const points = RANGE_POINTS[range];
-  const seed = `${range}:${refreshToken}`;
-
-  const activeUsers = Math.round(1280 * scale + refreshToken * 3);
-  const cwvPass = Math.min(99.2, 91.5 + scale * 3.2 - (refreshToken % 3) * 0.4);
-  const errorRate = Math.max(0.08, 0.42 / scale + (refreshToken % 5) * 0.02);
-  const dau = Math.round(940 * scale);
-  const dauTarget = 1100;
-  const matchVolume = Math.round(186 * scale + refreshToken);
-  const signupConv = Math.min(28, 14.2 * scale + (refreshToken % 4) * 0.3);
-  const revenueToday = Math.round(4200 * scale + refreshToken * 40);
-  const arr = Math.round(1_280_000 * scale);
-  const flagged = Math.max(0, 7 - (refreshToken % 4) + (range === "30d" ? 4 : 0));
-
-  const metrics: StatMetric[] = [
+  const copy = RANGE_COPY[range];
+  const candidates = Math.round(scale.registrations * scale.candidateShare);
+  const employers = scale.registrations - candidates;
+  const segments: PipelineSegment[] = [
+    { status: "Draft", count: scale.draft, color: PIPELINE_COLORS.Draft },
     {
-      id: "active-users",
-      section: "users",
-      label: "Active users",
-      value: formatCompact(activeUsers),
-      deltaPct: range === "today" ? 4.2 : range === "7d" ? 6.8 : 11.4,
-      health: "healthy",
-      subtitle: "Real-time · last 15 min",
-      sparkline: sparkline(`${seed}:users`, points, activeUsers * 0.82, activeUsers * 0.06),
+      status: "Pending Review",
+      count: scale.pending,
+      color: PIPELINE_COLORS["Pending Review"],
     },
-    {
-      id: "cwv-pass",
-      section: "health",
-      label: "CWV pass rate",
-      value: cwvPass.toFixed(1),
-      unit: "%",
-      deltaPct: range === "today" ? 0.8 : 1.6,
-      health: cwvPass >= 90 ? "healthy" : cwvPass >= 80 ? "watch" : "critical",
-      subtitle: "LCP / INP / CLS aggregate",
-      sparkline: sparkline(`${seed}:cwv`, points, cwvPass - 2, 1.4),
-    },
-    {
-      id: "error-5xx",
-      section: "health",
-      label: "5xx error rate",
-      value: errorRate.toFixed(2),
-      unit: "%",
-      deltaPct: range === "today" ? -12.5 : -8.1,
-      health: errorRate <= 0.5 ? "healthy" : errorRate <= 1.2 ? "watch" : "critical",
-      subtitle: "API + edge functions",
-      sparkline: sparkline(`${seed}:5xx`, points, errorRate + 0.2, 0.15),
-    },
-    {
-      id: "dau-target",
-      section: "conversions",
-      label: "DAU vs target",
-      value: `${formatCompact(dau)} / ${formatCompact(dauTarget)}`,
-      deltaPct: ((dau - dauTarget) / dauTarget) * 100,
-      health: dau / dauTarget >= 0.9 ? "healthy" : dau / dauTarget >= 0.75 ? "watch" : "critical",
-      subtitle: `${Math.round((dau / dauTarget) * 100)}% of target`,
-      sparkline: sparkline(`${seed}:dau`, points, dau * 0.9, dau * 0.05),
-    },
-    {
-      id: "match-volume",
-      section: "conversions",
-      label: "Match / action volume",
-      value: formatCompact(matchVolume),
-      deltaPct: range === "today" ? 3.1 : 9.4,
-      health: "healthy",
-      subtitle: "Manual + concierge matches",
-      sparkline: sparkline(`${seed}:match`, points, matchVolume * 0.85, matchVolume * 0.08),
-    },
-    {
-      id: "signup-conv",
-      section: "conversions",
-      label: "Signup conversion",
-      value: signupConv.toFixed(1),
-      unit: "%",
-      deltaPct: range === "today" ? 1.2 : 2.7,
-      health: signupConv >= 16 ? "healthy" : signupConv >= 12 ? "watch" : "critical",
-      subtitle: "Visit → candidate start",
-      sparkline: sparkline(`${seed}:signup`, points, signupConv - 1, 0.8),
-    },
-    {
-      id: "revenue-today",
-      section: "revenue",
-      label: range === "today" ? "Today's revenue" : "Period revenue",
-      value: formatCurrency(revenueToday * (range === "today" ? 1 : range === "7d" ? 6.2 : 24)),
-      deltaPct: range === "today" ? 5.6 : 8.9,
-      health: "healthy",
-      subtitle: "Unlock fees + retainers",
-      sparkline: sparkline(`${seed}:rev`, points, revenueToday * 0.7, revenueToday * 0.12),
-    },
-    {
-      id: "arr",
-      section: "revenue",
-      label: "ARR pulse",
-      value: formatCurrency(arr),
-      deltaPct: 2.4,
-      health: "healthy",
-      subtitle: "Annualized run-rate",
-      sparkline: sparkline(`${seed}:arr`, points, arr / 30, arr / 400),
-    },
-    {
-      id: "flagged-queue",
-      section: "revenue",
-      label: "Flagged content queue",
-      value: String(flagged),
-      deltaPct: flagged > 8 ? 18 : flagged > 4 ? 4 : -22,
-      health: flagged <= 3 ? "healthy" : flagged <= 8 ? "watch" : "critical",
-      subtitle: "Safety review backlog",
-      sparkline: sparkline(`${seed}:flag`, points, flagged + 2, 1.2),
-    },
-  ];
-
-  const alerts: SystemAlert[] = [
-    ...(errorRate > 0.5
-      ? [
-          {
-            id: "alert-5xx",
-            severity: "critical" as const,
-            title: "Elevated 5xx rate",
-            detail: `API error rate at ${errorRate.toFixed(2)}% over the selected window.`,
-            count: 1,
-          },
-        ]
-      : []),
-    ...(flagged > 0
-      ? [
-          {
-            id: "alert-flags",
-            severity: (flagged > 8 ? "critical" : "warning") as SystemAlert["severity"],
-            title: "Flagged content waiting",
-            detail: `${flagged} item${flagged === 1 ? "" : "s"} in the safety queue need review.`,
-            count: flagged,
-          },
-        ]
-      : []),
-    {
-      id: "alert-cwv",
-      severity: cwvPass >= 90 ? "info" : "warning",
-      title: cwvPass >= 90 ? "CWV within budget" : "CWV watch",
-      detail:
-        cwvPass >= 90
-          ? `Core Web Vitals pass rate is ${cwvPass.toFixed(1)}%.`
-          : `Pass rate dipped to ${cwvPass.toFixed(1)}% — check LCP on candidate dashboard.`,
-    },
+    { status: "Active", count: scale.active, color: PIPELINE_COLORS.Active },
+    { status: "Placed", count: scale.placed, color: PIPELINE_COLORS.Placed },
   ];
 
   return {
     range,
     generatedAt: new Date().toISOString(),
-    metrics,
-    alerts,
+    visitorVolume: {
+      label: "Visitor Volume",
+      total: scale.viewsTotal,
+      periodLabel: copy.periodLabel,
+      sparkline: buildSparkline(range, scale.viewsBase, scale.viewsVol),
+    },
+    newRegistrations: {
+      label: "New Registrations",
+      total: scale.registrations,
+      candidates,
+      employers,
+      changePct: scale.changePct,
+      changeLabel: copy.changeLabel,
+      periodLabel: copy.periodLabel,
+    },
+    candidatePipeline: {
+      label: "Candidate Pipeline",
+      segments,
+      total: segments.reduce((sum, s) => sum + s.count, 0),
+      periodLabel: copy.periodLabel,
+    },
+    activeMatches: {
+      label: "Active Matches",
+      matchesInPeriod: scale.matches,
+      periodTarget: scale.matchTarget,
+      periodProgress: scale.matches,
+      periodLabel: copy.periodLabel,
+      targetLabel: copy.targetLabel,
+    },
   };
 }

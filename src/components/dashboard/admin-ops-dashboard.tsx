@@ -1,67 +1,61 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Menu, RefreshCw, X } from "lucide-react";
+import { useState } from "react";
+import { Menu, X } from "lucide-react";
 import Link from "next/link";
 
-import { DateRangeToggle } from "@/components/dashboard/date-range-toggle";
-import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
-import { MetricGrid } from "@/components/dashboard/metric-grid";
-import { MobileNav } from "@/components/dashboard/mobile-nav";
-import { SystemAlerts } from "@/components/dashboard/system-alerts";
 import { BrandMark } from "@/components/brand/brand-mark";
-import { Button } from "@/components/ui/button";
+import { ChartRangeToggle } from "@/components/dashboard/chart-range-toggle";
+import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
+import { MobileNav } from "@/components/dashboard/mobile-nav";
+import { PipelineChart } from "@/components/dashboard/pipeline-chart";
+import { StatCard } from "@/components/dashboard/stat-card";
 import { ADMIN_LINKS } from "@/lib/admin/admin-nav";
 import {
-  buildAdminDashboardSnapshot,
-  type DateRangeKey,
-  type MetricSection,
+  getAdminDashboardMock,
+  type ChartRangeKey,
 } from "@/lib/dashboard/admin-metrics";
-import { cn } from "@/lib/utils";
 
-const SECTIONS: MetricSection[] = [
-  "users",
-  "health",
-  "conversions",
-  "revenue",
-];
-
-const POLL_MS = 45_000;
+function ProgressTowardTarget({
+  current,
+  target,
+  targetLabel,
+}: {
+  current: number;
+  target: number;
+  targetLabel: string;
+}) {
+  const pct = Math.min(100, Math.round((current / Math.max(target, 1)) * 100));
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-2 text-xs text-[#5B616B]">
+        <span>
+          {current.toLocaleString()} / {target.toLocaleString()} {targetLabel}
+        </span>
+        <span className="font-semibold tabular-nums text-[#2B5B84]">{pct}%</span>
+      </div>
+      <div
+        className="h-2 w-full overflow-hidden rounded-full bg-[#2B5B84]/12"
+        role="progressbar"
+        aria-valuenow={pct}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`${targetLabel} progress`}
+      >
+        <div
+          className="h-full rounded-full bg-[#2B5B84] transition-[width]"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
 
 export function AdminOpsDashboard() {
-  const [range, setRange] = useState<DateRangeKey>("today");
-  const [refreshToken, setRefreshToken] = useState(0);
-  const [refreshing, setRefreshing] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [lastRefreshed, setLastRefreshed] = useState(() => new Date());
-
-  const snapshot = buildAdminDashboardSnapshot(range, refreshToken);
-
-  const refresh = useCallback(async () => {
-    setRefreshing(true);
-    await new Promise((r) => setTimeout(r, 450));
-    setRefreshToken((n) => n + 1);
-    setLastRefreshed(new Date());
-    setRefreshing(false);
-  }, []);
-
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      setRefreshToken((n) => n + 1);
-      setLastRefreshed(new Date());
-    }, POLL_MS);
-    return () => window.clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    if (!drawerOpen) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setDrawerOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [drawerOpen]);
+  const [range, setRange] = useState<ChartRangeKey>("30d");
+  const data = getAdminDashboardMock(range);
 
   return (
     <div className="flex min-h-[100svh] bg-[#F7F6F3] text-[#2A2D34]">
@@ -76,7 +70,7 @@ export function AdminOpsDashboard() {
             <div className="flex min-w-0 items-center gap-2">
               <button
                 type="button"
-                className="inline-flex size-11 items-center justify-center rounded-md text-[#2B5B84] hover:bg-[#2B5B84]/8 lg:hidden"
+                className="inline-flex size-11 shrink-0 items-center justify-center rounded-md text-[#2B5B84] hover:bg-[#2B5B84]/8 lg:hidden"
                 aria-label={drawerOpen ? "Close menu" : "Open menu"}
                 aria-expanded={drawerOpen}
                 onClick={() => setDrawerOpen((open) => !open)}
@@ -87,7 +81,7 @@ export function AdminOpsDashboard() {
                   <Menu className="size-5" />
                 )}
               </button>
-              <div className="min-w-0 lg:hidden">
+              <div className="lg:hidden">
                 <BrandMark className="h-7 w-auto" />
               </div>
               <div className="min-w-0">
@@ -95,42 +89,12 @@ export function AdminOpsDashboard() {
                   Admin Portal
                 </p>
                 <h1 className="truncate font-display text-lg font-semibold text-[#2B5B84] sm:text-xl">
-                  Operations dashboard
+                  Dashboard
                 </h1>
               </div>
             </div>
-
-            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
-              <DateRangeToggle
-                value={range}
-                onChange={setRange}
-                disabled={refreshing}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => void refresh()}
-                disabled={refreshing}
-                className="min-h-11 gap-2 border-[#2B5B84]/20 text-[#2B5B84]"
-              >
-                <RefreshCw
-                  className={cn("size-4", refreshing && "animate-spin")}
-                  aria-hidden
-                />
-                Refresh
-              </Button>
-            </div>
+            <ChartRangeToggle value={range} onChange={setRange} />
           </div>
-          <p className="border-t border-[#2B5B84]/08 px-4 py-2 text-xs text-[#5B616B] sm:px-6">
-            Mock live feed · auto-polls every 45s · updated{" "}
-            <time dateTime={lastRefreshed.toISOString()}>
-              {lastRefreshed.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-              })}
-            </time>
-          </p>
         </header>
 
         {drawerOpen ? (
@@ -178,15 +142,43 @@ export function AdminOpsDashboard() {
           </div>
         ) : null}
 
-        <main className="mx-auto w-full max-w-7xl flex-1 space-y-8 overflow-x-hidden px-4 py-6 pb-24 sm:px-6 lg:pb-8">
-          <SystemAlerts alerts={snapshot.alerts} />
-          {SECTIONS.map((section) => (
-            <MetricGrid
-              key={section}
-              section={section}
-              metrics={snapshot.metrics}
+        <main className="mx-auto w-full max-w-5xl flex-1 overflow-x-hidden px-4 py-6 pb-24 sm:px-6 lg:pb-8">
+          <p className="mb-5 text-sm text-[#5B616B]">
+            {data.visitorVolume.periodLabel} snapshot for MatchLever traffic,
+            signups, pipeline, and matches.
+          </p>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5">
+            <StatCard
+              label={data.visitorVolume.label}
+              value={data.visitorVolume.total.toLocaleString()}
+              subtitle={`Total site views · ${data.visitorVolume.periodLabel.toLowerCase()}`}
+              sparkline={data.visitorVolume.sparkline}
             />
-          ))}
+
+            <StatCard
+              label={data.newRegistrations.label}
+              value={data.newRegistrations.total.toLocaleString()}
+              subtitle={`${data.newRegistrations.candidates.toLocaleString()} candidates · ${data.newRegistrations.employers.toLocaleString()} employers · ${data.newRegistrations.periodLabel.toLowerCase()}`}
+              changePct={data.newRegistrations.changePct}
+              changeLabel={data.newRegistrations.changeLabel}
+            />
+
+            <PipelineChart metric={data.candidatePipeline} />
+
+            <StatCard
+              label={data.activeMatches.label}
+              value={data.activeMatches.matchesInPeriod.toLocaleString()}
+              subtitle={`Introductions · ${data.activeMatches.periodLabel.toLowerCase()}`}
+              footer={
+                <ProgressTowardTarget
+                  current={data.activeMatches.periodProgress}
+                  target={data.activeMatches.periodTarget}
+                  targetLabel={data.activeMatches.targetLabel}
+                />
+              }
+            />
+          </div>
         </main>
 
         <MobileNav />
