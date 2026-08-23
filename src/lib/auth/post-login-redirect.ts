@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import {
+  loadUserRoleContext,
+  resolveRoleGatewayPath,
+} from "@/lib/auth/roles";
 import type { Database } from "@/types/database";
 
 /** Only allow same-origin relative paths (open-redirect safe). */
@@ -15,8 +19,7 @@ type AppSupabase = SupabaseClient<Database>;
 /**
  * Decide where a signed-in user should land.
  * Honors a safe `next` path when the user has access; otherwise lands on the
- * talent profile (or onboarding). Admin/superuser portals are URL-only —
- * they are not the default post-login destination.
+ * appropriate dashboard or onboarding gateway.
  */
 export async function resolvePostLoginPath(
   supabase: AppSupabase,
@@ -30,43 +33,42 @@ export async function resolvePostLoginPath(
 
   if (!user) return "/login";
 
-  const { data: profile } = await supabase
-    .from("user_profiles")
-    .select("is_admin, is_superuser")
-    .eq("id", user.id)
-    .maybeSingle();
+  const ctx = await loadUserRoleContext(supabase, user.id);
+  if (!ctx) return "/onboarding";
 
-  const isSuperuser = Boolean(profile?.is_superuser);
-  const isAdmin = Boolean(profile?.is_admin);
+  const gateway = resolveRoleGatewayPath(ctx);
 
-  // Explicit portal deep-links (e.g. /login?next=/admin) still work for staff.
-  if (safe?.startsWith("/superuser") && isSuperuser) return safe;
-  if (safe?.startsWith("/admin") && isAdmin) return safe;
+  if (safe?.startsWith("/superuser") && ctx.isSuperuser) return safe;
+  if (safe?.startsWith("/admin") && ctx.isAdmin) return safe;
+
+  if (safe?.startsWith("/employer/waitlist")) return safe;
+  if (safe?.startsWith("/choose-role")) return safe;
+
   if (
     safe &&
     (safe.startsWith("/dashboard") ||
       safe.startsWith("/onboarding") ||
       safe === "/")
   ) {
-    // Returning talent who already finished onboarding should land on the
-    // dashboard even when OAuth used next=/onboarding.
-    if (safe.startsWith("/onboarding")) {
-      const { data: talent } = await supabase
-        .from("talent_profiles")
-        .select("id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (talent) return "/dashboard/talent";
+    if (safe.startsWith("/onboarding") && ctx.hasTalentProfile) {
+      return gateway ?? "/dashboard/talent";
+    }
+    if (safe.startsWith("/dashboard/employer") && !ctx.hasEmployerProfile) {
+      return "/employer/waitlist";
+    }
+    if (safe.startsWith("/dashboard/talent") && !ctx.hasTalentProfile) {
+      return "/onboarding";
     }
     return safe;
   }
 
-  const { data: talent } = await supabase
-    .from("talent_profiles")
-    .select("id")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  if (gateway && !safe) return gateway;
 
-  if (talent) return "/dashboard/talent";
+  if (safe?.startsWith("/dashboard/employer")) {
+    return ctx.hasEmployerProfile ? safe : "/employer/waitlist";
+  }
+
+  if (ctx.hasTalentProfile) return "/dashboard/talent";
+  if (ctx.hasEmployerProfile) return "/dashboard/employer";
   return "/onboarding";
 }

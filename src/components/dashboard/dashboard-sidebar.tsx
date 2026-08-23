@@ -19,6 +19,7 @@ const ICONS = {
   "/admin/dashboard": LayoutDashboard,
   "/admin/users": Users,
   "/admin/talent": UserSquare2,
+  "/admin/employers": UserSquare2,
   "/admin/contact": MessageSquare,
 } as const;
 

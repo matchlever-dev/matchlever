@@ -1,14 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
-import { WaitlistModal } from "@/components/landing/waitlist-modal";
-
 export function CtaSplit() {
-  const [waitlistOpen, setWaitlistOpen] = useState(false);
-
   return (
     <section className="relative overflow-hidden bg-[#2B5B84] py-16 text-white sm:py-24 md:py-28">
       <svg
@@ -58,7 +53,7 @@ export function CtaSplit() {
 
         <div className="relative flex min-h-[220px] flex-col justify-between border border-white/15 bg-white/5 p-6 sm:min-h-0 sm:p-10">
           <span className="absolute top-5 right-5 bg-[#E87A5D] px-2.5 py-1 font-display text-[10px] font-bold tracking-[0.2em] text-white uppercase sm:top-6 sm:right-6">
-            Coming soon
+            Soft launch
           </span>
           <div className="pr-16 sm:pr-24">
             <p className="font-display text-[11px] font-semibold tracking-[0.28em] text-white/60 uppercase">
@@ -68,21 +63,18 @@ export function CtaSplit() {
               I&apos;m Hiring Top Talent
             </p>
             <p className="mt-3 max-w-md text-sm leading-relaxed text-white/70 sm:mt-4 sm:text-base">
-              Exclusive beta for enterprise hiring teams. Join the waitlist for
-              early seats.
+              For recruiters and hiring managers. First accepted match is free
+              during the employer soft launch.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setWaitlistOpen(true)}
+          <Link
+            href="/employer/waitlist"
             className="mt-8 inline-flex h-11 w-full items-center justify-center rounded-md bg-[#E87A5D] px-5 font-display text-xs font-semibold tracking-[0.14em] text-white uppercase transition hover:bg-[#d66a4f] sm:mt-12 sm:w-fit"
           >
-            Join Exclusive Beta Waitlist
-          </button>
+            Join the Employer Waitlist
+          </Link>
         </div>
       </div>
-
-      <WaitlistModal open={waitlistOpen} onOpenChange={setWaitlistOpen} />
     </section>
   );
 }

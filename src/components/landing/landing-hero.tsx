@@ -103,6 +103,25 @@ export function LandingHero() {
 
           <RotatingHeroTagline />
 
+          <div className="rounded-md border border-[#E87A5D]/35 bg-[#E87A5D]/10 px-4 py-3 sm:max-w-xl">
+            <p className="font-display text-[11px] font-semibold tracking-[0.22em] text-[#E87A5D] uppercase">
+              Employer Soft Launch
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-[#2A2D34] sm:text-base">
+              Hiring teams and hiring managers: join the waitlist for
+              pre-validated talent matching with zero-noise introductions.
+            </p>
+            <p className="mt-2 text-xs text-[#5B616B]">
+              Employers includes both company recruiters and hiring managers.
+            </p>
+            <Link
+              href="/employer/waitlist"
+              className="mt-4 inline-flex h-11 items-center justify-center rounded-md bg-[#E87A5D] px-5 font-display text-xs font-semibold tracking-[0.14em] text-white uppercase transition hover:bg-[#d66a4f]"
+            >
+              Join the Employer Waitlist
+            </Link>
+          </div>
+
           <p className="max-w-lg text-base leading-relaxed text-[#5B616B] sm:text-xl">
             Connect with vetted talents at no cost until a match is made.
           </p>

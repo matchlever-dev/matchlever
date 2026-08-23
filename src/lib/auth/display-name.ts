@@ -36,3 +36,24 @@ export function talentNameForInvite(
     "a MatchLever talent"
   );
 }
+
+export function splitNameFromAuthUser(user: AuthUserLike): {
+  firstName: string | null;
+  lastName: string | null;
+} {
+  const metadata = user.user_metadata ?? {};
+  const given = stringOrNull(metadata.given_name);
+  const family = stringOrNull(metadata.family_name);
+  if (given || family) {
+    return { firstName: given, lastName: family };
+  }
+  const full =
+    stringOrNull(metadata.full_name) || stringOrNull(metadata.name);
+  if (!full) return { firstName: null, lastName: null };
+  const parts = full.split(/\s+/).filter(Boolean);
+  if (parts.length === 1) return { firstName: parts[0], lastName: null };
+  return {
+    firstName: parts[0],
+    lastName: parts.slice(1).join(" "),
+  };
+}

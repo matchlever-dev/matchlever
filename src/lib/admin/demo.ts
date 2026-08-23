@@ -54,6 +54,27 @@ export type AdminTalentRow = {
   };
 };
 
+export type AdminEmployerRow = {
+  id: string;
+  user_id: string;
+  email: string | null;
+  full_name: string | null;
+  linkedin_url: string | null;
+  company_name: string;
+  title: string | null;
+  status: string;
+  user_role: string | null;
+  company_website: string | null;
+  industry: string | null;
+  company_size: string | null;
+  estimated_roles: number | null;
+  hiring_departments: string[];
+  work_arrangement: string | null;
+  first_match_free_claimed: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
 export function computeTalentMissing(input: {
   has_talent_profile: boolean;
   headline: string | null;
@@ -430,6 +451,49 @@ export const DEMO_ACTIVE_JOBS: ActiveJobPosting[] = [
     status: "active",
     kanban_columns: ["sourced", "screening", "interview", "offer", "hired"],
     employer_name: "Priya Shah",
+  },
+];
+
+export const DEMO_ADMIN_EMPLOYERS: AdminEmployerRow[] = [
+  {
+    id: "emp-1",
+    user_id: "user-h1",
+    email: "jordan.employer@acme.io",
+    full_name: "Jordan Lee",
+    linkedin_url: "https://www.linkedin.com/in/jordan-lee",
+    company_name: "Acme Systems",
+    title: "Head of Talent",
+    status: "waitlisted",
+    user_role: "recruiter",
+    company_website: "https://acme.example.com",
+    industry: "Enterprise Software",
+    company_size: "51-200",
+    estimated_roles: 4,
+    hiring_departments: ["Engineering", "Product"],
+    work_arrangement: "hybrid",
+    first_match_free_claimed: true,
+    created_at: "2026-07-10T10:00:00.000Z",
+    updated_at: "2026-07-10T10:00:00.000Z",
+  },
+  {
+    id: "emp-2",
+    user_id: "user-h2",
+    email: "priya@northwind.dev",
+    full_name: "Priya Shah",
+    linkedin_url: "https://www.linkedin.com/in/priya-shah",
+    company_name: "Northwind",
+    title: "VP Engineering",
+    status: "active",
+    user_role: "hiring_manager",
+    company_website: "https://northwind.dev",
+    industry: "Developer Tools",
+    company_size: "11-50",
+    estimated_roles: 2,
+    hiring_departments: ["Engineering"],
+    work_arrangement: "remote",
+    first_match_free_claimed: true,
+    created_at: "2026-06-18T09:10:00.000Z",
+    updated_at: "2026-07-02T14:00:00.000Z",
   },
 ];
 

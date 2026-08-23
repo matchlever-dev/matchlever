@@ -12,6 +12,7 @@ import {
   type TalentDashboardData,
 } from "@/lib/dashboard/talent";
 import { BrandMark } from "@/components/brand/brand-mark";
+import { RoleSwitcher } from "@/components/auth/role-switcher";
 import { AnonymousTalentCard } from "@/components/dashboard/anonymous-talent-card";
 import { ReferenceStatusTracker } from "@/components/dashboard/reference-status-tracker";
 import { ReferrerLinkedInLink } from "@/components/reference/referrer-linkedin-link";
@@ -38,6 +39,8 @@ export function TalentDashboard() {
   const [inviteWarning, setInviteWarning] = useState<string | null>(null);
   const [linkedinDraft, setLinkedinDraft] = useState("");
   const [linkedinBusy, setLinkedinBusy] = useState(false);
+  const [employerRequestBusy, setEmployerRequestBusy] = useState(false);
+  const [employerRequestMessage, setEmployerRequestMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const warning = searchParams.get("warning");
@@ -139,6 +142,36 @@ export function TalentDashboard() {
     }
   }
 
+  async function requestEmployerAccount() {
+    setEmployerRequestBusy(true);
+    setEmployerRequestMessage(null);
+    setError(null);
+    try {
+      const res = await fetch("/api/dashboard/talent/employer-request", {
+        method: "POST",
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || "Unable to request employer account");
+      }
+      if (json.alreadyExists) {
+        setEmployerRequestMessage(
+          "You already have an employer profile. Switch to the employer dashboard to view status."
+        );
+        return;
+      }
+      setEmployerRequestMessage(
+        "Employer profile created and waitlisted. Complete intake on the employer waitlist page."
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Unable to request employer account"
+      );
+    } finally {
+      setEmployerRequestBusy(false);
+    }
+  }
+
   async function signOut() {
     try {
       const supabase = createClient();
@@ -206,6 +239,7 @@ export function TalentDashboard() {
             </span>
           </Link>
           <div className="flex items-center gap-4">
+            <RoleSwitcher current="talent" />
             <button
               type="button"
               onClick={() => void signOut()}
@@ -335,6 +369,37 @@ export function TalentDashboard() {
               </Button>
             </div>
             <div className="mt-4 flex flex-col gap-3">
+              <div className="rounded-md border border-[#2B5B84]/12 bg-[#F7F6F3] p-4">
+                <p className="font-display text-[11px] font-semibold tracking-[0.18em] text-[#2B5B84] uppercase">
+                  Employer account
+                </p>
+                <p className="mt-2 text-sm text-[#5B616B]">
+                  Hiring on MatchLever too? Request an employer profile to join
+                  the waitlist.
+                </p>
+                {employerRequestMessage && (
+                  <p className="mt-2 text-sm text-[#2B5B84]">
+                    {employerRequestMessage}
+                  </p>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={employerRequestBusy}
+                  className="mt-3 h-10 border-[#E87A5D] text-[#E87A5D]"
+                  onClick={() => void requestEmployerAccount()}
+                >
+                  {employerRequestBusy ? "Submitting…" : "Request employer account"}
+                </Button>
+                <Button
+                  type="button"
+                  className="mt-1 h-9 px-0 text-[#2B5B84] hover:bg-transparent"
+                  variant="ghost"
+                  onClick={() => router.push("/employer/waitlist")}
+                >
+                  Complete employer waitlist intake
+                </Button>
+              </div>
               <Button
                 type="button"
                 className="h-11 bg-[#2B5B84] text-white hover:bg-[#244e71]"
