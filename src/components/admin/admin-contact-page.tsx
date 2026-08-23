@@ -22,18 +22,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { ADMIN_LINKS } from "@/lib/admin/admin-nav";
 import {
   CONTACT_STATUSES,
   type ContactRequestRow,
   type ContactStatus,
 } from "@/lib/contact/schema";
 import { cn } from "@/lib/utils";
-
-const ADMIN_LINKS = [
-  { href: "/admin/users", label: "Users" },
-  { href: "/admin/candidates", label: "Candidates" },
-  { href: "/admin/contact", label: "Contact" },
-];
 
 function statusBadgeClass(status: ContactStatus) {
   if (status === "New") return "bg-[#2B5B84]/12 text-[#2B5B84]";

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Send } from "lucide-react";
 
+import { ADMIN_LINKS } from "@/lib/admin/admin-nav";
 import type { AdminCandidateRow, AdminReferenceRow } from "@/lib/admin/demo";
 import {
   REQUIRED_VERIFIED_REFERENCES,
@@ -20,12 +21,6 @@ import { ReferrerLinkedInLink } from "@/components/reference/referrer-linkedin-l
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-const ADMIN_LINKS = [
-  { href: "/admin/users", label: "Users" },
-  { href: "/admin/candidates", label: "Candidates" },
-  { href: "/admin/contact", label: "Contact" },
-];
 
 const SUPERUSER_LINKS = [
   { href: "/superuser/candidates", label: "Candidates" },
@@ -94,7 +89,7 @@ function CandidateProfilesPage({
   allowDelete,
 }: {
   portalTitle: string;
-  links: { href: string; label: string }[];
+  links: readonly { href: string; label: string }[];
   accent: "admin" | "superuser";
   allowDelete: boolean;
 }) {

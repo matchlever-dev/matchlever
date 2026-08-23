@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { ADMIN_LINKS } from "@/lib/admin/admin-nav";
 import {
   type AdminUserRow,
   userAccountTypeLabels,
@@ -24,12 +25,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-
-const ADMIN_LINKS = [
-  { href: "/admin/users", label: "Users" },
-  { href: "/admin/candidates", label: "Candidates" },
-  { href: "/admin/contact", label: "Contact" },
-];
 
 const USER_STATUS_OPTIONS = [
   { value: "all", label: "All roles" },

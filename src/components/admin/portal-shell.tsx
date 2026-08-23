@@ -10,7 +10,7 @@ export function PortalShell({
   accent = "admin",
 }: {
   title: string;
-  links: { href: string; label: string }[];
+  links: readonly { href: string; label: string }[];
   children: React.ReactNode;
   accent?: "admin" | "superuser";
 }) {
