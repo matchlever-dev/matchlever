@@ -56,7 +56,7 @@ const PROCESS_STEPS = [
   },
 ] as const;
 
-export function EmployerSoftLaunchSection() {
+export function EmployerSoftLaunchSection({ showCta = true }: { showCta?: boolean }) {
   return (
     <section className="border-y border-[#2B5B84]/10 bg-white py-16 sm:py-24">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
@@ -128,14 +128,16 @@ export function EmployerSoftLaunchSection() {
           </ol>
         </div>
 
-        <div className="mt-10">
-          <Link
-            href="/employer/waitlist"
-            className="inline-flex h-12 items-center justify-center rounded-md bg-[#E87A5D] px-8 font-display text-xs font-semibold tracking-[0.14em] text-white uppercase transition hover:bg-[#d66a4f]"
-          >
-            Join the Employer Waitlist
-          </Link>
-        </div>
+        {showCta && (
+          <div className="mt-10">
+            <Link
+              href="/employer/waitlist#waitlist-form"
+              className="inline-flex h-12 items-center justify-center rounded-md bg-[#E87A5D] px-8 font-display text-xs font-semibold tracking-[0.14em] text-white uppercase transition hover:bg-[#d66a4f]"
+            >
+              Join the Employer Waitlist
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   );

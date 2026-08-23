@@ -152,9 +152,9 @@ export function EmployerWaitlistPage() {
 
   return (
     <main className="bg-[#F7F6F3] text-[#2A2D34]">
-      <EmployerSoftLaunchSection />
+      <EmployerSoftLaunchSection showCta={false} />
 
-      <section className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
+      <section id="waitlist-form" className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
         <div className="mb-8 flex items-center gap-3">
           <BrandMark className="h-10 w-auto" />
           <div>
@@ -387,7 +387,7 @@ export function EmployerWaitlistPage() {
               type="submit"
               className="h-11 w-full bg-[#E87A5D] text-white hover:bg-[#d66a4f] sm:w-auto"
             >
-              Join the Employer Waitlist
+              Submit waitlist application
             </Button>
           </form>
         )}
