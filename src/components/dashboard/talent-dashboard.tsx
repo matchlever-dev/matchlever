@@ -47,6 +47,14 @@ export function TalentDashboard() {
     if (warning) setInviteWarning(warning);
   }, [searchParams]);
 
+  useEffect(() => {
+    if (searchParams.get("edit") !== "1") return;
+    if (!data || needsOnboarding) return;
+    setEditOpen(true);
+    // Drop the query so refresh/back don't keep reopening the modal.
+    router.replace("/dashboard/talent", { scroll: false });
+  }, [searchParams, data, needsOnboarding, router]);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);

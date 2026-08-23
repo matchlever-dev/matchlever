@@ -51,7 +51,7 @@ export async function resolvePostLoginPath(
       safe === "/")
   ) {
     if (safe.startsWith("/onboarding") && ctx.hasTalentProfile) {
-      return gateway ?? "/dashboard/talent";
+      return gateway ?? "/dashboard/talent?edit=1";
     }
     if (safe.startsWith("/dashboard/employer") && !ctx.hasEmployerProfile) {
       return "/employer/waitlist";
