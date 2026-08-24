@@ -95,10 +95,7 @@ export function EmployerDashboard() {
               <p className="text-xs text-[#5B616B]">{data.profile.companyName}</p>
             </div>
           </div>
-          <RoleSwitcher
-            current="employer"
-            showAdminLinks={data.user.isAdmin || data.user.isSuperuser}
-          />
+          <RoleSwitcher current="employer" />
         </div>
       </header>
 

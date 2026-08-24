@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
 import "./globals.css";
 
+import { SiteChrome } from "@/components/brand/site-chrome";
 import { LandingFooter } from "@/components/landing/landing-footer";
+import { getNavSession } from "@/lib/auth/nav-session.server";
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
@@ -23,18 +25,22 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const navSession = await getNavSession();
+
   return (
     <html lang="en">
       <body className={`${montserrat.variable} font-sans antialiased`}>
-        <div className="flex min-h-[100svh] flex-col">
-          <div className="flex-1">{children}</div>
-          <LandingFooter />
-        </div>
+        <SiteChrome initialSession={navSession}>
+          <div className="flex min-h-[100svh] flex-col">
+            <div className="flex-1">{children}</div>
+            <LandingFooter />
+          </div>
+        </SiteChrome>
       </body>
     </html>
   );
