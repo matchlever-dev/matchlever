@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 import { SiteChrome } from "@/components/brand/site-chrome";
@@ -53,6 +55,8 @@ export default async function RootLayout({
             <LandingFooter brandTagline={brandTagline} />
           </div>
         </SiteChrome>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

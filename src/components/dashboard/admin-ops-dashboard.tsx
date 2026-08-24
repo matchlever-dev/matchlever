@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { AdminPortalShell } from "@/components/admin/admin-portal-shell";
 import { ChartRangeToggle } from "@/components/dashboard/chart-range-toggle";
@@ -8,6 +8,7 @@ import { PipelineChart } from "@/components/dashboard/pipeline-chart";
 import { StatCard } from "@/components/dashboard/stat-card";
 import {
   getAdminDashboardMock,
+  type AdminDashboardData,
   type ChartRangeKey,
 } from "@/lib/dashboard/admin-metrics";
 
@@ -48,7 +49,42 @@ function ProgressTowardTarget({
 
 export function AdminOpsDashboard() {
   const [range, setRange] = useState<ChartRangeKey>("30d");
-  const data = getAdminDashboardMock(range);
+  const [data, setData] = useState<AdminDashboardData>(() =>
+    getAdminDashboardMock("30d")
+  );
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async (nextRange: ChartRangeKey) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/admin/dashboard?range=${encodeURIComponent(nextRange)}`,
+        { cache: "no-store" }
+      );
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || "Failed to load dashboard metrics");
+      }
+      setData(json as AdminDashboardData);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to load dashboard metrics"
+      );
+      setData(getAdminDashboardMock(nextRange));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load(range);
+  }, [load, range]);
+
+  const visitorSubtitle = data.visitorVolume.unavailableReason
+    ? data.visitorVolume.unavailableReason
+    : `Total site views · ${data.visitorVolume.periodLabel.toLowerCase()}`;
 
   return (
     <AdminPortalShell
@@ -56,16 +92,28 @@ export function AdminOpsDashboard() {
       headerActions={<ChartRangeToggle value={range} onChange={setRange} />}
       mainClassName="max-w-5xl"
     >
-      <p className="mb-5 text-sm text-[#5B616B]">
-        {data.visitorVolume.periodLabel} snapshot for MatchLever traffic,
-        signups, pipeline, and matches.
-      </p>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-[#5B616B]">
+          {data.visitorVolume.periodLabel} snapshot for MatchLever traffic,
+          signups, pipeline, and matches.
+          {data.demo ? " (Demo data)" : null}
+        </p>
+        {loading ? (
+          <p className="text-xs font-medium text-[#5B616B]">Refreshing…</p>
+        ) : null}
+      </div>
+
+      {error ? (
+        <p className="mb-4 text-sm text-destructive" role="alert">
+          {error} Showing fallback metrics.
+        </p>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5">
         <StatCard
           label={data.visitorVolume.label}
           value={data.visitorVolume.total.toLocaleString()}
-          subtitle={`Total site views · ${data.visitorVolume.periodLabel.toLowerCase()}`}
+          subtitle={visitorSubtitle}
           sparkline={data.visitorVolume.sparkline}
         />
 

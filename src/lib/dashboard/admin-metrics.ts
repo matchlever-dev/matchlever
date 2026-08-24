@@ -1,3 +1,6 @@
+import { computeTalentMissing } from "@/lib/admin/demo";
+import { REQUIRED_VERIFIED_REFERENCES } from "@/lib/dashboard/talent";
+
 export type ChartRangeKey = "30d" | "180d" | "1y" | "lifetime";
 
 export type SparkPoint = {
@@ -23,6 +26,9 @@ export type VisitorVolumeMetric = {
   total: number;
   periodLabel: string;
   sparkline: SparkPoint[];
+  /** False when Web Analytics is not configured / unavailable. */
+  available?: boolean;
+  unavailableReason?: string;
 };
 
 export type NewRegistrationsMetric = {
@@ -55,6 +61,7 @@ export type ActiveMatchesMetric = {
 export type AdminDashboardData = {
   range: ChartRangeKey;
   generatedAt: string;
+  demo?: boolean;
   visitorVolume: VisitorVolumeMetric;
   newRegistrations: NewRegistrationsMetric;
   talentPipeline: TalentPipelineMetric;
@@ -72,12 +79,158 @@ export const CHART_RANGE_OPTIONS: ReadonlyArray<{
   { value: "lifetime", label: "Lifetime", shortLabel: "Life" },
 ];
 
-const PIPELINE_COLORS: Record<PipelineStatus, string> = {
+export const PIPELINE_COLORS: Record<PipelineStatus, string> = {
   Draft: "#94A3B8",
   "Pending Review": "#C4922A",
   Active: "#2B5B84",
   Placed: "#2F6F4E",
 };
+
+export const MATCH_TARGETS: Record<ChartRangeKey, number> = {
+  "30d": 45,
+  "180d": 200,
+  "1y": 480,
+  lifetime: 1000,
+};
+
+export const RANGE_COPY: Record<
+  ChartRangeKey,
+  {
+    periodLabel: string;
+    changeLabel: string;
+    targetLabel: string;
+  }
+> = {
+  "30d": {
+    periodLabel: "Last 30 days",
+    changeLabel: "vs prior 30 days",
+    targetLabel: "30-day target",
+  },
+  "180d": {
+    periodLabel: "Last 180 days",
+    changeLabel: "vs prior 180 days",
+    targetLabel: "180-day target",
+  },
+  "1y": {
+    periodLabel: "Last 12 months",
+    changeLabel: "vs prior year",
+    targetLabel: "Annual target",
+  },
+  lifetime: {
+    periodLabel: "Lifetime",
+    changeLabel: "vs prior half of lifetime",
+    targetLabel: "Lifetime goal",
+  },
+};
+
+export function parseChartRangeKey(value: string | null | undefined): ChartRangeKey {
+  if (value === "180d" || value === "1y" || value === "lifetime") return value;
+  return "30d";
+}
+
+export function getRangeBounds(
+  range: ChartRangeKey,
+  now = new Date()
+): {
+  from: Date;
+  to: Date;
+  priorFrom: Date;
+  priorTo: Date;
+  dayCount: number | null;
+} {
+  const to = now;
+  const msDay = 86_400_000;
+
+  if (range === "lifetime") {
+    const from = new Date("2024-01-01T00:00:00.000Z");
+    const span = Math.max(msDay, to.getTime() - from.getTime());
+    const mid = new Date(from.getTime() + span / 2);
+    return {
+      from,
+      to,
+      priorFrom: from,
+      priorTo: mid,
+      dayCount: null,
+    };
+  }
+
+  const days = range === "30d" ? 30 : range === "180d" ? 180 : 365;
+  const from = new Date(to.getTime() - days * msDay);
+  const priorTo = from;
+  const priorFrom = new Date(from.getTime() - days * msDay);
+  return { from, to, priorFrom, priorTo, dayCount: days };
+}
+
+export function buildPipelineSegments(
+  counts: Record<PipelineStatus, number>
+): PipelineSegment[] {
+  return (["Draft", "Pending Review", "Active", "Placed"] as const).map(
+    (status) => ({
+      status,
+      count: counts[status] ?? 0,
+      color: PIPELINE_COLORS[status],
+    })
+  );
+}
+
+export function mapTalentToPipelineStatus(input: {
+  hasTalentProfile: boolean;
+  status: string;
+  headline: string | null;
+  globalCity: string | null;
+  globalCountry: string | null;
+  workHoursStart: string | null;
+  workHoursEnd: string | null;
+  rawResumeText: string | null;
+  sanitizedSummary: string | null;
+  verifiedReferenceCount: number;
+  isPlaced: boolean;
+}): PipelineStatus {
+  if (input.isPlaced) return "Placed";
+
+  const missing = computeTalentMissing({
+    has_talent_profile: input.hasTalentProfile,
+    headline: input.headline,
+    global_city: input.globalCity,
+    global_country: input.globalCountry,
+    work_hours_start: input.workHoursStart,
+    work_hours_end: input.workHoursEnd,
+    raw_resume_text: input.rawResumeText,
+    sanitized_summary: input.sanitizedSummary,
+    references: Array.from({ length: input.verifiedReferenceCount }, () => ({
+      status: "verified",
+    })),
+  });
+
+  if (
+    input.status === "actively_looking" &&
+    !missing.resume &&
+    !missing.profile &&
+    !missing.references
+  ) {
+    return "Active";
+  }
+
+  if (!missing.resume && !missing.profile && missing.references) {
+    return "Pending Review";
+  }
+
+  return "Draft";
+}
+
+export function percentChange(current: number, prior: number): number {
+  if (prior <= 0) return current > 0 ? 100 : 0;
+  return ((current - prior) / prior) * 100;
+}
+
+export function emptyPipelineCounts(): Record<PipelineStatus, number> {
+  return {
+    Draft: 0,
+    "Pending Review": 0,
+    Active: 0,
+    Placed: 0,
+  };
+}
 
 function hashSeed(input: string): number {
   let h = 2166136261;
@@ -137,36 +290,6 @@ function buildSparkline(
   }
   return out;
 }
-
-const RANGE_COPY: Record<
-  ChartRangeKey,
-  {
-    periodLabel: string;
-    changeLabel: string;
-    targetLabel: string;
-  }
-> = {
-  "30d": {
-    periodLabel: "Last 30 days",
-    changeLabel: "vs prior 30 days",
-    targetLabel: "30-day target",
-  },
-  "180d": {
-    periodLabel: "Last 180 days",
-    changeLabel: "vs prior 180 days",
-    targetLabel: "180-day target",
-  },
-  "1y": {
-    periodLabel: "Last 12 months",
-    changeLabel: "vs prior year",
-    targetLabel: "Annual target",
-  },
-  lifetime: {
-    periodLabel: "Lifetime",
-    changeLabel: "vs prior half of lifetime",
-    targetLabel: "Lifetime goal",
-  },
-};
 
 type RangeScale = {
   viewsTotal: number;
@@ -242,7 +365,7 @@ const RANGE_SCALE: Record<ChartRangeKey, RangeScale> = {
   },
 };
 
-/** Typed mock snapshot for the selected chart range. */
+/** Typed mock snapshot for the selected chart range (demo / no Supabase). */
 export function getAdminDashboardMock(
   range: ChartRangeKey = "30d"
 ): AdminDashboardData {
@@ -250,25 +373,23 @@ export function getAdminDashboardMock(
   const copy = RANGE_COPY[range];
   const talent = Math.round(scale.registrations * scale.talentShare);
   const employers = scale.registrations - talent;
-  const segments: PipelineSegment[] = [
-    { status: "Draft", count: scale.draft, color: PIPELINE_COLORS.Draft },
-    {
-      status: "Pending Review",
-      count: scale.pending,
-      color: PIPELINE_COLORS["Pending Review"],
-    },
-    { status: "Active", count: scale.active, color: PIPELINE_COLORS.Active },
-    { status: "Placed", count: scale.placed, color: PIPELINE_COLORS.Placed },
-  ];
+  const segments = buildPipelineSegments({
+    Draft: scale.draft,
+    "Pending Review": scale.pending,
+    Active: scale.active,
+    Placed: scale.placed,
+  });
 
   return {
     range,
     generatedAt: new Date().toISOString(),
+    demo: true,
     visitorVolume: {
       label: "Visitor Volume",
       total: scale.viewsTotal,
       periodLabel: copy.periodLabel,
       sparkline: buildSparkline(range, scale.viewsBase, scale.viewsVol),
+      available: true,
     },
     newRegistrations: {
       label: "New Registrations",
@@ -283,7 +404,7 @@ export function getAdminDashboardMock(
       label: "Talent Pipeline",
       segments,
       total: segments.reduce((sum, s) => sum + s.count, 0),
-      periodLabel: copy.periodLabel,
+      periodLabel: "Current snapshot",
     },
     activeMatches: {
       label: "Active Matches",
@@ -295,3 +416,5 @@ export function getAdminDashboardMock(
     },
   };
 }
+
+export { REQUIRED_VERIFIED_REFERENCES };
