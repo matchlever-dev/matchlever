@@ -140,9 +140,11 @@ export function SiteHeader({ className }: { className?: string }) {
                     onClick={() => setDrawerOpen(false)}
                     className={cn(
                       "inline-flex min-h-11 items-center rounded-lg px-3 font-display text-xs font-semibold tracking-wide uppercase",
-                      item.emphasis === "primary"
-                        ? "text-[#2B5B84] hover:bg-[#2B5B84]/8"
-                        : "text-[#5B616B] hover:bg-[#2B5B84]/8"
+                      item.emphasis === "staff"
+                        ? "text-[#E87A5D] hover:bg-[#E87A5D]/10"
+                        : item.emphasis === "primary"
+                          ? "text-[#2B5B84] hover:bg-[#2B5B84]/8"
+                          : "text-[#5B616B] hover:bg-[#2B5B84]/8"
                     )}
                   >
                     {item.label}

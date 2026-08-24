@@ -60,14 +60,16 @@ export function buildSiteNavItems(
     });
   }
 
-  if (ready && session.staffLink) {
-    items.push({
-      key: session.staffLink.href,
-      href: session.staffLink.href,
-      label: session.staffLink.label,
-      emphasis: "staff",
-      kind: "link",
-    });
+  if (ready && session.staffLinks.length > 0) {
+    for (const staffLink of session.staffLinks) {
+      items.push({
+        key: staffLink.href,
+        href: staffLink.href,
+        label: staffLink.label,
+        emphasis: "staff",
+        kind: "link",
+      });
+    }
   }
 
   return items;

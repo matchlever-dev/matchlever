@@ -15,7 +15,7 @@ export function RoleSwitcher({
   const otherHref =
     other === "talent" ? "/dashboard/talent" : "/dashboard/employer";
   const otherLabel = other === "talent" ? "Talent" : "Employer";
-  const staffLink = ready ? session.staffLink : null;
+  const staffLinks = ready ? session.staffLinks : [];
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -29,14 +29,15 @@ export function RoleSwitcher({
           Switch to {otherLabel}
         </Button>
       </Link>
-      {staffLink ? (
+      {staffLinks.map((link) => (
         <Link
-          href={staffLink.href}
-          className="text-xs font-medium text-[#2B5B84] underline-offset-2 hover:underline"
+          key={link.href}
+          href={link.href}
+          className="inline-flex h-8 items-center rounded-md border border-[#E87A5D]/35 bg-[#E87A5D]/10 px-3 text-xs font-semibold text-[#E87A5D] transition hover:bg-[#E87A5D]/20"
         >
-          {staffLink.label === "Superuser Console" ? "Superuser" : "Admin"}
+          {link.label === "Superuser Console" ? "Superuser" : "Admin Portal"}
         </Link>
-      ) : null}
+      ))}
     </div>
   );
 }

@@ -9,14 +9,14 @@ export type NavSession = {
   authenticated: boolean;
   dashboardHref: string | null;
   dashboardLabel: string;
-  staffLink: NavStaffLink | null;
+  staffLinks: NavStaffLink[];
 };
 
 export const GUEST_NAV_SESSION: NavSession = {
   authenticated: false,
   dashboardHref: null,
   dashboardLabel: "Dashboard",
-  staffLink: null,
+  staffLinks: [],
 };
 
 export function resolveDashboardNav(ctx: UserRoleContext | null): {
@@ -38,17 +38,19 @@ export function resolveDashboardNav(ctx: UserRoleContext | null): {
   return { href: "/onboarding", label: "Dashboard" };
 }
 
-export function resolveStaffNavLink(
+export function resolveStaffNavLinks(
   ctx: Pick<UserRoleContext, "isAdmin" | "isSuperuser"> | null
-): NavStaffLink | null {
-  if (!ctx) return null;
-  if (ctx.isSuperuser) {
-    return { href: "/superuser/talent", label: "Superuser Console" };
-  }
+): NavStaffLink[] {
+  if (!ctx) return [];
+
+  const links: NavStaffLink[] = [];
   if (ctx.isAdmin) {
-    return { href: "/admin/dashboard", label: "Admin Portal" };
+    links.push({ href: "/admin/dashboard", label: "Admin Portal" });
   }
-  return null;
+  if (ctx.isSuperuser) {
+    links.push({ href: "/superuser/talent", label: "Superuser Console" });
+  }
+  return links;
 }
 
 export function buildNavSession(
@@ -65,6 +67,6 @@ export function buildNavSession(
     authenticated: true,
     dashboardHref: dashboard.href,
     dashboardLabel: dashboard.label,
-    staffLink: resolveStaffNavLink(ctx),
+    staffLinks: resolveStaffNavLinks(ctx),
   };
 }
