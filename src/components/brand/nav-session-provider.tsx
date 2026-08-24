@@ -32,7 +32,7 @@ export function NavSessionProvider({
   children: React.ReactNode;
 }) {
   const [session, setSession] = useState(initialSession);
-  const [ready, setReady] = useState(true);
+  const [ready, setReady] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -46,6 +46,10 @@ export function NavSessionProvider({
       setReady(true);
     }
   }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
 
   useEffect(() => {
     if (!isSupabaseConfigured()) return;

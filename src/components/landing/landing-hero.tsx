@@ -146,7 +146,7 @@ export function LandingHero() {
             </a>
           </div>
           <p className="text-sm text-[#5B616B]">
-            {isSignedIn ? (
+            {!ready ? null : isSignedIn ? (
               <>
                 Welcome back.{" "}
                 <Link

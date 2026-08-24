@@ -55,7 +55,7 @@ export function CtaSplit() {
                 : "Begin onboarding"}
               <ArrowRight className="size-4 transition group-hover:translate-x-1" />
             </Link>
-            {!isSignedIn ? (
+            {!ready ? null : !isSignedIn ? (
               <Link
                 href="/login?next=/dashboard/talent"
                 className="font-display text-[11px] font-medium tracking-wide text-white/70 underline underline-offset-2 transition hover:text-white"
@@ -91,7 +91,7 @@ export function CtaSplit() {
                 ? "Open employer profile"
                 : "Join the Employer Waitlist"}
             </Link>
-            {!isSignedIn ? (
+            {!ready ? null : !isSignedIn ? (
               <Link
                 href="/login?next=/dashboard/employer"
                 className="font-display text-[11px] font-medium tracking-wide text-white/70 underline underline-offset-2 transition hover:text-white"

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import { useNavSession } from "@/components/brand/nav-session-provider";
 import type { NavSession } from "@/lib/auth/nav-session";
@@ -32,7 +33,8 @@ export function siteNavLinkClassName(emphasis: SiteNavItem["emphasis"]) {
 
 export function buildSiteNavItems(
   session: NavSession,
-  ready: boolean
+  ready: boolean,
+  pathname?: string | null
 ): SiteNavItem[] {
   const items: SiteNavItem[] = PUBLIC_NAV_LINKS.map((link) => ({
     key: link.href,
@@ -42,15 +44,20 @@ export function buildSiteNavItems(
     kind: "link" as const,
   }));
 
-  if (session.authenticated && session.dashboardHref) {
+  const pathDashboardHref = resolvePathDashboardHref(pathname);
+  const dashboardHref = session.dashboardHref ?? pathDashboardHref;
+  const isAuthenticated =
+    session.authenticated || Boolean(pathDashboardHref);
+
+  if (isAuthenticated && dashboardHref) {
     items.push({
       key: "dashboard",
-      href: session.dashboardHref,
+      href: dashboardHref,
       label: session.dashboardLabel,
       emphasis: "primary",
       kind: "link",
     });
-  } else {
+  } else if (ready) {
     items.push({
       key: "sign-in",
       href: "/login",
@@ -75,6 +82,15 @@ export function buildSiteNavItems(
   return items;
 }
 
+function resolvePathDashboardHref(pathname?: string | null): string | null {
+  if (!pathname) return null;
+  if (pathname.startsWith("/dashboard/talent")) return "/dashboard/talent";
+  if (pathname.startsWith("/dashboard/employer")) return "/dashboard/employer";
+  if (pathname.startsWith("/admin")) return "/admin/dashboard";
+  if (pathname.startsWith("/superuser")) return "/superuser/talent";
+  return null;
+}
+
 export function SiteNavLinks({
   className,
   linkClassName,
@@ -82,8 +98,9 @@ export function SiteNavLinks({
   className?: string;
   linkClassName?: string;
 }) {
+  const pathname = usePathname();
   const { session, ready } = useNavSession();
-  const items = buildSiteNavItems(session, ready);
+  const items = buildSiteNavItems(session, ready, pathname);
 
   return (
     <nav

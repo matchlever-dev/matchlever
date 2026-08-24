@@ -37,7 +37,7 @@ export function SiteHeader({ className }: { className?: string }) {
     return null;
   }
 
-  const navItems = buildSiteNavItems(session, ready);
+  const navItems = buildSiteNavItems(session, ready, pathname);
 
   return (
     <>
