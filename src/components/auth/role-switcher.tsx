@@ -11,24 +11,39 @@ export function RoleSwitcher({
   current: "talent" | "employer";
 }) {
   const { session, ready } = useNavSession();
-  const other = current === "talent" ? "employer" : "talent";
-  const otherHref =
-    other === "talent" ? "/dashboard/talent" : "/dashboard/employer";
-  const otherLabel = other === "talent" ? "Talent" : "Employer";
   const staffLinks = ready ? session.staffLinks : [];
+
+  const canSwitchToEmployer =
+    current === "talent" && ready && session.hasEmployerProfile;
+  const canSwitchToTalent =
+    current === "employer" && ready && session.hasTalentProfile;
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Link href={otherHref}>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="border-[#2B5B84]/20 text-[#2B5B84]"
-        >
-          Switch to {otherLabel}
-        </Button>
-      </Link>
+      {canSwitchToEmployer ? (
+        <Link href="/dashboard/employer">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="border-[#E87A5D]/40 text-[#E87A5D]"
+          >
+            Switch to Employer
+          </Button>
+        </Link>
+      ) : null}
+      {canSwitchToTalent ? (
+        <Link href="/dashboard/talent">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="border-[#2B5B84]/20 text-[#2B5B84]"
+          >
+            Switch to Talent
+          </Button>
+        </Link>
+      ) : null}
       {staffLinks.map((link) => (
         <Link
           key={link.href}

@@ -54,7 +54,10 @@ export function userHasDualProfiles(ctx: UserRoleContext): boolean {
   return ctx.hasTalentProfile && ctx.hasEmployerProfile;
 }
 
-export function resolveRoleGatewayPath(ctx: UserRoleContext): string | null {
-  if (userHasDualProfiles(ctx)) return "/choose-role";
+/**
+ * Dual-profile users default to the Employer dashboard with in-app switching.
+ * Keep `/choose-role` available as an explicit destination, but do not force it.
+ */
+export function resolveRoleGatewayPath(_ctx: UserRoleContext): string | null {
   return null;
 }

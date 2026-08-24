@@ -34,8 +34,9 @@ export function LoginForm() {
   const audienceHint = useMemo(() => {
     if (next?.startsWith("/admin")) return "Admin portal access";
     if (next?.startsWith("/superuser")) return "Superuser portal access";
+    if (next?.startsWith("/dashboard/employer")) return "Employer dashboard access";
     if (next?.startsWith("/dashboard")) return "Talent dashboard access";
-    return "Talent, admins, and superusers";
+    return "Talent, employers, admins, and superusers";
   }, [next]);
 
   async function signInWithLinkedIn() {

@@ -1,3 +1,10 @@
+import {
+  COMPANY_SIZES,
+  EMPLOYER_USER_ROLES,
+  WORK_ARRANGEMENTS,
+  employerStatusLabel,
+} from "@/lib/employer/waitlist-schema";
+
 export type EmployerDashboardData = {
   demo: boolean;
   profile: {
@@ -23,6 +30,7 @@ export type EmployerDashboardData = {
     role: string;
     isAdmin: boolean;
     isSuperuser: boolean;
+    hasTalentProfile: boolean;
   };
 };
 
@@ -51,6 +59,7 @@ export const DEMO_EMPLOYER_DASHBOARD: EmployerDashboardData = {
     role: "employer",
     isAdmin: false,
     isSuperuser: false,
+    hasTalentProfile: false,
   },
 };
 
@@ -65,7 +74,7 @@ export function employerStatusHeadline(status: string): string {
     case "inactive":
       return "Your employer account is inactive";
     default:
-      return "Employer dashboard";
+      return "Employer profile";
   }
 }
 
@@ -83,3 +92,28 @@ export function employerStatusDescription(status: string): string {
       return "";
   }
 }
+
+export function employerUserRoleLabel(value: string | null | undefined): string {
+  if (!value) return "—";
+  return (
+    EMPLOYER_USER_ROLES.find((role) => role.value === value)?.label ?? value
+  );
+}
+
+export function employerCompanySizeLabel(
+  value: string | null | undefined
+): string {
+  if (!value) return "—";
+  return COMPANY_SIZES.find((size) => size.value === value)?.label ?? value;
+}
+
+export function employerWorkArrangementLabel(
+  value: string | null | undefined
+): string {
+  if (!value) return "—";
+  return (
+    WORK_ARRANGEMENTS.find((item) => item.value === value)?.label ?? value
+  );
+}
+
+export { employerStatusLabel };

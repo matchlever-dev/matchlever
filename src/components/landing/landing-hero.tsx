@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { BrandMark, BrandWordmark } from "@/components/brand/brand-mark";
+import { useNavSession } from "@/components/brand/nav-session-provider";
 
 const HERO_TAGLINES = [
   "Upload your profile, find your match",
@@ -50,6 +51,10 @@ function RotatingHeroTagline() {
 }
 
 export function LandingHero() {
+  const { session, ready } = useNavSession();
+  const isSignedIn = ready && session.authenticated;
+  const dashboardHref = session.dashboardHref || "/dashboard/employer";
+
   return (
     <section className="relative isolate min-h-[100svh] overflow-hidden bg-[#F7F6F3]">
       <div
@@ -141,13 +146,27 @@ export function LandingHero() {
             </a>
           </div>
           <p className="text-sm text-[#5B616B]">
-            Already joined?{" "}
-            <Link
-              href="/login"
-              className="font-semibold text-[#2B5B84] underline underline-offset-2"
-            >
-              Log in to your dashboard
-            </Link>
+            {isSignedIn ? (
+              <>
+                Welcome back.{" "}
+                <Link
+                  href={dashboardHref}
+                  className="font-semibold text-[#2B5B84] underline underline-offset-2"
+                >
+                  Open your dashboard
+                </Link>
+              </>
+            ) : (
+              <>
+                Already joined?{" "}
+                <Link
+                  href="/login"
+                  className="font-semibold text-[#2B5B84] underline underline-offset-2"
+                >
+                  Log in to your dashboard
+                </Link>
+              </>
+            )}
           </p>
         </div>
       </div>

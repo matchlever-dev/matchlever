@@ -13,6 +13,7 @@ import {
 } from "@/lib/dashboard/talent";
 import { BrandMark } from "@/components/brand/brand-mark";
 import { RoleSwitcher } from "@/components/auth/role-switcher";
+import { useNavSession } from "@/components/brand/nav-session-provider";
 import { AnonymousTalentCard } from "@/components/dashboard/anonymous-talent-card";
 import { ReferenceStatusTracker } from "@/components/dashboard/reference-status-tracker";
 import { ReferrerLinkedInLink } from "@/components/reference/referrer-linkedin-link";
@@ -29,6 +30,7 @@ import { ensureAbsoluteHttpUrl, urlTextInputProps } from "@/lib/url";
 export function TalentDashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { session } = useNavSession();
   const [data, setData] = useState<TalentDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -377,37 +379,41 @@ export function TalentDashboard() {
               </Button>
             </div>
             <div className="mt-4 flex flex-col gap-3">
-              <div className="rounded-md border border-[#2B5B84]/12 bg-[#F7F6F3] p-4">
-                <p className="font-display text-[11px] font-semibold tracking-[0.18em] text-[#2B5B84] uppercase">
-                  Employer account
-                </p>
-                <p className="mt-2 text-sm text-[#5B616B]">
-                  Hiring on MatchLever too? Request an employer profile to join
-                  the waitlist.
-                </p>
-                {employerRequestMessage && (
-                  <p className="mt-2 text-sm text-[#2B5B84]">
-                    {employerRequestMessage}
+              {!session.hasEmployerProfile ? (
+                <div className="rounded-md border border-[#2B5B84]/12 bg-[#F7F6F3] p-4">
+                  <p className="font-display text-[11px] font-semibold tracking-[0.18em] text-[#2B5B84] uppercase">
+                    Employer account
                   </p>
-                )}
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={employerRequestBusy}
-                  className="mt-3 h-10 border-[#E87A5D] text-[#E87A5D]"
-                  onClick={() => void requestEmployerAccount()}
-                >
-                  {employerRequestBusy ? "Submitting…" : "Request employer account"}
-                </Button>
-                <Button
-                  type="button"
-                  className="mt-1 h-9 px-0 text-[#2B5B84] hover:bg-transparent"
-                  variant="ghost"
-                  onClick={() => router.push("/employer/waitlist")}
-                >
-                  Complete employer waitlist intake
-                </Button>
-              </div>
+                  <p className="mt-2 text-sm text-[#5B616B]">
+                    Hiring on MatchLever too? Request an employer profile to join
+                    the waitlist.
+                  </p>
+                  {employerRequestMessage && (
+                    <p className="mt-2 text-sm text-[#2B5B84]">
+                      {employerRequestMessage}
+                    </p>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={employerRequestBusy}
+                    className="mt-3 h-10 border-[#E87A5D] text-[#E87A5D]"
+                    onClick={() => void requestEmployerAccount()}
+                  >
+                    {employerRequestBusy
+                      ? "Submitting…"
+                      : "Request employer account"}
+                  </Button>
+                  <Button
+                    type="button"
+                    className="mt-1 h-9 px-0 text-[#2B5B84] hover:bg-transparent"
+                    variant="ghost"
+                    onClick={() => router.push("/employer/waitlist")}
+                  >
+                    Complete employer waitlist intake
+                  </Button>
+                </div>
+              ) : null}
               <Button
                 type="button"
                 className="h-11 bg-[#2B5B84] text-white hover:bg-[#244e71]"

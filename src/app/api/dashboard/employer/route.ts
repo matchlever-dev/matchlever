@@ -18,7 +18,8 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const [{ data: employer }, { data: profile }] = await Promise.all([
+  const [{ data: employer }, { data: profile }, { data: talent }] =
+    await Promise.all([
     supabase
       .from("employer_profiles")
       .select(
@@ -30,6 +31,11 @@ export async function GET() {
       .from("user_profiles")
       .select("full_name, email, linkedin_url, role, is_admin, is_superuser")
       .eq("id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("talent_profiles")
+      .select("id")
+      .eq("user_id", user.id)
       .maybeSingle(),
   ]);
 
@@ -65,6 +71,7 @@ export async function GET() {
       role: profile?.role ?? "employer",
       isAdmin: Boolean(profile?.is_admin),
       isSuperuser: Boolean(profile?.is_superuser),
+      hasTalentProfile: Boolean(talent),
     },
   });
 }

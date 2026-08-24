@@ -3,7 +3,18 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
+import { useNavSession } from "@/components/brand/nav-session-provider";
+
 export function CtaSplit() {
+  const { session, ready } = useNavSession();
+  const isSignedIn = ready && session.authenticated;
+  const talentHref = session.hasTalentProfile
+    ? "/dashboard/talent"
+    : "/onboarding";
+  const employerHref = session.hasEmployerProfile
+    ? "/dashboard/employer"
+    : "/employer/waitlist";
+
   return (
     <section className="relative overflow-hidden bg-[#2B5B84] py-16 text-white sm:py-24 md:py-28">
       <svg
@@ -36,18 +47,22 @@ export function CtaSplit() {
           </div>
           <div className="mt-8 flex flex-col gap-3 sm:mt-12">
             <Link
-              href="/onboarding"
+              href={isSignedIn && session.hasTalentProfile ? talentHref : "/onboarding"}
               className="inline-flex items-center gap-2 font-display text-xs font-semibold tracking-[0.16em] uppercase"
             >
-              Begin onboarding
+              {isSignedIn && session.hasTalentProfile
+                ? "Open talent profile"
+                : "Begin onboarding"}
               <ArrowRight className="size-4 transition group-hover:translate-x-1" />
             </Link>
-            <Link
-              href="/login?next=/dashboard/talent"
-              className="font-display text-[11px] font-medium tracking-wide text-white/70 underline underline-offset-2 transition hover:text-white"
-            >
-              Already a talent? Log in
-            </Link>
+            {!isSignedIn ? (
+              <Link
+                href="/login?next=/dashboard/talent"
+                className="font-display text-[11px] font-medium tracking-wide text-white/70 underline underline-offset-2 transition hover:text-white"
+              >
+                Already a talent? Log in
+              </Link>
+            ) : null}
           </div>
         </div>
 
@@ -67,12 +82,24 @@ export function CtaSplit() {
               during the employer soft launch.
             </p>
           </div>
-          <Link
-            href="/employer/waitlist"
-            className="mt-8 inline-flex h-11 w-full items-center justify-center rounded-md bg-[#E87A5D] px-5 font-display text-xs font-semibold tracking-[0.14em] text-white uppercase transition hover:bg-[#d66a4f] sm:mt-12 sm:w-fit"
-          >
-            Join the Employer Waitlist
-          </Link>
+          <div className="mt-8 flex flex-col gap-3 sm:mt-12">
+            <Link
+              href={employerHref}
+              className="inline-flex h-11 w-full items-center justify-center rounded-md bg-[#E87A5D] px-5 font-display text-xs font-semibold tracking-[0.14em] text-white uppercase transition hover:bg-[#d66a4f] sm:w-fit"
+            >
+              {isSignedIn && session.hasEmployerProfile
+                ? "Open employer profile"
+                : "Join the Employer Waitlist"}
+            </Link>
+            {!isSignedIn ? (
+              <Link
+                href="/login?next=/dashboard/employer"
+                className="font-display text-[11px] font-medium tracking-wide text-white/70 underline underline-offset-2 transition hover:text-white"
+              >
+                Already an employer? Log in
+              </Link>
+            ) : null}
+          </div>
         </div>
       </div>
     </section>

@@ -2,7 +2,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
   loadUserRoleContext,
-  resolveRoleGatewayPath,
 } from "@/lib/auth/roles";
 import type { Database } from "@/types/database";
 
@@ -36,8 +35,6 @@ export async function resolvePostLoginPath(
   const ctx = await loadUserRoleContext(supabase, user.id);
   if (!ctx) return "/onboarding";
 
-  const gateway = resolveRoleGatewayPath(ctx);
-
   if (safe?.startsWith("/superuser") && ctx.isSuperuser) return safe;
   if (safe?.startsWith("/admin") && ctx.isAdmin) return safe;
 
@@ -51,7 +48,7 @@ export async function resolvePostLoginPath(
       safe === "/")
   ) {
     if (safe.startsWith("/onboarding") && ctx.hasTalentProfile) {
-      return gateway ?? "/dashboard/talent?edit=1";
+      return "/dashboard/talent?edit=1";
     }
     if (safe.startsWith("/dashboard/employer") && !ctx.hasEmployerProfile) {
       return "/employer/waitlist";
@@ -62,13 +59,12 @@ export async function resolvePostLoginPath(
     return safe;
   }
 
-  if (gateway && !safe) return gateway;
-
   if (safe?.startsWith("/dashboard/employer")) {
     return ctx.hasEmployerProfile ? safe : "/employer/waitlist";
   }
 
-  if (ctx.hasTalentProfile) return "/dashboard/talent";
+  // Prefer employer when dual-profile; otherwise land on the single profile.
   if (ctx.hasEmployerProfile) return "/dashboard/employer";
+  if (ctx.hasTalentProfile) return "/dashboard/talent";
   return "/onboarding";
 }

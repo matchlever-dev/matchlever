@@ -9,6 +9,8 @@ export type NavSession = {
   authenticated: boolean;
   dashboardHref: string | null;
   dashboardLabel: string;
+  hasTalentProfile: boolean;
+  hasEmployerProfile: boolean;
   staffLinks: NavStaffLink[];
 };
 
@@ -16,9 +18,15 @@ export const GUEST_NAV_SESSION: NavSession = {
   authenticated: false,
   dashboardHref: null,
   dashboardLabel: "Dashboard",
+  hasTalentProfile: false,
+  hasEmployerProfile: false,
   staffLinks: [],
 };
 
+/**
+ * Default landing dashboard after login / nav "Dashboard" link.
+ * Dual-profile users prefer Employer; single-profile users get their profile.
+ */
 export function resolveDashboardNav(ctx: UserRoleContext | null): {
   href: string;
   label: string;
@@ -26,14 +34,11 @@ export function resolveDashboardNav(ctx: UserRoleContext | null): {
   if (!ctx) {
     return { href: "/onboarding", label: "Dashboard" };
   }
-  if (ctx.hasTalentProfile && ctx.hasEmployerProfile) {
-    return { href: "/choose-role", label: "Dashboard" };
+  if (ctx.hasEmployerProfile) {
+    return { href: "/dashboard/employer", label: "Dashboard" };
   }
   if (ctx.hasTalentProfile) {
     return { href: "/dashboard/talent", label: "Dashboard" };
-  }
-  if (ctx.hasEmployerProfile) {
-    return { href: "/dashboard/employer", label: "Dashboard" };
   }
   return { href: "/onboarding", label: "Dashboard" };
 }
@@ -67,6 +72,8 @@ export function buildNavSession(
     authenticated: true,
     dashboardHref: dashboard.href,
     dashboardLabel: dashboard.label,
+    hasTalentProfile: Boolean(ctx?.hasTalentProfile),
+    hasEmployerProfile: Boolean(ctx?.hasEmployerProfile),
     staffLinks: resolveStaffNavLinks(ctx),
   };
 }
