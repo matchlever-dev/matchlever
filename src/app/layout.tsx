@@ -7,10 +7,8 @@ import "./globals.css";
 import { SiteChrome } from "@/components/brand/site-chrome";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { getNavSession } from "@/lib/auth/nav-session.server";
-import {
-  DEFAULT_BRAND_TAGLINE,
-  getSiteCopy,
-} from "@/lib/marketing/site-copy";
+import { DEFAULT_BRAND_TAGLINE } from "@/lib/marketing/site-copy";
+import { getSiteCopy } from "@/lib/marketing/site-copy.server";
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",

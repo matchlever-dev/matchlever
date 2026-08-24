@@ -2,7 +2,7 @@ import { CtaSplit } from "@/components/landing/cta-split";
 import { EmployerSoftLaunchSection } from "@/components/landing/employer-soft-launch";
 import { FeaturedCarousel } from "@/components/landing/featured-carousel";
 import { LandingHero } from "@/components/landing/landing-hero";
-import { getSiteCopy } from "@/lib/marketing/site-copy";
+import { getSiteCopy } from "@/lib/marketing/site-copy.server";
 
 export default async function HomePage() {
   const { heroTaglines } = await getSiteCopy();

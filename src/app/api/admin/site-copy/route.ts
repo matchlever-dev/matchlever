@@ -3,9 +3,9 @@ import { NextResponse } from "next/server";
 import { requireAdminFlagApi } from "@/lib/auth/api-guards";
 import {
   DEFAULT_SITE_COPY,
-  getSiteCopy,
   siteCopyUpdateSchema,
 } from "@/lib/marketing/site-copy";
+import { getSiteCopy } from "@/lib/marketing/site-copy.server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 

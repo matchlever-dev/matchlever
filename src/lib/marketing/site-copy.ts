@@ -1,8 +1,5 @@
 import { z } from "zod";
 
-import { createClient } from "@/lib/supabase/server";
-import { isSupabaseConfigured } from "@/lib/supabase/env";
-
 export const DEFAULT_HERO_TAGLINES = [
   "Upload your profile, find your match",
   "Where Tech Talent Meets Tech Innovators",
@@ -31,7 +28,7 @@ export const siteCopyUpdateSchema = z.object({
 
 export type SiteCopyUpdate = z.infer<typeof siteCopyUpdateSchema>;
 
-function normalizeHeroTaglines(value: unknown): [string, string, string] {
+export function normalizeHeroTaglines(value: unknown): [string, string, string] {
   if (!Array.isArray(value) || value.length !== 3) {
     return [...DEFAULT_HERO_TAGLINES];
   }
@@ -40,36 +37,4 @@ function normalizeHeroTaglines(value: unknown): [string, string, string] {
     return [...DEFAULT_HERO_TAGLINES];
   }
   return [lines[0]!, lines[1]!, lines[2]!];
-}
-
-/** Load marketing copy for public pages. Falls back to defaults. */
-export async function getSiteCopy(): Promise<SiteCopy> {
-  if (!isSupabaseConfigured()) {
-    return DEFAULT_SITE_COPY;
-  }
-
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("site_copy")
-      .select("hero_taglines, brand_tagline")
-      .eq("id", 1)
-      .maybeSingle();
-
-    if (error || !data) {
-      if (error) {
-        console.error("[site copy]", error.message);
-      }
-      return DEFAULT_SITE_COPY;
-    }
-
-    const brandTagline = String(data.brand_tagline ?? "").trim();
-    return {
-      heroTaglines: normalizeHeroTaglines(data.hero_taglines),
-      brandTagline: brandTagline || DEFAULT_BRAND_TAGLINE,
-    };
-  } catch (err) {
-    console.error("[site copy]", err);
-    return DEFAULT_SITE_COPY;
-  }
 }
