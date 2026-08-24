@@ -6,17 +6,17 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import { BrandMark, BrandWordmark } from "@/components/brand/brand-mark";
 import { useNavSession } from "@/components/brand/nav-session-provider";
-
-const HERO_TAGLINES = [
-  "Upload your profile, find your match",
-  "Where Tech Talent Meets Tech Innovators",
-  "Your Lever into the Tech Industry",
-] as const;
+import { DEFAULT_HERO_TAGLINES } from "@/lib/marketing/site-copy";
 
 const TAGLINE_INTERVAL_MS = 3000;
 
-function RotatingHeroTagline() {
+function RotatingHeroTagline({
+  taglines,
+}: {
+  taglines: [string, string, string];
+}) {
   const [index, setIndex] = useState(0);
+  const lines = taglines.length === 3 ? taglines : [...DEFAULT_HERO_TAGLINES];
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia(
@@ -25,17 +25,17 @@ function RotatingHeroTagline() {
     if (prefersReducedMotion) return;
 
     const id = window.setInterval(() => {
-      setIndex((current) => (current + 1) % HERO_TAGLINES.length);
+      setIndex((current) => (current + 1) % lines.length);
     }, TAGLINE_INTERVAL_MS);
     return () => window.clearInterval(id);
-  }, []);
+  }, [lines.length]);
 
   return (
     <h1 className="max-w-xl font-display text-[1.5rem] font-semibold leading-[1.2] tracking-tight text-[#2A2D34] sm:max-w-2xl sm:text-[1.75rem] md:text-[2rem]">
-      <span className="sr-only">{HERO_TAGLINES.join(". ")}</span>
+      <span className="sr-only">{lines.join(". ")}</span>
       <AnimatePresence mode="wait" initial={false}>
         <motion.span
-          key={HERO_TAGLINES[index]}
+          key={lines[index]}
           aria-hidden
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -43,14 +43,18 @@ function RotatingHeroTagline() {
           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
           className="block"
         >
-          {HERO_TAGLINES[index]}
+          {lines[index]}
         </motion.span>
       </AnimatePresence>
     </h1>
   );
 }
 
-export function LandingHero() {
+export function LandingHero({
+  heroTaglines = [...DEFAULT_HERO_TAGLINES],
+}: {
+  heroTaglines?: [string, string, string];
+}) {
   const { session, ready } = useNavSession();
   const isSignedIn = ready && session.authenticated;
   const dashboardHref = session.dashboardHref || "/dashboard/employer";
@@ -106,7 +110,7 @@ export function LandingHero() {
 
           <div className="h-px w-16 bg-gradient-to-r from-[#2B5B84] to-[#E87A5D] sm:w-24" />
 
-          <RotatingHeroTagline />
+          <RotatingHeroTagline taglines={heroTaglines} />
 
           <div className="rounded-md border border-[#E87A5D]/35 bg-[#E87A5D]/10 px-4 py-3 sm:max-w-xl">
             <p className="font-display text-[11px] font-semibold tracking-[0.22em] text-[#E87A5D] uppercase">

@@ -8,6 +8,7 @@ import {
   ChevronRight,
   LayoutDashboard,
   MessageSquare,
+  Type,
   Users,
   UserSquare2,
 } from "lucide-react";
@@ -22,6 +23,7 @@ const ICONS = {
   "/admin/talent": UserSquare2,
   "/admin/employers": Building2,
   "/admin/contact": MessageSquare,
+  "/admin/site-copy": Type,
 } as const;
 
 export function DashboardSidebar({

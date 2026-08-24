@@ -435,6 +435,27 @@ export type Database = {
         };
         Relationships: [];
       };
+      site_copy: {
+        Row: {
+          id: number;
+          hero_taglines: string[];
+          brand_tagline: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: number;
+          hero_taglines: string[];
+          brand_tagline: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: number;
+          hero_taglines?: string[];
+          brand_tagline?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
