@@ -50,10 +50,10 @@ export function resolveStaffNavLinks(
 
   const links: NavStaffLink[] = [];
   if (ctx.isAdmin) {
-    links.push({ href: "/admin/dashboard", label: "Admin Portal" });
+    links.push({ href: "/admin/dashboard", label: "Admin" });
   }
   if (ctx.isSuperuser) {
-    links.push({ href: "/superuser/talent", label: "Superuser Console" });
+    links.push({ href: "/superuser/talent", label: "Superuser" });
   }
   return links;
 }

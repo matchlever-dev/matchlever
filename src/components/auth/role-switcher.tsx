@@ -50,7 +50,7 @@ export function RoleSwitcher({
           href={link.href}
           className="inline-flex h-8 items-center rounded-md border border-[#E87A5D]/35 bg-[#E87A5D]/10 px-3 text-xs font-semibold text-[#E87A5D] transition hover:bg-[#E87A5D]/20"
         >
-          {link.label === "Superuser Console" ? "Superuser" : "Admin Portal"}
+          {link.label}
         </Link>
       ))}
     </div>

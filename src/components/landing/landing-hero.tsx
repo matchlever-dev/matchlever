@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-import { BrandMark, BrandWordmark } from "@/components/brand/brand-mark";
+import { BrandWordmark } from "@/components/brand/brand-mark";
 import { useNavSession } from "@/components/brand/nav-session-provider";
 import { DEFAULT_HERO_TAGLINES } from "@/lib/marketing/site-copy";
 
@@ -99,13 +99,8 @@ export function LandingHero({
           <motion.div
             initial={false}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-start gap-2 sm:flex-row sm:items-end sm:gap-4"
           >
-            <BrandMark
-              priority
-              className="h-16 w-auto sm:h-24 md:h-28"
-            />
-            <BrandWordmark className="pb-0.5 sm:pb-1" />
+            <BrandWordmark />
           </motion.div>
 
           <div className="h-px w-14 bg-gradient-to-r from-[#2B5B84] to-[#E87A5D] sm:w-20" />
