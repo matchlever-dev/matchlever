@@ -16,6 +16,7 @@ import {
   matchesKeyword,
   type AdminSortMode,
 } from "@/components/admin/admin-list-controls";
+import { AdminPortalShell } from "@/components/admin/admin-portal-shell";
 import { PortalShell } from "@/components/admin/portal-shell";
 import { ReferrerLinkedInLink } from "@/components/reference/referrer-linkedin-link";
 import { Badge } from "@/components/ui/badge";
@@ -244,8 +245,8 @@ function TalentProfilesPage({
     }
   }
 
-  return (
-    <PortalShell title={portalTitle} links={links} accent={accent}>
+  const pageContent = (
+    <>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="font-display text-[11px] font-semibold tracking-[0.22em] text-[#E87A5D] uppercase">
@@ -500,6 +501,16 @@ function TalentProfilesPage({
           )}
         </div>
       )}
+    </>
+  );
+
+  if (accent === "admin") {
+    return <AdminPortalShell title="Talent">{pageContent}</AdminPortalShell>;
+  }
+
+  return (
+    <PortalShell title={portalTitle} links={links} accent={accent}>
+      {pageContent}
     </PortalShell>
   );
 }

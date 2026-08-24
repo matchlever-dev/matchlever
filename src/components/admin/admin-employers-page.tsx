@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { ADMIN_LINKS } from "@/lib/admin/admin-nav";
 import type { AdminEmployerRow } from "@/lib/admin/demo";
 import { employerStatusLabel } from "@/lib/employer/waitlist-schema";
 import {
@@ -10,7 +9,7 @@ import {
   matchesKeyword,
   type AdminSortMode,
 } from "@/components/admin/admin-list-controls";
-import { PortalShell } from "@/components/admin/portal-shell";
+import { AdminPortalShell } from "@/components/admin/admin-portal-shell";
 import { ReferrerLinkedInLink } from "@/components/reference/referrer-linkedin-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -137,7 +136,7 @@ export function AdminEmployersPage() {
   }
 
   return (
-    <PortalShell title="Admin Portal" links={ADMIN_LINKS} accent="admin">
+    <AdminPortalShell title="Employers">
       <div className="space-y-4">
         <div>
           <h1 className="font-display text-2xl font-semibold text-[#2B5B84]">
@@ -282,7 +281,7 @@ export function AdminEmployersPage() {
           </div>
         )}
       </div>
-    </PortalShell>
+    </AdminPortalShell>
   );
 }
 

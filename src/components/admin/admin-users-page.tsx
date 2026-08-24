@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { ADMIN_LINKS } from "@/lib/admin/admin-nav";
 import {
   type AdminUserRow,
   userAccountTypeLabels,
@@ -14,7 +13,7 @@ import {
   matchesKeyword,
   type AdminSortMode,
 } from "@/components/admin/admin-list-controls";
-import { PortalShell } from "@/components/admin/portal-shell";
+import { AdminPortalShell } from "@/components/admin/admin-portal-shell";
 import { Switch } from "@/components/ui/switch";
 import {
   Table,
@@ -129,7 +128,7 @@ export function AdminUsersPage() {
   }
 
   return (
-    <PortalShell title="Admin Portal" links={ADMIN_LINKS}>
+    <AdminPortalShell title="Users">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="font-display text-[11px] font-semibold tracking-[0.22em] text-[#E87A5D] uppercase">
@@ -230,6 +229,6 @@ export function AdminUsersPage() {
           </Table>
         )}
       </div>
-    </PortalShell>
+    </AdminPortalShell>
   );
 }

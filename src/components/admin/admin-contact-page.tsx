@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { PortalShell } from "@/components/admin/portal-shell";
+import { AdminPortalShell } from "@/components/admin/admin-portal-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -22,7 +22,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { ADMIN_LINKS } from "@/lib/admin/admin-nav";
 import {
   CONTACT_STATUSES,
   type ContactRequestRow,
@@ -134,7 +133,7 @@ export function AdminContactPage() {
   }
 
   return (
-    <PortalShell title="Admin Portal" links={ADMIN_LINKS}>
+    <AdminPortalShell title="Contact">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="font-display text-[11px] font-semibold tracking-[0.22em] text-[#E87A5D] uppercase">
@@ -315,6 +314,6 @@ export function AdminContactPage() {
           )}
         </aside>
       </div>
-    </PortalShell>
+    </AdminPortalShell>
   );
 }

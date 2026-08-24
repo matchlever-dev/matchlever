@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Building2,
   ChevronLeft,
   ChevronRight,
   LayoutDashboard,
@@ -19,7 +20,7 @@ const ICONS = {
   "/admin/dashboard": LayoutDashboard,
   "/admin/users": Users,
   "/admin/talent": UserSquare2,
-  "/admin/employers": UserSquare2,
+  "/admin/employers": Building2,
   "/admin/contact": MessageSquare,
 } as const;
 
