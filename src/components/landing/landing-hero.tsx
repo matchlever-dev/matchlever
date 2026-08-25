@@ -107,6 +107,21 @@ export function LandingHero({
 
           <RotatingHeroTagline taglines={heroTaglines} />
 
+          <div className="flex w-full flex-col gap-2.5 sm:w-auto sm:flex-row sm:flex-wrap">
+            <Link
+              href="/onboarding"
+              className="inline-flex h-11 w-full items-center justify-center rounded-md bg-[#2B5B84] px-6 font-display text-xs font-semibold tracking-[0.14em] text-white uppercase transition hover:bg-[#244e71] sm:w-auto"
+            >
+              Start as a Talent
+            </Link>
+            <a
+              href="#featured"
+              className="inline-flex h-11 w-full items-center justify-center rounded-md border border-[#2B5B84]/25 bg-transparent px-6 font-display text-xs font-semibold tracking-[0.14em] text-[#2B5B84] uppercase transition hover:border-[#E87A5D] hover:text-[#E87A5D] sm:w-auto"
+            >
+              Browse Talent
+            </a>
+          </div>
+
           <div className="rounded-md border border-[#E87A5D]/35 bg-[#E87A5D]/10 px-3 py-2.5 sm:max-w-xl sm:px-4 sm:py-3">
             <p className="font-display text-[11px] font-semibold tracking-[0.22em] text-[#E87A5D] uppercase">
               Employer Soft Launch
@@ -124,21 +139,6 @@ export function LandingHero({
             >
               Join the Employer Waitlist
             </Link>
-          </div>
-
-          <div className="flex w-full flex-col gap-2.5 sm:w-auto sm:flex-row sm:flex-wrap">
-            <Link
-              href="/onboarding"
-              className="inline-flex h-11 w-full items-center justify-center rounded-md bg-[#2B5B84] px-6 font-display text-xs font-semibold tracking-[0.14em] text-white uppercase transition hover:bg-[#244e71] sm:w-auto"
-            >
-              Start as a Talent
-            </Link>
-            <a
-              href="#featured"
-              className="inline-flex h-11 w-full items-center justify-center rounded-md border border-[#2B5B84]/25 bg-transparent px-6 font-display text-xs font-semibold tracking-[0.14em] text-[#2B5B84] uppercase transition hover:border-[#E87A5D] hover:text-[#E87A5D] sm:w-auto"
-            >
-              Browse Talent
-            </a>
           </div>
           <p className="text-xs text-[#5B616B] sm:text-sm">
             {!ready ? null : isSignedIn ? (

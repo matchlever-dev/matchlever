@@ -1,5 +1,8 @@
 import { BrandMark } from "@/components/brand/brand-mark";
-import { SiteNavLinks } from "@/components/brand/site-nav-links";
+import {
+  FOOTER_NAV_LINKS,
+  SiteNavLinks,
+} from "@/components/brand/site-nav-links";
 import { DEFAULT_BRAND_TAGLINE } from "@/lib/marketing/site-copy";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +32,7 @@ export function LandingFooter({
           <BrandMark className="h-8 w-auto" />
           <p className="text-sm text-[#5B616B]">{brandTagline}</p>
         </div>
-        <SiteNavLinks />
+        <SiteNavLinks links={FOOTER_NAV_LINKS} />
       </div>
     </footer>
   );

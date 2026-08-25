@@ -56,7 +56,7 @@ const PROCESS_STEPS = [
   },
 ] as const;
 
-export function EmployerSoftLaunchSection({ showCta = true }: { showCta?: boolean }) {
+export function StreamlineHiringSection({ showCta = true }: { showCta?: boolean }) {
   return (
     <section className="border-y border-[#2B5B84]/10 bg-white py-16 sm:py-24">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
@@ -95,39 +95,6 @@ export function EmployerSoftLaunchSection({ showCta = true }: { showCta?: boolea
           ))}
         </div>
 
-        <div className="mt-14">
-          <div className="flex items-center gap-2">
-            <Workflow className="size-5 text-[#E87A5D]" aria-hidden />
-            <h3 className="font-display text-lg font-semibold text-[#2B5B84]">
-              How MatchLever works for employers
-            </h3>
-          </div>
-          <ol className="mt-6 grid gap-4 lg:grid-cols-4">
-            {PROCESS_STEPS.map((step, index) => (
-              <li
-                key={step.step}
-                className="relative border border-[#2B5B84]/12 p-5"
-              >
-                <span className="inline-flex size-8 items-center justify-center rounded-full bg-[#2B5B84] font-display text-xs font-bold text-white">
-                  {step.step}
-                </span>
-                <h4 className="mt-4 font-display text-sm font-semibold text-[#2A2D34]">
-                  {step.title}
-                </h4>
-                <p className="mt-2 text-sm leading-relaxed text-[#5B616B]">
-                  {step.body}
-                </p>
-                {index < PROCESS_STEPS.length - 1 && (
-                  <UserCheck
-                    aria-hidden
-                    className="absolute top-1/2 -right-3 hidden size-5 -translate-y-1/2 text-[#E87A5D] lg:block"
-                  />
-                )}
-              </li>
-            ))}
-          </ol>
-        </div>
-
         {showCta && (
           <div className="mt-10">
             <Link
@@ -138,6 +105,45 @@ export function EmployerSoftLaunchSection({ showCta = true }: { showCta?: boolea
             </Link>
           </div>
         )}
+      </div>
+    </section>
+  );
+}
+
+export function HowMatchLeverWorksSection() {
+  return (
+    <section className="border-y border-[#2B5B84]/10 bg-white py-16 sm:py-24">
+      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+        <div className="flex items-center gap-2">
+          <Workflow className="size-5 text-[#E87A5D]" aria-hidden />
+          <h2 className="font-display text-lg font-semibold text-[#2B5B84] sm:text-xl">
+            How MatchLever Works
+          </h2>
+        </div>
+        <ol className="mt-6 grid gap-4 lg:grid-cols-4">
+          {PROCESS_STEPS.map((step, index) => (
+            <li
+              key={step.step}
+              className="relative border border-[#2B5B84]/12 p-5"
+            >
+              <span className="inline-flex size-8 items-center justify-center rounded-full bg-[#2B5B84] font-display text-xs font-bold text-white">
+                {step.step}
+              </span>
+              <h3 className="mt-4 font-display text-sm font-semibold text-[#2A2D34]">
+                {step.title}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-[#5B616B]">
+                {step.body}
+              </p>
+              {index < PROCESS_STEPS.length - 1 && (
+                <UserCheck
+                  aria-hidden
+                  className="absolute top-1/2 -right-3 hidden size-5 -translate-y-1/2 text-[#E87A5D] lg:block"
+                />
+              )}
+            </li>
+          ))}
+        </ol>
       </div>
     </section>
   );

@@ -1,5 +1,5 @@
-export const WHY_MATCHLEVER = {
-  title: "Why MatchLever",
+export const ABOUT_MATCHLEVER = {
+  title: "About MatchLever",
   eyebrow: "Arise Solutions LLC",
   sections: [
     {

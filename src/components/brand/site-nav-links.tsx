@@ -7,8 +7,14 @@ import { useNavSession } from "@/components/brand/nav-session-provider";
 import type { NavSession } from "@/lib/auth/nav-session";
 import { cn } from "@/lib/utils";
 
-export const PUBLIC_NAV_LINKS = [
+export const HEADER_NAV_LINKS = [
   { href: "/why-matchlever", label: "Why MatchLever" },
+  { href: "/legal/talent", label: "Talent Terms" },
+  { href: "/contact", label: "Contact Us" },
+] as const;
+
+export const FOOTER_NAV_LINKS = [
+  { href: "/about", label: "About MatchLever" },
   { href: "/legal/talent", label: "Talent Terms" },
   { href: "/contact", label: "Contact Us" },
 ] as const;
@@ -31,16 +37,19 @@ export function siteNavLinkClassName(emphasis: SiteNavItem["emphasis"]) {
   return "text-[#5B616B] transition hover:text-[#2B5B84]";
 }
 
+const PRIMARY_NAV_HREFS = new Set(["/why-matchlever", "/about"]);
+
 export function buildSiteNavItems(
   session: NavSession,
   ready: boolean,
-  pathname?: string | null
+  pathname?: string | null,
+  links: readonly { href: string; label: string }[] = HEADER_NAV_LINKS
 ): SiteNavItem[] {
-  const items: SiteNavItem[] = PUBLIC_NAV_LINKS.map((link) => ({
+  const items: SiteNavItem[] = links.map((link) => ({
     key: link.href,
     href: link.href,
     label: link.label,
-    emphasis: link.href === "/why-matchlever" ? "primary" : "default",
+    emphasis: PRIMARY_NAV_HREFS.has(link.href) ? "primary" : "default",
     kind: "link" as const,
   }));
 
@@ -94,13 +103,15 @@ function resolvePathDashboardHref(pathname?: string | null): string | null {
 export function SiteNavLinks({
   className,
   linkClassName,
+  links = HEADER_NAV_LINKS,
 }: {
   className?: string;
   linkClassName?: string;
+  links?: readonly { href: string; label: string }[];
 }) {
   const pathname = usePathname();
   const { session, ready } = useNavSession();
-  const items = buildSiteNavItems(session, ready, pathname);
+  const items = buildSiteNavItems(session, ready, pathname, links);
 
   return (
     <nav

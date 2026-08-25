@@ -18,7 +18,7 @@ import {
 } from "@/lib/employer/waitlist-schema";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { EmployerSoftLaunchSection } from "@/components/landing/employer-soft-launch";
+import { StreamlineHiringSection } from "@/components/landing/employer-soft-launch";
 import { BrandMark } from "@/components/brand/brand-mark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -152,7 +152,7 @@ export function EmployerWaitlistPage() {
 
   return (
     <main className="bg-[#F7F6F3] text-[#2A2D34]">
-      <EmployerSoftLaunchSection showCta={false} />
+      <StreamlineHiringSection showCta={false} />
 
       <section id="waitlist-form" className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
         <div className="mb-8 flex items-center gap-3">
