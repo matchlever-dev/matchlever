@@ -21,11 +21,14 @@ export type SiteNavItem = {
   key: string;
   href: string;
   label: string;
-  emphasis: "primary" | "default" | "staff";
+  emphasis: "primary" | "default" | "staff" | "accent";
   kind: "link" | "sign-in";
 };
 
 export function siteNavLinkClassName(emphasis: SiteNavItem["emphasis"]) {
+  if (emphasis === "accent") {
+    return "font-semibold text-[#E87A5D] underline-offset-2 transition hover:text-[#d66a4f] hover:underline";
+  }
   if (emphasis === "primary") {
     return "font-semibold text-[#2B5B84] underline-offset-2 transition hover:text-[#E87A5D] hover:underline";
   }
@@ -35,7 +38,13 @@ export function siteNavLinkClassName(emphasis: SiteNavItem["emphasis"]) {
   return "text-[#5B616B] transition hover:text-[#2B5B84]";
 }
 
-const PRIMARY_NAV_HREFS = new Set(["/why-matchlever", "/about"]);
+const PRIMARY_NAV_HREFS = new Set(["/about"]);
+
+function navLinkEmphasis(href: string): SiteNavItem["emphasis"] {
+  if (href === "/why-matchlever") return "accent";
+  if (PRIMARY_NAV_HREFS.has(href)) return "primary";
+  return "default";
+}
 
 export function buildSiteNavItems(
   session: NavSession,
@@ -47,7 +56,7 @@ export function buildSiteNavItems(
     key: link.href,
     href: link.href,
     label: link.label,
-    emphasis: PRIMARY_NAV_HREFS.has(link.href) ? "primary" : "default",
+    emphasis: navLinkEmphasis(link.href),
     kind: "link" as const,
   }));
 
