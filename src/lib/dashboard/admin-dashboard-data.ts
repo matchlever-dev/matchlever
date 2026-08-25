@@ -111,6 +111,29 @@ function countRegistrationsByRole(
   return { total: rows.length, talent, employers };
 }
 
+/** MatchLever production project — used when system/env IDs are absent (e.g. local). */
+const MATCHLEVER_PROJECT_ID = "prj_9l9hC8JM6wff2v9n1jpaoGkQdMwt";
+const MATCHLEVER_TEAM_ID = "team_AmzLdp2FptSTXdDRQUFJBQDT";
+
+function analyticsGranularity(range: ChartRangeKey): {
+  by: "day" | "week" | "month";
+  limit: number;
+} {
+  if (range === "30d") return { by: "day", limit: 32 };
+  if (range === "180d") return { by: "week", limit: 30 };
+  if (range === "1y") return { by: "week", limit: 53 };
+  return { by: "month", limit: 36 };
+}
+
+function formatAnalyticsBucketLabel(timestamp: string, by: "day" | "week" | "month") {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return timestamp;
+  if (by === "month") {
+    return `${date.getUTCMonth() + 1}/${String(date.getUTCFullYear()).slice(2)}`;
+  }
+  return formatDayLabel(date);
+}
+
 async function fetchVisitorVolume(args: {
   range: ChartRangeKey;
   from: Date;
@@ -119,7 +142,11 @@ async function fetchVisitorVolume(args: {
   /** Fallback timestamps when Web Analytics is unavailable (site inbound events). */
   inboundTimestamps: string[];
 }): Promise<AdminDashboardData["visitorVolume"]> {
-  const analytics = await fetchVercelWebAnalytics(args.from, args.to);
+  const analytics = await fetchVercelWebAnalytics(
+    args.from,
+    args.to,
+    args.range
+  );
   if (analytics) {
     return {
       label: "Visitor Volume",
@@ -144,13 +171,14 @@ async function fetchVisitorVolume(args: {
     sparkline,
     available: true,
     unavailableReason:
-      "Showing contacts + new signups until Vercel Web Analytics is enabled.",
+      "Showing contacts + new signups until VERCEL_API_TOKEN is configured for Web Analytics.",
   };
 }
 
 async function fetchVercelWebAnalytics(
   from: Date,
-  to: Date
+  to: Date,
+  range: ChartRangeKey
 ): Promise<{ total: number; sparkline: SparkPoint[] } | null> {
   const token =
     process.env.VERCEL_API_TOKEN?.trim() ||
@@ -159,42 +187,90 @@ async function fetchVercelWebAnalytics(
   const projectId =
     process.env.VERCEL_PROJECT_ID?.trim() ||
     process.env.NEXT_PUBLIC_VERCEL_PROJECT_ID?.trim() ||
-    "";
-  const teamId = process.env.VERCEL_TEAM_ID?.trim() || "";
+    MATCHLEVER_PROJECT_ID;
+  const teamId =
+    process.env.VERCEL_TEAM_ID?.trim() || MATCHLEVER_TEAM_ID;
 
-  if (!token || !projectId) return null;
+  if (!token) return null;
+
+  const { by, limit } = analyticsGranularity(range);
+  const since = from.toISOString();
+  const until = to.toISOString();
+  const headers = { Authorization: `Bearer ${token}` };
 
   try {
-    const params = new URLSearchParams({
+    const countParams = new URLSearchParams({
       projectId,
-      from: from.toISOString(),
-      to: to.toISOString(),
+      teamId,
+      since,
+      until,
     });
-    if (teamId) params.set("teamId", teamId);
+    const aggregateParams = new URLSearchParams({
+      projectId,
+      teamId,
+      since,
+      until,
+      by,
+      limit: String(limit),
+    });
 
-    // Vercel Web Analytics timeseries endpoint (requires Web Analytics enabled).
-    const res = await fetch(
-      `https://api.vercel.com/v1/web-analytics/timeseries?${params.toString()}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
+    const [countRes, aggregateRes] = await Promise.all([
+      fetch(
+        `https://api.vercel.com/v1/query/web-analytics/visits/count?${countParams}`,
+        { headers, cache: "no-store" }
+      ),
+      fetch(
+        `https://api.vercel.com/v1/query/web-analytics/visits/aggregate?${aggregateParams}`,
+        { headers, cache: "no-store" }
+      ),
+    ]);
+
+    if (!countRes.ok && !aggregateRes.ok) {
+      console.error(
+        "[admin-dashboard] Web Analytics query failed",
+        countRes.status,
+        aggregateRes.status
+      );
+      return null;
+    }
+
+    let total = 0;
+    if (countRes.ok) {
+      const countJson = (await countRes.json()) as {
+        data?: { pageviews?: number; visitors?: number };
+      };
+      total = Number(countJson.data?.pageviews ?? 0);
+    }
+
+    let sparkline: SparkPoint[] = [];
+    if (aggregateRes.ok) {
+      const aggregateJson = (await aggregateRes.json()) as {
+        data?: Array<{
+          timestamp?: string;
+          pageviews?: number;
+          visitors?: number;
+        }>;
+      };
+      const rows = (aggregateJson.data ?? []).filter(
+        (row) => typeof row.timestamp === "string"
+      );
+      sparkline = rows.map((row, index) => ({
+        day: formatAnalyticsBucketLabel(row.timestamp!, by) || `D${index + 1}`,
+        views: Number(row.pageviews ?? 0),
+      }));
+      if (!countRes.ok) {
+        total = sparkline.reduce((sum, point) => sum + point.views, 0);
       }
-    );
-    if (!res.ok) return null;
+    }
 
-    const json = (await res.json()) as {
-      data?: Array<{ key?: string; total?: number; devices?: number }>;
-    };
-    const rows = json.data ?? [];
-    if (!rows.length) return null;
+    if (!sparkline.length && total === 0) {
+      // Analytics enabled but no traffic in range — still a successful query.
+      return { total: 0, sparkline: [] };
+    }
 
-    const sparkline: SparkPoint[] = rows.map((row, index) => ({
-      day: row.key?.slice(5, 10)?.replace("-", "/") || `D${index + 1}`,
-      views: Number(row.total ?? row.devices ?? 0),
-    }));
-    const total = sparkline.reduce((sum, point) => sum + point.views, 0);
     return { total, sparkline };
-  } catch {
+  } catch (error) {
+    console.error("[admin-dashboard] Web Analytics query error", error);
     return null;
   }
 }

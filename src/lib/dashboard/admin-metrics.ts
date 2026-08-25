@@ -26,7 +26,7 @@ export type VisitorVolumeMetric = {
   total: number;
   periodLabel: string;
   sparkline: SparkPoint[];
-  /** False when Web Analytics is not configured / unavailable. */
+  /** False when Web Analytics API token is missing / unavailable. */
   available?: boolean;
   unavailableReason?: string;
 };

@@ -61,11 +61,8 @@ export function StreamlineHiringSection({ showCta = true }: { showCta?: boolean 
     <section className="border-y border-[#2B5B84]/10 bg-white py-16 sm:py-24">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         <div className="max-w-3xl">
-          <p className="font-display text-[11px] font-semibold tracking-[0.28em] text-[#E87A5D] uppercase">
-            Employer Soft Launch
-          </p>
-          <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-[#2B5B84] sm:text-4xl">
-            Streamline hiring with pre-validated talent
+          <h2 className="font-display text-3xl font-semibold tracking-tight text-[#2B5B84] sm:text-4xl">
+            Why MatchLever? Streamline hiring with pre-validated talents
           </h2>
           <p className="mt-4 text-base leading-relaxed text-[#5B616B] sm:text-lg">
             MatchLever is opening employer access for organizations that want
