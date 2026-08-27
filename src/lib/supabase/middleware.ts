@@ -76,6 +76,26 @@ export async function updateSession(request: NextRequest) {
     console.warn("[supabase middleware] session refresh skipped:", error);
   }
 
+  // Rolling 60-minute window: renew on every request (including /onboarding and
+  // API calls). Previously this only ran for /dashboard|/admin|/superuser, so
+  // a long onboarding session could lose ml_stay_signed_in + auth cookies and
+  // Complete profile returned Unauthorized.
+  if (staySignedIn) {
+    supabaseResponse.cookies.set(
+      STAY_SIGNED_IN_COOKIE,
+      "1",
+      staySignedInCookieWriteOptions()
+    );
+    for (const cookie of request.cookies.getAll()) {
+      if (!cookie.name.startsWith("sb-") || !cookie.value) continue;
+      supabaseResponse.cookies.set(
+        cookie.name,
+        cookie.value,
+        withStaySignedInCookieOptions(true, { path: "/" })
+      );
+    }
+  }
+
   if (!needsAuth) {
     return supabaseResponse;
   }
@@ -88,14 +108,6 @@ export async function updateSession(request: NextRequest) {
     return redirectToLogin(
       request,
       `${pathname}${request.nextUrl.search}`
-    );
-  }
-
-  if (staySignedIn) {
-    supabaseResponse.cookies.set(
-      STAY_SIGNED_IN_COOKIE,
-      "1",
-      staySignedInCookieWriteOptions()
     );
   }
 

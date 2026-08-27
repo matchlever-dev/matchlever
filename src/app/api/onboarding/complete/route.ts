@@ -21,6 +21,7 @@ import {
   REFERRER_LINKEDIN_INVALID_MESSAGE,
   validateReferrerLinkedIn,
 } from "@/lib/reference/linkedin-validation";
+import { SESSION_EXPIRED_MESSAGE } from "@/lib/auth/stay-signed-in";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
@@ -124,7 +125,7 @@ export async function POST(request: Request) {
 
     if (userError || !user) {
       return NextResponse.json(
-        { error: "Sign in with LinkedIn before completing onboarding." },
+        { error: SESSION_EXPIRED_MESSAGE },
         { status: 401 }
       );
     }

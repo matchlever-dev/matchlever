@@ -5,6 +5,7 @@ import {
   REFERRER_LINKEDIN_INVALID_MESSAGE,
   validateReferrerLinkedIn,
 } from "@/lib/reference/linkedin-validation";
+import { SESSION_EXPIRED_MESSAGE } from "@/lib/auth/stay-signed-in";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
@@ -24,7 +25,10 @@ export async function POST(request: Request) {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return NextResponse.json(
+          { error: SESSION_EXPIRED_MESSAGE },
+          { status: 401 }
+        );
       }
     }
 

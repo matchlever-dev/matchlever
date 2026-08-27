@@ -20,6 +20,8 @@ import { StepAuth } from "@/components/onboarding/steps/step-auth";
 import { StepResume } from "@/components/onboarding/steps/step-resume";
 import { StepPreferences } from "@/components/onboarding/steps/step-preferences";
 import { StepReferences } from "@/components/onboarding/steps/step-references";
+import { SESSION_EXPIRED_MESSAGE, setStaySignedInPreference } from "@/lib/auth/stay-signed-in";
+import { createClient } from "@/lib/supabase/client";
 
 function scrollToFirstFieldError() {
   window.requestAnimationFrame(() => {
@@ -87,6 +89,9 @@ export function OnboardingWizard() {
       }>;
     };
     if (!res.ok) {
+      if (res.status === 401) {
+        throw new Error(data.error || SESSION_EXPIRED_MESSAGE);
+      }
       throw new Error(data.error || "Unable to check LinkedIn profile pages");
     }
 
@@ -111,6 +116,27 @@ export function OnboardingWizard() {
     return allOpen;
   }
 
+  async function ensureSignedInSession(): Promise<boolean> {
+    try {
+      // Keep the rolling stay-signed-in window alive while the user finishes.
+      setStaySignedInPreference(true);
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.getUser();
+      if (!error && data.user) return true;
+      const { data: refreshed } = await supabase.auth.refreshSession();
+      return Boolean(refreshed.session?.user);
+    } catch {
+      return false;
+    }
+  }
+
+  function promptReauthenticate(message = SESSION_EXPIRED_MESSAGE) {
+    form.setValue("linkedInConnected", false, { shouldValidate: true });
+    setStep(1);
+    setSubmitError(message);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   async function handleNext() {
     setSubmitError(null);
     const ok = await validateCurrentStep();
@@ -120,6 +146,12 @@ export function OnboardingWizard() {
     }
 
     if (step === 4) {
+      const signedIn = await ensureSignedInSession();
+      if (!signedIn) {
+        promptReauthenticate();
+        return;
+      }
+
       setIsCheckingLinkedIn(true);
       try {
         const pagesOpen = await validateReferencePagesOpen();
@@ -131,11 +163,20 @@ export function OnboardingWizard() {
           return;
         }
       } catch (err) {
-        setSubmitError(
+        const message =
           err instanceof Error
             ? err.message
-            : "Unable to check LinkedIn profile pages"
-        );
+            : "Unable to check LinkedIn profile pages";
+        if (
+          message === SESSION_EXPIRED_MESSAGE ||
+          /unauthorized|sign in with linkedin|session expired/i.test(message)
+        ) {
+          promptReauthenticate(
+            message === "Unauthorized" ? SESSION_EXPIRED_MESSAGE : message
+          );
+          return;
+        }
+        setSubmitError(message);
         return;
       } finally {
         setIsCheckingLinkedIn(false);
@@ -150,6 +191,12 @@ export function OnboardingWizard() {
 
     setIsSubmitting(true);
     try {
+      const stillSignedIn = await ensureSignedInSession();
+      if (!stillSignedIn) {
+        promptReauthenticate();
+        return;
+      }
+
       const payload = form.getValues();
       const res = await fetch("/api/onboarding/complete", {
         method: "POST",
@@ -162,6 +209,10 @@ export function OnboardingWizard() {
         referenceIndex?: number;
       };
       if (!res.ok) {
+        if (res.status === 401) {
+          promptReauthenticate(data.error || SESSION_EXPIRED_MESSAGE);
+          return;
+        }
         if (typeof data.referenceIndex === "number") {
           form.setError(`references.${data.referenceIndex}.linkedInUrl`, {
             type: "manual",

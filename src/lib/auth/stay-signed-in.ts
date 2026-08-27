@@ -1,6 +1,10 @@
-/** Preference cookie: keep the Supabase session cookie alive for 60 minutes. */
+/** Preference cookie: keep the Supabase session cookie alive for 60 minutes (rolling). */
 export const STAY_SIGNED_IN_COOKIE = "ml_stay_signed_in";
 export const STAY_SIGNED_IN_SECONDS = 60 * 60;
+
+/** Shown when Complete profile / API calls fail because the auth cookie is gone. */
+export const SESSION_EXPIRED_MESSAGE =
+  "Your session expired. Sign in with LinkedIn again to finish your profile.";
 
 type SameSite = boolean | "lax" | "strict" | "none";
 
