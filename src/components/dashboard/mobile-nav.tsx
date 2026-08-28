@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Building2,
+  CircleHelp,
   LayoutDashboard,
   MessageSquare,
   Type,
@@ -21,6 +22,7 @@ const ICONS = {
   "/admin/employers": Building2,
   "/admin/contact": MessageSquare,
   "/admin/site-copy": Type,
+  "/admin/faq": CircleHelp,
 } as const;
 
 /** Fixed bottom navigation for mobile admin dashboard. */
@@ -32,7 +34,7 @@ export function MobileNav() {
       aria-label="Admin mobile"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-[#2B5B84]/10 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
     >
-      <ul className="mx-auto grid max-w-lg grid-cols-6">
+      <ul className="mx-auto grid max-w-lg grid-cols-7">
         {ADMIN_LINKS.map((link) => {
           const Icon = ICONS[link.href as keyof typeof ICONS] ?? LayoutDashboard;
           const active =

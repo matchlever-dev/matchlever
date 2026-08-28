@@ -456,6 +456,30 @@ export type Database = {
         };
         Relationships: [];
       };
+      faq_items: {
+        Row: {
+          id: string;
+          question: string;
+          answer: string;
+          sort_order: number;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          question: string;
+          answer: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          question?: string;
+          answer?: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

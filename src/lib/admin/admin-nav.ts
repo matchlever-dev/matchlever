@@ -6,6 +6,7 @@ export const ADMIN_LINKS = [
   { href: "/admin/employers", label: "Employers" },
   { href: "/admin/contact", label: "Contact" },
   { href: "/admin/site-copy", label: "Site copy" },
+  { href: "/admin/faq", label: "FAQ" },
 ] as const;
 
 export type AdminNavLink = (typeof ADMIN_LINKS)[number];

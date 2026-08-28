@@ -6,6 +6,7 @@ import {
   Building2,
   ChevronLeft,
   ChevronRight,
+  CircleHelp,
   LayoutDashboard,
   MessageSquare,
   Type,
@@ -24,6 +25,7 @@ const ICONS = {
   "/admin/employers": Building2,
   "/admin/contact": MessageSquare,
   "/admin/site-copy": Type,
+  "/admin/faq": CircleHelp,
 } as const;
 
 export function DashboardSidebar({
