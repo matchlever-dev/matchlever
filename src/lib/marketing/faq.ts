@@ -13,6 +13,15 @@ export type FaqItemDraft = {
   answer: string;
 };
 
+export function faqItemAnchorId(index: number) {
+  return `faq-item-${index}`;
+}
+
+export function faqItemLinkLabel(question: string, index: number) {
+  const trimmed = question.trim();
+  return trimmed || `Question ${index + 1}`;
+}
+
 export const DEFAULT_FAQ_ITEMS: FaqItem[] = [
   {
     id: "default-0",

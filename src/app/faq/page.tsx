@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { FaqAnswer } from "@/lib/marketing/faq-answer";
+import { faqItemAnchorId } from "@/lib/marketing/faq";
 import { getFaqItems } from "@/lib/marketing/faq.server";
 
 export const metadata: Metadata = {
@@ -21,14 +22,32 @@ export default async function FaqPage() {
       <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-[#2B5B84] sm:text-4xl">
         Frequently asked questions
       </h1>
-      <p className="mt-4 max-w-2xl text-base leading-relaxed text-[#2A2D34]/80">
-        Answers to common questions about how MatchLever works for talent and
-        employers.
-      </p>
+
+      <nav
+        aria-label="FAQ sections"
+        className="mt-8 border border-[#2B5B84]/10 bg-white/60 p-5 sm:p-6"
+      >
+        <ol className="space-y-3">
+          {items.map((item, index) => (
+            <li key={item.id}>
+              <a
+                href={`#${faqItemAnchorId(index)}`}
+                className="font-display text-base font-semibold text-[#2B5B84] underline-offset-2 transition hover:text-[#E87A5D] hover:underline"
+              >
+                {item.question}
+              </a>
+            </li>
+          ))}
+        </ol>
+      </nav>
 
       <div className="mt-10 divide-y divide-[#2B5B84]/10 border-y border-[#2B5B84]/10">
-        {items.map((item) => (
-          <section key={item.id} className="py-8 first:pt-8 last:pb-8">
+        {items.map((item, index) => (
+          <section
+            id={faqItemAnchorId(index)}
+            key={item.id}
+            className="scroll-mt-24 py-8 first:pt-8 last:pb-8"
+          >
             <h2 className="font-display text-xl font-semibold text-[#2B5B84]">
               {item.question}
             </h2>

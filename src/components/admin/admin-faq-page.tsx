@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   DEFAULT_FAQ_ITEMS,
+  faqItemAnchorId,
+  faqItemLinkLabel,
   type FaqItem,
   type FaqItemDraft,
 } from "@/lib/marketing/faq";
@@ -27,15 +29,6 @@ function toDraft(item: FaqItem): FaqItemDraft {
 
 function createEmptyDraft(): FaqItemDraft {
   return { question: "", answer: "" };
-}
-
-function faqItemAnchorId(index: number) {
-  return `faq-item-${index}`;
-}
-
-function faqItemLinkLabel(question: string, index: number) {
-  const trimmed = question.trim();
-  return trimmed || `Question ${index + 1}`;
 }
 
 export function AdminFaqPage() {
