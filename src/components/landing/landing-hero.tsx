@@ -131,7 +131,9 @@ export function LandingHero({
               pre-validated talent matching with zero-noise introductions.
             </p>
             <p className="mt-1 text-xs text-[#5B616B]">
-              Employers includes both company recruiters and hiring managers.
+              <span className="font-semibold text-[#2A2D34]">Employers</span>{" "}
+              include hiring managers, corporate recruiters, and employment
+              agencies that are actively seeking candidates.
             </p>
             <Link
               href="/employer/waitlist"

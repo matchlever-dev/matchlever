@@ -71,11 +71,11 @@ export function StreamlineHiringSection({ showCta = true }: { showCta?: boolean 
             MatchLever is opening employer access for organizations that want
             high-signal introductions — not another applicant tracking firehose.
           </p>
-          <p className="mt-3 text-sm text-[#5B616B]">
-            <span className="font-semibold text-[#2A2D34]">Employers</span>{" "}
-            includes both company recruiters and hiring managers building teams
-            directly.
-          </p>
+            <p className="mt-3 text-sm text-[#5B616B]">
+              <span className="font-semibold text-[#2A2D34]">Employers</span>{" "}
+              include hiring managers, corporate recruiters, and employment
+              agencies that are actively seeking candidates.
+            </p>
         </div>
 
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
