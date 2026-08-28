@@ -29,6 +29,15 @@ function createEmptyDraft(): FaqItemDraft {
   return { question: "", answer: "" };
 }
 
+function faqItemAnchorId(index: number) {
+  return `faq-item-${index}`;
+}
+
+function faqItemLinkLabel(question: string, index: number) {
+  const trimmed = question.trim();
+  return trimmed || `Question ${index + 1}`;
+}
+
 export function AdminFaqPage() {
   const [items, setItems] = useState<FaqItemDraft[]>(
     DEFAULT_FAQ_ITEMS.map(toDraft)
@@ -156,10 +165,32 @@ export function AdminFaqPage() {
             void save();
           }}
         >
+          <nav
+            aria-label="FAQ sections"
+            className="border border-[#2B5B84]/15 bg-white p-5 sm:p-6"
+          >
+            <h2 className="font-display text-sm font-semibold text-[#2B5B84]">
+              Jump to question
+            </h2>
+            <ol className="mt-3 list-decimal space-y-2 pl-5">
+              {items.map((item, index) => (
+                <li key={faqItemAnchorId(index)}>
+                  <a
+                    href={`#${faqItemAnchorId(index)}`}
+                    className="text-sm text-[#2B5B84] underline-offset-2 transition hover:text-[#E87A5D] hover:underline"
+                  >
+                    {faqItemLinkLabel(item.question, index)}
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+
           {items.map((item, index) => (
             <section
+              id={faqItemAnchorId(index)}
               key={item.id ?? `draft-${index}`}
-              className="border border-[#2B5B84]/15 bg-white p-5 sm:p-6"
+              className="scroll-mt-24 border border-[#2B5B84]/15 bg-white p-5 sm:p-6"
             >
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <p className="font-display text-sm font-semibold text-[#2B5B84]">
