@@ -96,12 +96,18 @@ export function StreamlineHiringSection({ showCta = true }: { showCta?: boolean 
         </div>
 
         {showCta && (
-          <div className="mt-10">
+          <div className="mt-10 flex flex-wrap gap-3">
             <Link
               href="/employer/waitlist#waitlist-form"
               className="inline-flex h-12 items-center justify-center rounded-md bg-[#E87A5D] px-8 font-display text-xs font-semibold tracking-[0.14em] text-white uppercase transition hover:bg-[#d66a4f]"
             >
               Join the Employer Waitlist
+            </Link>
+            <Link
+              href="/faq"
+              className="inline-flex h-12 items-center justify-center rounded-md border border-[#2B5B84]/25 px-8 font-display text-xs font-semibold tracking-[0.14em] text-[#2B5B84] uppercase transition hover:border-[#E87A5D] hover:text-[#E87A5D]"
+            >
+              Read the FAQ
             </Link>
           </div>
         )}
