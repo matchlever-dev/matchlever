@@ -6,10 +6,9 @@ import { AdminPortalShell } from "@/components/admin/admin-portal-shell";
 import { ChartRangeToggle } from "@/components/dashboard/chart-range-toggle";
 import { PipelineChart } from "@/components/dashboard/pipeline-chart";
 import { StatCard } from "@/components/dashboard/stat-card";
-import {
-  getAdminDashboardMock,
-  type AdminDashboardData,
-  type ChartRangeKey,
+import type {
+  AdminDashboardData,
+  ChartRangeKey,
 } from "@/lib/dashboard/admin-metrics";
 
 function ProgressTowardTarget({
@@ -47,11 +46,31 @@ function ProgressTowardTarget({
   );
 }
 
+function DashboardSkeleton() {
+  return (
+    <div
+      className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5"
+      aria-busy="true"
+      aria-label="Loading dashboard metrics"
+    >
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div
+          key={index}
+          className="min-h-[168px] border border-[#2B5B84]/12 bg-white p-4 sm:p-5"
+        >
+          <div className="h-3 w-28 animate-pulse rounded bg-[#2B5B84]/12" />
+          <div className="mt-4 h-9 w-20 animate-pulse rounded bg-[#2B5B84]/10" />
+          <div className="mt-3 h-3 w-48 animate-pulse rounded bg-[#2B5B84]/8" />
+          <div className="mt-6 h-10 w-full animate-pulse rounded bg-[#2B5B84]/8" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function AdminOpsDashboard() {
   const [range, setRange] = useState<ChartRangeKey>("30d");
-  const [data, setData] = useState<AdminDashboardData>(() =>
-    getAdminDashboardMock("30d")
-  );
+  const [data, setData] = useState<AdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,7 +91,7 @@ export function AdminOpsDashboard() {
       setError(
         err instanceof Error ? err.message : "Failed to load dashboard metrics"
       );
-      setData(getAdminDashboardMock(nextRange));
+      // Keep any previously loaded real metrics; never inject mock fallback data.
     } finally {
       setLoading(false);
     }
@@ -82,10 +101,6 @@ export function AdminOpsDashboard() {
     void load(range);
   }, [load, range]);
 
-  const visitorSubtitle = data.visitorVolume.unavailableReason
-    ? data.visitorVolume.unavailableReason
-    : `Total site views · ${data.visitorVolume.periodLabel.toLowerCase()}`;
-
   return (
     <AdminPortalShell
       title="Dashboard"
@@ -94,52 +109,70 @@ export function AdminOpsDashboard() {
     >
       <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-[#5B616B]">
-          {data.visitorVolume.periodLabel} snapshot for MatchLever traffic,
-          signups, pipeline, and matches.
-          {data.demo ? " (Demo data)" : null}
+          {data
+            ? `${data.visitorVolume.periodLabel} snapshot for MatchLever traffic, signups, pipeline, and matches.${data.demo ? " (Demo data)" : ""}`
+            : "Loading MatchLever traffic, signups, pipeline, and matches."}
         </p>
-        {loading ? (
+        {loading && data ? (
           <p className="text-xs font-medium text-[#5B616B]">Refreshing…</p>
         ) : null}
       </div>
 
       {error ? (
         <p className="mb-4 text-sm text-destructive" role="alert">
-          {error} Showing fallback metrics.
+          {error}
         </p>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5">
-        <StatCard
-          label={data.visitorVolume.label}
-          value={data.visitorVolume.total.toLocaleString()}
-          subtitle={visitorSubtitle}
-          sparkline={data.visitorVolume.sparkline}
-        />
+      {loading && !data ? <DashboardSkeleton /> : null}
 
-        <StatCard
-          label={data.newRegistrations.label}
-          value={data.newRegistrations.total.toLocaleString()}
-          subtitle={`${data.newRegistrations.talent.toLocaleString()} talent · ${data.newRegistrations.employers.toLocaleString()} employers · ${data.newRegistrations.periodLabel.toLowerCase()}`}
-          changePct={data.newRegistrations.changePct}
-          changeLabel={data.newRegistrations.changeLabel}
-        />
-
-        <PipelineChart metric={data.talentPipeline} />
-
-        <StatCard
-          label={data.activeMatches.label}
-          value={data.activeMatches.matchesInPeriod.toLocaleString()}
-          subtitle={`Introductions · ${data.activeMatches.periodLabel.toLowerCase()}`}
-          footer={
-            <ProgressTowardTarget
-              current={data.activeMatches.periodProgress}
-              target={data.activeMatches.periodTarget}
-              targetLabel={data.activeMatches.targetLabel}
-            />
+      {data ? (
+        <div
+          className={
+            loading
+              ? "grid grid-cols-1 gap-4 opacity-60 lg:grid-cols-2 lg:gap-5"
+              : "grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5"
           }
-        />
-      </div>
+        >
+          <StatCard
+            label={data.visitorVolume.label}
+            value={data.visitorVolume.total.toLocaleString()}
+            subtitle={
+              data.visitorVolume.unavailableReason
+                ? data.visitorVolume.unavailableReason
+                : `Total site views · ${data.visitorVolume.periodLabel.toLowerCase()}`
+            }
+            sparkline={data.visitorVolume.sparkline}
+          />
+
+          <StatCard
+            label={data.newRegistrations.label}
+            value={data.newRegistrations.total.toLocaleString()}
+            subtitle={`${data.newRegistrations.talent.toLocaleString()} talent · ${data.newRegistrations.employers.toLocaleString()} employers · ${data.newRegistrations.periodLabel.toLowerCase()}`}
+            changePct={data.newRegistrations.changePct}
+            changeLabel={data.newRegistrations.changeLabel}
+          />
+
+          <PipelineChart metric={data.talentPipeline} />
+
+          <StatCard
+            label={data.activeMatches.label}
+            value={data.activeMatches.matchesInPeriod.toLocaleString()}
+            subtitle={`Introductions · ${data.activeMatches.periodLabel.toLowerCase()}`}
+            footer={
+              <ProgressTowardTarget
+                current={data.activeMatches.periodProgress}
+                target={data.activeMatches.periodTarget}
+                targetLabel={data.activeMatches.targetLabel}
+              />
+            }
+          />
+        </div>
+      ) : null}
+
+      {!loading && !data && !error ? (
+        <p className="text-sm text-[#5B616B]">No dashboard metrics available.</p>
+      ) : null}
     </AdminPortalShell>
   );
 }
