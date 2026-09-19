@@ -183,8 +183,7 @@ export function EmployerDashboard() {
                   {data.user.fullName || "Employer"}
                 </h1>
                 <p className="mt-1 text-sm text-[#5B616B]">
-                  {data.profile.title || "Title not set"} ·{" "}
-                  {data.profile.companyName}
+                  {employerProfileSubtitle(data.profile)}
                 </p>
               </div>
             </div>
@@ -347,4 +346,20 @@ function JobOpeningRow({ job }: { job: EmployerJobSummary }) {
       </Link>
     </li>
   );
+}
+
+function employerProfileSubtitle(profile: {
+  title: string | null;
+  companyName: string;
+}): string {
+  const title = profile.title?.trim() || "";
+  const company = profile.companyName?.trim() || "";
+  const companyPending =
+    !company || /^pending intake$/i.test(company);
+
+  if (!title || companyPending) {
+    return "Edit Profile to enter company name and title";
+  }
+
+  return `${title} · ${company}`;
 }
