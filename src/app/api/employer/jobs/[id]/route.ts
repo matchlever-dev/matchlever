@@ -14,7 +14,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 const statusSchema = z.enum(["draft", "active", "paused", "closed"]);
 
 const JOB_SELECT =
-  "id, title, status, company_name, verified_skills, years_experience, suggested_taglines, endorsed_skills, location_modes, max_commute_miles, open_to_relocation, global_city, global_country, timezone, work_hours_start, work_hours_end, min_salary, visa_statuses, accepted_match_count, match_bundle_purchased_at, updated_at, employer_profile_id";
+  "id, title, status, company_name, description, verified_skills, years_experience, suggested_taglines, endorsed_skills, location_modes, max_commute_miles, open_to_relocation, global_city, global_country, timezone, work_hours_start, work_hours_end, min_salary, visa_statuses, accepted_match_count, match_bundle_purchased_at, updated_at, employer_profile_id";
 
 async function requireOwnedJob(
   supabase: Awaited<ReturnType<typeof createClient>>,

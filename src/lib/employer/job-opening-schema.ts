@@ -21,6 +21,7 @@ function needsCommuteFields(modes: Array<(typeof LOCATION_MODE_VALUES)[number]>)
 
 export const jobOpeningFormObjectSchema = z.object({
   title: z.string().trim().min(2, "Job title is required").max(120),
+  description: z.string().trim().max(60_000).optional(),
   verifiedSkills: z
     .array(z.string().trim().min(1).max(60))
     .min(1, "Add at least one verified skill")
@@ -109,6 +110,7 @@ export type JobOpeningFormValues = z.infer<typeof jobOpeningFormObjectSchema>;
 
 export const defaultJobOpeningValues: JobOpeningFormValues = {
   title: "",
+  description: "",
   verifiedSkills: [],
   yearsExperience: 5,
   suggestedTaglines: ["", "", ""],

@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { X } from "lucide-react";
+import { FileUp, Loader2, X } from "lucide-react";
 
 import {
   defaultJobOpeningValues,
@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { Textarea } from "@/components/ui/textarea";
 
 type JobOpeningFormProps = {
   initialValues?: Partial<JobOpeningFormValues>;
@@ -57,6 +58,11 @@ export function JobOpeningForm({
   const [busyAction, setBusyAction] = useState<"draft" | "publish" | null>(
     null
   );
+  const [parseBusy, setParseBusy] = useState(false);
+  const [parseError, setParseError] = useState<string | null>(null);
+  const [parseFileName, setParseFileName] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<JobOpeningFormValues>({
     resolver: zodResolver(jobOpeningFormSchema),
@@ -69,6 +75,7 @@ export function JobOpeningForm({
     control,
     watch,
     setValue,
+    reset,
     handleSubmit,
     formState: { errors },
   } = form;
@@ -81,6 +88,7 @@ export function JobOpeningForm({
   const globalCountry = watch("globalCountry") ?? "";
   const globalCity = watch("globalCity") ?? "";
   const minSalary = watch("minSalary");
+  const description = watch("description") ?? "";
 
   const needsLocal =
     locationModes.includes("hybrid") || locationModes.includes("onsite");
@@ -102,6 +110,42 @@ export function JobOpeningForm({
             freeMatchesUsed,
           })
         : null;
+
+  async function parseJobFile(file: File) {
+    setParseBusy(true);
+    setParseError(null);
+    setParseFileName(file.name);
+    try {
+      const body = new FormData();
+      body.append("jobDescription", file);
+      const res = await fetch("/api/employer/jobs/parse", {
+        method: "POST",
+        body,
+      });
+      const json = (await res.json()) as {
+        error?: string;
+        formValues?: JobOpeningFormValues;
+      };
+      if (!res.ok || !json.formValues) {
+        throw new Error(json.error || "Unable to parse job description");
+      }
+      reset({ ...defaultJobOpeningValues, ...json.formValues });
+    } catch (err) {
+      setParseError(
+        err instanceof Error ? err.message : "Unable to parse job description"
+      );
+      setParseFileName(null);
+    } finally {
+      setParseBusy(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  function onFileList(fileList: FileList | null) {
+    const file = fileList?.[0];
+    if (!file) return;
+    void parseJobFile(file);
+  }
 
   function toggleLocationMode(mode: (typeof LOCATION_MODES)[number]["value"]) {
     const next = locationModes.includes(mode)
@@ -204,6 +248,86 @@ export function JobOpeningForm({
       }}
     >
       <div className="space-y-6">
+        <section className="border border-[#2B5B84]/15 bg-white p-5 sm:p-6">
+          <p className="font-display text-[11px] font-semibold tracking-[0.22em] text-[#E87A5D] uppercase">
+            Job description upload
+          </p>
+          <h2 className="mt-2 font-display text-xl font-semibold text-[#2B5B84]">
+            Autofill from JD
+          </h2>
+          <p className="mt-2 text-sm text-[#5B616B]">
+            Upload a PDF, DOCX, or HTML job description. We extract text and
+            populate title, skills, taglines, endorsed traits, location, salary,
+            and visa fields. Review everything before publishing.
+          </p>
+
+          <label
+            onDragEnter={(event) => {
+              event.preventDefault();
+              setDragging(true);
+            }}
+            onDragOver={(event) => event.preventDefault()}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(event) => {
+              event.preventDefault();
+              setDragging(false);
+              onFileList(event.dataTransfer.files);
+            }}
+            className={`mt-5 flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border border-dashed px-4 py-10 text-center transition ${
+              dragging
+                ? "border-[#2B5B84] bg-[#2B5B84]/8"
+                : "border-[#2B5B84]/25 bg-[#F7F6F3]"
+            }`}
+          >
+            {parseBusy ? (
+              <Loader2 className="size-8 animate-spin text-[#2B5B84]" />
+            ) : (
+              <FileUp className="size-8 text-[#2B5B84]" />
+            )}
+            <div>
+              <p className="text-sm font-medium text-[#2A2D34]">
+                {parseBusy
+                  ? "Parsing job description…"
+                  : parseFileName
+                    ? `Parsed ${parseFileName}`
+                    : "Drop JD here or click to upload"}
+              </p>
+              <p className="mt-1 text-xs text-[#5B616B]">
+                PDF, DOCX, or HTML · max 10 MB
+              </p>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.docx,.html,.htm,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/html"
+              className="sr-only"
+              disabled={parseBusy}
+              onChange={(event) => onFileList(event.target.files)}
+            />
+          </label>
+
+          {parseError ? (
+            <p className="mt-3 text-sm text-destructive" role="alert">
+              {parseError}
+            </p>
+          ) : null}
+
+          {description ? (
+            <div className="mt-5 grid gap-2">
+              <Label htmlFor="job-description">Extracted description</Label>
+              <Textarea
+                id="job-description"
+                rows={6}
+                className="min-h-32 text-sm"
+                {...register("description")}
+              />
+              <p className="text-xs text-[#5B616B]">
+                Stored with the job opening for matching context. Edit freely.
+              </p>
+            </div>
+          ) : null}
+        </section>
+
         <section className="border border-[#2B5B84]/15 bg-white p-5 sm:p-6">
           <p className="font-display text-[11px] font-semibold tracking-[0.22em] text-[#E87A5D] uppercase">
             Section 1 · Core Profile
@@ -676,7 +800,7 @@ export function JobOpeningForm({
             type="button"
             variant="outline"
             className="h-11 border-[#2B5B84]/25 text-[#2B5B84]"
-            disabled={busyAction !== null}
+            disabled={busyAction !== null || parseBusy}
             onClick={() => void submit("draft")}
           >
             {busyAction === "draft" ? "Saving…" : "Save as Draft"}
@@ -684,7 +808,7 @@ export function JobOpeningForm({
           <Button
             type="submit"
             className="h-11 bg-[#2B5B84] text-white hover:bg-[#244d70]"
-            disabled={busyAction !== null}
+            disabled={busyAction !== null || parseBusy}
           >
             {busyAction === "publish" ? "Publishing…" : "Publish Job Opening"}
           </Button>

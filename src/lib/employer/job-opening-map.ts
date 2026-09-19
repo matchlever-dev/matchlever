@@ -16,6 +16,7 @@ export function jobOpeningPayloadToRow(
 
   return {
     title: data.title.trim(),
+    description: data.description?.trim() || null,
     status,
     verified_skills: data.verifiedSkills,
     years_experience: data.yearsExperience,
@@ -36,6 +37,7 @@ export function jobOpeningPayloadToRow(
 
 export function jobRowToFormValues(row: {
   title: string;
+  description?: string | null;
   verified_skills: unknown;
   years_experience: number | null;
   suggested_taglines: unknown;
@@ -61,6 +63,7 @@ export function jobRowToFormValues(row: {
 
   return {
     title: row.title,
+    description: row.description ?? "",
     verifiedSkills: Array.isArray(row.verified_skills)
       ? row.verified_skills.map(String)
       : [],
