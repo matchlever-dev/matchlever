@@ -63,7 +63,7 @@ export function SiteHeader({ className }: { className?: string }) {
               )}
             </button>
             <Link href="/" className="flex min-w-0 items-center gap-2">
-              <BrandMark className="h-9 w-auto shrink-0 sm:h-10" />
+              <BrandMark className="h-11 w-auto shrink-0 sm:h-12" />
               <span className="hidden font-display text-xs font-bold tracking-[0.16em] text-[#2B5B84] uppercase sm:inline">
                 MatchLever
               </span>

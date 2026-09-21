@@ -44,12 +44,12 @@ export function LandingHero() {
         />
       </svg>
 
-      <div className="relative mx-auto flex w-full max-w-6xl flex-col justify-start px-5 pb-10 pt-6 sm:px-8 sm:pb-12 sm:pt-8">
-        <div className="flex flex-col items-start gap-3 sm:gap-4">
+      <div className="relative mx-auto flex w-full max-w-6xl flex-col justify-start px-5 pb-5 pt-4 sm:px-8 sm:pb-6 sm:pt-5">
+        <div className="flex flex-col items-start gap-2 sm:gap-3">
           <div className="h-px w-14 bg-gradient-to-r from-[#2B5B84] to-[#E87A5D] sm:w-20" />
 
-          <h1 className="max-w-3xl font-display text-3xl font-semibold tracking-tight text-[#2A2D34] sm:text-4xl md:text-5xl">
-            Match with Top-Tier Talent & Opportunities
+          <h1 className="max-w-3xl font-display text-lg font-semibold tracking-tight text-[#2A2D34] sm:text-xl md:text-2xl">
+            New way to connect Top Talent with Best Jobs
           </h1>
 
           <p className="text-xs text-[#5B616B] sm:text-sm">

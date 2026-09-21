@@ -118,7 +118,7 @@ export function StreamlineHiringSection({ showCta = true }: { showCta?: boolean 
 
 export function HowMatchLeverWorksSection() {
   return (
-    <section className="border-y border-[#2B5B84]/10 bg-[#F7F6F3] py-16 sm:py-24">
+    <section className="border-y border-[#2B5B84]/10 bg-[#F7F6F3] py-8 sm:py-10">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         <div className="flex items-center gap-2">
           <Workflow className="size-5 text-[#E87A5D]" aria-hidden />
@@ -126,7 +126,7 @@ export function HowMatchLeverWorksSection() {
             How MatchLever Works
           </h2>
         </div>
-        <ol className="mt-6 grid gap-4 lg:grid-cols-4">
+        <ol className="mt-4 grid gap-4 lg:grid-cols-4">
           {PROCESS_STEPS.map((step, index) => (
             <li
               key={step.step}

@@ -9,16 +9,16 @@ export function FeaturedTalentSection({
   talent: FeaturedTalent[];
 }) {
   return (
-    <section id="featured" className="relative bg-white py-16 sm:py-24 md:py-28">
+    <section id="featured" className="relative bg-white py-8 sm:py-10">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         <p className="font-display text-[11px] font-semibold tracking-[0.28em] text-[#E87A5D] uppercase">
           Featured talent
         </p>
-        <h2 className="mt-3 max-w-2xl font-display text-2xl font-semibold tracking-tight text-[#2A2D34] sm:mt-4 sm:text-3xl md:text-4xl">
+        <h2 className="mt-2 max-w-2xl font-display text-xl font-semibold tracking-tight text-[#2A2D34] sm:text-2xl md:text-3xl">
           Meet the talent driving tomorrow&apos;s growth.
         </h2>
 
-        <div className="mt-10 grid gap-5 sm:mt-12 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
+        <div className="mt-6 grid gap-4 sm:mt-8 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
           {talent.map((person) => (
             <TalentCard key={person.id} person={person} />
           ))}

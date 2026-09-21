@@ -49,7 +49,7 @@ export function AdminPortalShell({
                 )}
               </button>
               <div className="lg:hidden">
-                <BrandMark className="h-7 w-auto" />
+                <BrandMark className="h-10 w-auto" />
               </div>
               <div className="min-w-0">
                 <p className="font-display text-[10px] font-semibold tracking-[0.2em] text-[#E87A5D] uppercase">

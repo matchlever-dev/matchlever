@@ -22,7 +22,7 @@ export function PortalShell({
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-8">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2">
-              <BrandMark className="h-7 w-auto" />
+              <BrandMark className="h-10 w-auto" />
             </Link>
             <span
               className="font-display text-xs font-bold tracking-[0.18em] uppercase"

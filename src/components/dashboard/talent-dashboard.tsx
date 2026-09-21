@@ -243,7 +243,7 @@ export function TalentDashboard() {
       <header className="border-b border-[#2B5B84]/10 bg-white/80 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-5 py-4 sm:px-8">
           <Link href="/" className="flex items-center gap-2">
-            <BrandMark className="h-8 w-auto" />
+            <BrandMark className="h-10 w-auto" />
             <span className="font-display text-xs font-bold tracking-[0.16em] uppercase">
               Talent Dashboard
             </span>

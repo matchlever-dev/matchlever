@@ -51,7 +51,7 @@ export function DashboardSidebar({
         )}
       >
         <Link href="/admin/dashboard" className="flex min-w-0 items-center gap-2">
-          <BrandMark className="h-7 w-auto shrink-0" />
+          <BrandMark className="h-10 w-auto shrink-0" />
           {!collapsed ? (
             <span className="truncate font-display text-[11px] font-bold tracking-[0.16em] text-[#2B5B84] uppercase">
               Admin

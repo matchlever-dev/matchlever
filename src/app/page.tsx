@@ -7,9 +7,9 @@ import { TwoPathCta } from "@/components/landing/two-path-cta";
 import { getFeaturedTalent } from "@/lib/marketing/featured-talent.server";
 
 export const metadata: Metadata = {
-  title: "Match with Top-Tier Talent & Opportunities · MatchLever",
+  title: "New way to connect Top Talent with Best Jobs · MatchLever",
   description:
-    "Match with top-tier talent and opportunities. Hire vetted professionals or apply as talent on MatchLever.",
+    "A new way to connect top talent with the best jobs. Hire vetted professionals or apply as talent on MatchLever.",
 };
 
 export default async function HomePage() {

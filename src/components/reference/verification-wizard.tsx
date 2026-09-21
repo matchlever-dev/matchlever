@@ -237,7 +237,7 @@ export function ReferenceVerificationWizard({ token }: { token: string }) {
         <header className="sticky top-0 z-20 border-b border-[#2B5B84]/10 bg-[#F7F6F3]/95 backdrop-blur">
           <div className="mx-auto flex max-w-lg items-center justify-between gap-3 px-5 py-3">
             <div className="flex items-center gap-2">
-              <BrandMark className="h-8 w-auto" />
+              <BrandMark className="h-10 w-auto" />
               <p className="font-display text-xs font-bold tracking-[0.16em] text-[#2A2D34] uppercase">
                 Reference
               </p>
