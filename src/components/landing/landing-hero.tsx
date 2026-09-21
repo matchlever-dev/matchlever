@@ -10,6 +10,8 @@ import { DEFAULT_HERO_TAGLINES } from "@/lib/marketing/site-copy";
 
 const TAGLINE_INTERVAL_MS = 3000;
 
+const HERO_TITLE = "Match with Top-Tier Talent & Opportunities";
+
 function RotatingHeroTagline({
   taglines,
 }: {
@@ -31,7 +33,7 @@ function RotatingHeroTagline({
   }, [lines.length]);
 
   return (
-    <h1 className="max-w-xl font-display text-[1.125rem] font-semibold leading-snug tracking-tight text-[#2A2D34] sm:max-w-2xl sm:text-[1.25rem] md:text-[1.375rem]">
+    <h2 className="max-w-xl font-display text-[1.125rem] font-semibold leading-snug tracking-tight text-[#2A2D34] sm:max-w-2xl sm:text-[1.25rem] md:text-[1.375rem]">
       <span className="sr-only">{lines.join(". ")}</span>
       <AnimatePresence mode="wait" initial={false}>
         <motion.span
@@ -46,7 +48,7 @@ function RotatingHeroTagline({
           {lines[index]}
         </motion.span>
       </AnimatePresence>
-    </h1>
+    </h2>
   );
 }
 
@@ -96,52 +98,18 @@ export function LandingHero({
 
       <div className="relative mx-auto flex w-full max-w-6xl flex-col justify-start px-5 pb-10 pt-6 sm:px-8 sm:pb-12 sm:pt-8">
         <div className="flex flex-col items-start gap-3 sm:gap-4">
-          <motion.div
-            initial={false}
-            animate={{ opacity: 1, y: 0 }}
-          >
+          <motion.div initial={false} animate={{ opacity: 1, y: 0 }}>
             <BrandWordmark />
           </motion.div>
 
           <div className="h-px w-14 bg-gradient-to-r from-[#2B5B84] to-[#E87A5D] sm:w-20" />
 
+          <h1 className="max-w-3xl font-display text-3xl font-semibold tracking-tight text-[#2A2D34] sm:text-4xl md:text-5xl">
+            {HERO_TITLE}
+          </h1>
+
           <RotatingHeroTagline taglines={heroTaglines} />
 
-          <div className="flex w-full flex-col gap-2.5 sm:w-auto sm:flex-row sm:flex-wrap">
-            <Link
-              href="/onboarding"
-              className="inline-flex h-11 w-full items-center justify-center rounded-md bg-[#2B5B84] px-6 font-display text-xs font-semibold tracking-[0.14em] text-white uppercase transition hover:bg-[#244e71] sm:w-auto"
-            >
-              Start as a Talent
-            </Link>
-            <a
-              href="#featured"
-              className="inline-flex h-11 w-full items-center justify-center rounded-md border border-[#2B5B84]/25 bg-transparent px-6 font-display text-xs font-semibold tracking-[0.14em] text-[#2B5B84] uppercase transition hover:border-[#E87A5D] hover:text-[#E87A5D] sm:w-auto"
-            >
-              Browse Talent
-            </a>
-          </div>
-
-          <div className="rounded-md border border-[#E87A5D]/35 bg-[#E87A5D]/10 px-3 py-2.5 sm:max-w-xl sm:px-4 sm:py-3">
-            <p className="font-display text-[11px] font-semibold tracking-[0.22em] text-[#E87A5D] uppercase">
-              Employer Soft Launch
-            </p>
-            <p className="mt-1.5 text-sm leading-relaxed text-[#2A2D34]">
-              Hiring teams and hiring managers: join the waitlist for
-              pre-validated talent matching with zero-noise introductions.
-            </p>
-            <p className="mt-1 text-xs text-[#5B616B]">
-              <span className="font-semibold text-[#2A2D34]">Employers</span>{" "}
-              include hiring managers, corporate recruiters, and employment
-              agencies that are actively seeking candidates.
-            </p>
-            <Link
-              href="/employer/waitlist"
-              className="mt-3 inline-flex h-10 items-center justify-center rounded-md bg-[#E87A5D] px-5 font-display text-xs font-semibold tracking-[0.14em] text-white uppercase transition hover:bg-[#d66a4f]"
-            >
-              Join the Employer Waitlist
-            </Link>
-          </div>
           <p className="text-xs text-[#5B616B] sm:text-sm">
             {!ready ? null : isSignedIn ? (
               <>

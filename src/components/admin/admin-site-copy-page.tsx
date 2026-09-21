@@ -108,8 +108,8 @@ export function AdminSiteCopyPage() {
             Homepage & brand taglines
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-[#5B616B]">
-            Edit the three rotating homepage headlines and the brand tagline
-            shown in the footer and elsewhere.
+            Edit the three rotating homepage subheadlines (under the static H1)
+            and the brand tagline shown in the footer and elsewhere.
           </p>
         </div>
         {demo && (
