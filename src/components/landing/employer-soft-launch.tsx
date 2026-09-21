@@ -135,7 +135,7 @@ export function HowMatchLeverWorksSection() {
               <span className="inline-flex size-8 items-center justify-center rounded-full bg-[#2B5B84] font-display text-xs font-bold text-white">
                 {step.step}
               </span>
-              <h3 className="mt-4 font-display text-sm font-semibold text-[#2A2D34]">
+              <h3 className="mt-4 font-display text-lg font-semibold leading-snug text-[#2A2D34] sm:text-xl">
                 {step.title}
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-[#5B616B]">

@@ -40,10 +40,7 @@ function TalentCard({ person }: { person: FeaturedTalent }) {
           <EyeOff className="size-5" />
         </div>
         <div className="min-w-0">
-          <p className="font-display text-[10px] font-semibold tracking-[0.2em] text-[#5B616B] uppercase">
-            Incognito profile
-          </p>
-          <h3 className="mt-1 font-display text-base font-semibold tracking-tight text-[#2A2D34] sm:text-lg">
+          <h3 className="font-display text-base font-semibold tracking-tight text-[#2A2D34] sm:text-lg">
             {person.title}
           </h3>
         </div>
