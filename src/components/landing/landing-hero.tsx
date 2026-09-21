@@ -1,10 +1,59 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
 import { useNavSession } from "@/components/brand/nav-session-provider";
+import { DEFAULT_HERO_TAGLINES } from "@/lib/marketing/site-copy";
 
-export function LandingHero() {
+const TAGLINE_INTERVAL_MS = 2000;
+
+function RotatingHeroTagline({
+  taglines,
+}: {
+  taglines: [string, string, string];
+}) {
+  const [index, setIndex] = useState(0);
+  const lines = taglines.length === 3 ? taglines : [...DEFAULT_HERO_TAGLINES];
+
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (prefersReducedMotion) return;
+
+    const id = window.setInterval(() => {
+      setIndex((current) => (current + 1) % lines.length);
+    }, TAGLINE_INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, [lines.length]);
+
+  return (
+    <h1 className="max-w-3xl font-display text-lg font-semibold tracking-tight text-[#2A2D34] sm:text-xl md:text-2xl">
+      <span className="sr-only">{lines.join(". ")}</span>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.span
+          key={lines[index]}
+          aria-hidden
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          className="block"
+        >
+          {lines[index]}
+        </motion.span>
+      </AnimatePresence>
+    </h1>
+  );
+}
+
+export function LandingHero({
+  heroTaglines = [...DEFAULT_HERO_TAGLINES],
+}: {
+  heroTaglines?: [string, string, string];
+}) {
   const { session, ready } = useNavSession();
   const isSignedIn = ready && session.authenticated;
   const dashboardHref = session.dashboardHref || "/dashboard/employer";
@@ -48,9 +97,7 @@ export function LandingHero() {
         <div className="flex flex-col items-start gap-2 sm:gap-3">
           <div className="h-px w-14 bg-gradient-to-r from-[#2B5B84] to-[#E87A5D] sm:w-20" />
 
-          <h1 className="max-w-3xl font-display text-lg font-semibold tracking-tight text-[#2A2D34] sm:text-xl md:text-2xl">
-            New way to connect Top Talent with Best Jobs
-          </h1>
+          <RotatingHeroTagline taglines={heroTaglines} />
 
           <p className="text-xs text-[#5B616B] sm:text-sm">
             {!ready ? null : isSignedIn ? (

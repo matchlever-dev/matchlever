@@ -22,7 +22,7 @@ export function TwoPathCta() {
             For employers
           </p>
           <h2 className="mt-2 font-display text-xl font-semibold tracking-tight text-[#2A2D34] sm:text-2xl">
-            Hire Exceptional Talent
+            Fast and Precision Hiring
           </h2>
           <p className="mt-2 flex-1 text-sm leading-relaxed text-[#5B616B] sm:text-base">
             Your openings matched with best-fit candidates only! No more
@@ -43,7 +43,7 @@ export function TwoPathCta() {
             For talent
           </p>
           <h2 className="mt-2 font-display text-xl font-semibold tracking-tight text-[#2A2D34] sm:text-2xl">
-            Find Your Next Great Role
+            Really jobs that match YOU
           </h2>
           <p className="mt-2 flex-1 text-sm leading-relaxed text-[#5B616B] sm:text-base">
             Show your true worth here! Match with high-growth companies
