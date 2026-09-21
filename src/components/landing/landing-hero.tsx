@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useNavSession } from "@/components/brand/nav-session-provider";
 import { DEFAULT_HERO_TAGLINES } from "@/lib/marketing/site-copy";
 
-const TAGLINE_INTERVAL_MS = 2000;
+const TAGLINE_INTERVAL_MS = 3000;
 
 function RotatingHeroTagline({
   taglines,
@@ -95,8 +95,6 @@ export function LandingHero({
 
       <div className="relative mx-auto flex w-full max-w-6xl flex-col justify-start px-5 pb-5 pt-4 sm:px-8 sm:pb-6 sm:pt-5">
         <div className="flex flex-col items-start gap-2 sm:gap-3">
-          <div className="h-px w-14 bg-gradient-to-r from-[#2B5B84] to-[#E87A5D] sm:w-20" />
-
           <RotatingHeroTagline taglines={heroTaglines} />
 
           <p className="text-xs text-[#5B616B] sm:text-sm">

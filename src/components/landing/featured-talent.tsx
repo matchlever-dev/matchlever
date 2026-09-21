@@ -1,7 +1,14 @@
-import Link from "next/link";
 import { EyeOff } from "lucide-react";
 
 import type { FeaturedTalent } from "@/lib/onboarding/featured-talent";
+
+const TAGLINE_MAX_LENGTH = 60;
+
+function truncateTagline(tagline: string): string {
+  const trimmed = tagline.trim();
+  if (trimmed.length <= TAGLINE_MAX_LENGTH) return trimmed;
+  return `${trimmed.slice(0, TAGLINE_MAX_LENGTH).trimEnd()}...`;
+}
 
 export function FeaturedTalentSection({
   talent,
@@ -47,19 +54,12 @@ function TalentCard({ person }: { person: FeaturedTalent }) {
       </div>
 
       <p className="mt-4 flex-1 text-sm leading-relaxed text-[#5B616B]">
-        {person.tagline}
+        {truncateTagline(person.tagline)}
       </p>
 
       <p className="mt-4 text-sm font-medium text-[#2A2D34]">
         {person.superPower}
       </p>
-
-      <Link
-        href={person.profileHref}
-        className="mt-5 inline-flex h-10 w-full items-center justify-center rounded-md border border-[#2B5B84]/25 bg-white px-4 font-display text-xs font-semibold tracking-[0.14em] text-[#2B5B84] uppercase transition hover:border-[#E87A5D] hover:text-[#E87A5D]"
-      >
-        View Profile
-      </Link>
     </article>
   );
 }
