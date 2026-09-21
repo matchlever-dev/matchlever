@@ -15,12 +15,6 @@ type SuperpowerVote = {
   votes?: unknown;
 };
 
-function firstNameFrom(fullName: string | null | undefined): string {
-  const trimmed = String(fullName ?? "").trim();
-  if (!trimmed) return "Talent";
-  return trimmed.split(/\s+/)[0] || "Talent";
-}
-
 function formatSuperPower(
   verifiedSuperpowers: unknown,
   verifiedSkills: unknown,
@@ -84,7 +78,7 @@ function averageReferenceScore(
 }
 
 /**
- * Top actively looking talent for the homepage grid.
+ * Top actively looking talent for the homepage grid (anonymous only).
  * Falls back to curated marketing cards when the pool is empty.
  */
 export async function getFeaturedTalent(): Promise<FeaturedTalent[]> {
@@ -101,7 +95,7 @@ export async function getFeaturedTalent(): Promise<FeaturedTalent[]> {
     const { data: profiles, error } = await admin
       .from("talent_profiles")
       .select(
-        "id, user_id, headline, selected_tagline, verified_skills, verified_superpowers, status",
+        "id, headline, selected_tagline, verified_skills, verified_superpowers, status",
       )
       .eq("status", "actively_looking")
       .not("headline", "is", null)
@@ -113,21 +107,14 @@ export async function getFeaturedTalent(): Promise<FeaturedTalent[]> {
     }
 
     const profileIds = profiles.map((p) => p.id);
-    const userIds = [...new Set(profiles.map((p) => p.user_id))];
 
-    const [{ data: references }, { data: users }] = await Promise.all([
-      admin
-        .from("talent_references")
-        .select(
-          "talent_profile_id, status, reliability_score, technical_quality_score, rehire_intent_score",
-        )
-        .in("talent_profile_id", profileIds)
-        .eq("status", "verified"),
-      admin
-        .from("user_profiles")
-        .select("id, full_name, avatar_url")
-        .in("id", userIds),
-    ]);
+    const { data: references } = await admin
+      .from("talent_references")
+      .select(
+        "talent_profile_id, status, reliability_score, technical_quality_score, rehire_intent_score",
+      )
+      .in("talent_profile_id", profileIds)
+      .eq("status", "verified");
 
     const refsByTalent = new Map<
       string,
@@ -142,8 +129,6 @@ export async function getFeaturedTalent(): Promise<FeaturedTalent[]> {
       list.push(ref);
       refsByTalent.set(ref.talent_profile_id, list);
     }
-
-    const userById = new Map((users ?? []).map((u) => [u.id, u]));
 
     const ranked = profiles
       .map((profile) => {
@@ -168,24 +153,18 @@ export async function getFeaturedTalent(): Promise<FeaturedTalent[]> {
     }
 
     const live: FeaturedTalent[] = ranked.map(({ profile }) => {
-      const user = userById.get(profile.user_id);
       const tagline =
         String(profile.selected_tagline ?? "").trim() ||
         "Verified MatchLever talent ready to deliver.";
 
       return {
         id: profile.id,
-        firstName: firstNameFrom(user?.full_name),
         title: String(profile.headline ?? "Software Engineer").trim(),
         tagline,
         superPower: formatSuperPower(
           profile.verified_superpowers,
           profile.verified_skills,
         ),
-        imageUrl:
-          typeof user?.avatar_url === "string" && user.avatar_url.trim()
-            ? user.avatar_url.trim()
-            : null,
         profileHref: PROFILE_HREF,
       };
     });

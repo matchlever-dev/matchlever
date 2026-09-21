@@ -1,62 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 
-import { BrandWordmark } from "@/components/brand/brand-mark";
 import { useNavSession } from "@/components/brand/nav-session-provider";
-import { DEFAULT_HERO_TAGLINES } from "@/lib/marketing/site-copy";
 
-const TAGLINE_INTERVAL_MS = 3000;
-
-const HERO_TITLE = "Match with Top-Tier Talent & Opportunities";
-
-function RotatingHeroTagline({
-  taglines,
-}: {
-  taglines: [string, string, string];
-}) {
-  const [index, setIndex] = useState(0);
-  const lines = taglines.length === 3 ? taglines : [...DEFAULT_HERO_TAGLINES];
-
-  useEffect(() => {
-    const prefersReducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    if (prefersReducedMotion) return;
-
-    const id = window.setInterval(() => {
-      setIndex((current) => (current + 1) % lines.length);
-    }, TAGLINE_INTERVAL_MS);
-    return () => window.clearInterval(id);
-  }, [lines.length]);
-
-  return (
-    <h2 className="max-w-xl font-display text-[1.125rem] font-semibold leading-snug tracking-tight text-[#2A2D34] sm:max-w-2xl sm:text-[1.25rem] md:text-[1.375rem]">
-      <span className="sr-only">{lines.join(". ")}</span>
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.span
-          key={lines[index]}
-          aria-hidden
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          className="block"
-        >
-          {lines[index]}
-        </motion.span>
-      </AnimatePresence>
-    </h2>
-  );
-}
-
-export function LandingHero({
-  heroTaglines = [...DEFAULT_HERO_TAGLINES],
-}: {
-  heroTaglines?: [string, string, string];
-}) {
+export function LandingHero() {
   const { session, ready } = useNavSession();
   const isSignedIn = ready && session.authenticated;
   const dashboardHref = session.dashboardHref || "/dashboard/employer";
@@ -98,17 +46,11 @@ export function LandingHero({
 
       <div className="relative mx-auto flex w-full max-w-6xl flex-col justify-start px-5 pb-10 pt-6 sm:px-8 sm:pb-12 sm:pt-8">
         <div className="flex flex-col items-start gap-3 sm:gap-4">
-          <motion.div initial={false} animate={{ opacity: 1, y: 0 }}>
-            <BrandWordmark />
-          </motion.div>
-
           <div className="h-px w-14 bg-gradient-to-r from-[#2B5B84] to-[#E87A5D] sm:w-20" />
 
           <h1 className="max-w-3xl font-display text-3xl font-semibold tracking-tight text-[#2A2D34] sm:text-4xl md:text-5xl">
-            {HERO_TITLE}
+            Match with Top-Tier Talent & Opportunities
           </h1>
-
-          <RotatingHeroTagline taglines={heroTaglines} />
 
           <p className="text-xs text-[#5B616B] sm:text-sm">
             {!ready ? null : isSignedIn ? (

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EyeOff } from "lucide-react";
 
 import type { FeaturedTalent } from "@/lib/onboarding/featured-talent";
 
@@ -28,34 +29,23 @@ export function FeaturedTalentSection({
 }
 
 function TalentCard({ person }: { person: FeaturedTalent }) {
-  const initial = person.firstName.charAt(0).toUpperCase() || "T";
-
   return (
     <article className="flex flex-col border border-[#2B5B84]/15 bg-[#F7F6F3] p-5 sm:p-6">
-      <div className="flex items-center gap-3">
-        {person.imageUrl ? (
-          // External auth provider avatars; domains vary by identity provider.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={person.imageUrl}
-            alt=""
-            width={48}
-            height={48}
-            className="size-12 rounded-full object-cover"
-          />
-        ) : (
-          <div
-            aria-hidden
-            className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#2B5B84] font-display text-lg font-bold text-white"
-          >
-            {initial}
-          </div>
-        )}
+      <div className="flex items-start gap-3">
+        <div
+          aria-hidden
+          className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#2B5B84] text-white"
+          title="Identity hidden until a match is accepted"
+        >
+          <EyeOff className="size-5" />
+        </div>
         <div className="min-w-0">
-          <p className="font-display text-base font-semibold tracking-tight text-[#2A2D34]">
-            {person.firstName}
+          <p className="font-display text-[10px] font-semibold tracking-[0.2em] text-[#5B616B] uppercase">
+            Incognito profile
           </p>
-          <p className="truncate text-sm text-[#2B5B84]">{person.title}</p>
+          <h3 className="mt-1 font-display text-base font-semibold tracking-tight text-[#2A2D34] sm:text-lg">
+            {person.title}
+          </h3>
         </div>
       </div>
 

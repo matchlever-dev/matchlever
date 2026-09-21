@@ -25,9 +25,8 @@ export function TwoPathCta() {
             Hire Exceptional Talent
           </h2>
           <p className="mt-3 flex-1 text-sm leading-relaxed text-[#5B616B] sm:text-base">
-            Access a curated network of vetted professionals ready to integrate
-            with your team, accelerate your roadmap, and deliver immediate
-            results.
+            Your openings matched with best-fit candidates only! No more
+            browsing thru fake profiles, we already verified them for you.
           </p>
           <Link
             href={employerHref}
@@ -47,9 +46,8 @@ export function TwoPathCta() {
             Find Your Next Great Role
           </h2>
           <p className="mt-3 flex-1 text-sm leading-relaxed text-[#5B616B] sm:text-base">
-            Take control of your career trajectory. Match with high-growth
-            companies offering impactful, flexible projects that align perfectly
-            with your expertise.
+            Show your true worth here! Match with high-growth companies
+            offering opportunities that align perfectly with what you offer.
           </p>
           <Link
             href={
