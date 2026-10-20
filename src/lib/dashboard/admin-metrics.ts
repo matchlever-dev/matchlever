@@ -187,6 +187,8 @@ export function mapTalentToPipelineStatus(input: {
   isPlaced: boolean;
 }): PipelineStatus {
   if (input.isPlaced) return "Placed";
+  // Users who never finished creating a talent profile stay in Draft.
+  if (!input.hasTalentProfile) return "Draft";
 
   const missing = computeTalentMissing({
     has_talent_profile: input.hasTalentProfile,

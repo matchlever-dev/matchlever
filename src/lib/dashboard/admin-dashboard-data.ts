@@ -290,6 +290,7 @@ export async function buildAdminDashboardData(
     currentUsers,
     priorUsers,
     contactCurrent,
+    allUsers,
     talentRows,
     referenceRows,
     placedRows,
@@ -318,6 +319,14 @@ export async function buildAdminDashboardData(
         .select("created_at")
         .gte("created_at", fromIso)
         .lt("created_at", toIso)
+        .order("created_at", { ascending: true })
+        .range(start, end)
+    ),
+    // Pipeline includes every logged-in user (same scope as admin Talent).
+    fetchAllRows<{ id: string }>((start, end) =>
+      supabase
+        .from("user_profiles")
+        .select("id")
         .order("created_at", { ascending: true })
         .range(start, end)
     ),
@@ -377,9 +386,17 @@ export async function buildAdminDashboardData(
   }
 
   const placedTalentIds = new Set(placedRows.map((row) => row.talent_profile_id));
+  const talentByUserId = new Map(talentRows.map((row) => [row.user_id, row]));
   const pipelineCounts = emptyPipelineCounts();
 
-  for (const talent of talentRows) {
+  // Count every user. Incomplete / missing talent profiles land in Draft;
+  // Pending Review, Active, and Placed keep the existing mapping.
+  for (const user of allUsers) {
+    const talent = talentByUserId.get(user.id);
+    if (!talent) {
+      pipelineCounts.Draft += 1;
+      continue;
+    }
     const bucket: PipelineStatus = mapTalentToPipelineStatus({
       hasTalentProfile: true,
       status: talent.status,
