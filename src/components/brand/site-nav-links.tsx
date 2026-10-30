@@ -121,7 +121,7 @@ export function SiteNavLinks({
 }) {
   const pathname = usePathname();
   const { session, ready } = useNavSession();
-  // Guests get Sign In + Employer onboarding; job posting stays signed-in only.
+  // Guests get Sign In; job posting stays signed-in only.
   const visibleLinks = links.filter(
     (link) =>
       link.href !== "/dashboard/employer/jobs/new" ||
