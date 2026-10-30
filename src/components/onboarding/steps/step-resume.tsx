@@ -5,6 +5,7 @@ import { useFormContext } from "react-hook-form";
 import { FileUp, Loader2 } from "lucide-react";
 
 import type { OnboardingFormValues } from "@/lib/onboarding/form-schema";
+import { Input } from "@/components/ui/input";
 
 type SanitizeResponse = {
   anonymous_title: string;
@@ -12,6 +13,7 @@ type SanitizeResponse = {
   verified_skills: string[];
   years_experience: number;
   suggested_taglines: string[];
+  raw_resume_text?: string;
   error?: string;
 };
 
@@ -31,14 +33,25 @@ export function StepResume() {
   const anonymousTitle = watch("anonymousTitle");
   const skills = watch("verifiedSkills");
   const taglines = watch("suggestedTaglines");
-  const candidateTosAgreed = watch("candidateTosAgreed");
+  const selectedTagline = watch("selectedTagline");
+  const talentTosAgreed = watch("talentTosAgreed");
+
+  function updateTagline(index: number, value: string) {
+    const next = [taglines[0] ?? "", taglines[1] ?? "", taglines[2] ?? ""];
+    const previous = next[index] ?? "";
+    next[index] = value;
+    setValue("suggestedTaglines", next, { shouldValidate: true });
+    if (selectedTagline === previous || selectedTagline === "") {
+      setValue("selectedTagline", value, { shouldValidate: true });
+    }
+  }
 
   const uploadResume = useCallback(
     async (file: File) => {
-      if (!candidateTosAgreed) {
+      if (!talentTosAgreed) {
         setStatus("error");
         setErrorMessage(
-          "Agree to the Job Candidate Terms of Service before uploading a resume."
+          "Agree to the Talent Terms of Service before uploading a resume."
         );
         return;
       }
@@ -50,7 +63,7 @@ export function StepResume() {
       body.append("resume", file);
 
       try {
-        const res = await fetch("/api/candidate/sanitize", {
+        const res = await fetch("/api/talent/sanitize", {
           method: "POST",
           body,
         });
@@ -71,6 +84,7 @@ export function StepResume() {
 
         setValue("anonymousTitle", data.anonymous_title);
         setValue("sanitizedSummary", data.sanitized_summary);
+        setValue("rawResumeText", data.raw_resume_text ?? "");
         setValue("verifiedSkills", data.verified_skills);
         setValue("yearsExperience", data.years_experience);
         setValue("suggestedTaglines", data.suggested_taglines, {
@@ -85,10 +99,12 @@ export function StepResume() {
         setErrorMessage(
           err instanceof Error ? err.message : "Could not sanitize resume"
         );
-        setValue("suggestedTaglines", [], { shouldValidate: true });
+        setValue("suggestedTaglines", ["", "", ""], { shouldValidate: true });
+        setValue("selectedTagline", "");
+        setValue("rawResumeText", "");
       }
     },
-    [setValue, candidateTosAgreed]
+    [setValue, talentTosAgreed]
   );
 
   function onFileChange(fileList: FileList | null) {
@@ -155,34 +171,48 @@ export function StepResume() {
 
       {status === "extracting" && <ExtractionSkeleton />}
 
-      {status === "done" && (
+      {(status === "done" || status === "error") && fileName && (
         <div className="space-y-4 rounded-xl border border-[#2B5B84]/15 bg-white p-5">
-          <p className="text-xs font-semibold tracking-wide text-[#E87A5D] uppercase">
-            Extraction complete
-          </p>
-          <h3 className="text-lg font-semibold text-[#2B5B84]">
-            {anonymousTitle}
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {skills.map((skill) => (
-              <span
-                key={skill}
-                className="rounded-md bg-[#2B5B84]/10 px-2 py-1 text-xs font-medium text-[#2B5B84]"
-              >
-                {skill}
-              </span>
+          {status === "done" ? (
+            <>
+              <p className="text-xs font-semibold tracking-wide text-[#E87A5D] uppercase">
+                Extraction complete
+              </p>
+              <h3 className="text-lg font-semibold text-[#2B5B84]">
+                {anonymousTitle}
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {skills.map((skill) => (
+                  <span
+                    key={skill}
+                    className="rounded-md bg-[#2B5B84]/10 px-2 py-1 text-xs font-medium text-[#2B5B84]"
+                  >
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-[#2A2D34]/70">
+              AI could not draft Superpower Taglines. Enter three options (at
+              least 8 characters each) to continue.
+            </p>
+          )}
+          <div className="space-y-2">
+            <p className="text-xs font-semibold tracking-wide text-[#E87A5D] uppercase">
+              Superpower Taglines
+            </p>
+            {[0, 1, 2].map((index) => (
+              <Input
+                key={index}
+                value={taglines[index] ?? ""}
+                onChange={(e) => updateTagline(index, e.target.value)}
+                placeholder={`Option ${index + 1}`}
+                maxLength={160}
+                aria-label={`Superpower Tagline option ${index + 1}`}
+              />
             ))}
           </div>
-          <ul className="space-y-2">
-            {taglines.map((line) => (
-              <li
-                key={line}
-                className="rounded-lg bg-[#F8F9FA] px-3 py-2 text-sm text-[#2A2D34]"
-              >
-                {line}
-              </li>
-            ))}
-          </ul>
         </div>
       )}
     </div>

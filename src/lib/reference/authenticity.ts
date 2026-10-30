@@ -1,6 +1,9 @@
 import OpenAI from "openai";
 import { z } from "zod";
 
+import { ensureAbsoluteHttpUrl } from "@/lib/url";
+import { relationshipLabel } from "@/lib/reference/relationship";
+
 export type LinkedInStructureSignals = {
   url: string;
   hostname: string;
@@ -28,7 +31,7 @@ export type AuthenticityResult = z.infer<typeof authenticityResultSchema>;
 export function analyzeLinkedInUrlStructure(
   linkedInUrl: string
 ): LinkedInStructureSignals {
-  const parsed = new URL(linkedInUrl);
+  const parsed = new URL(ensureAbsoluteHttpUrl(linkedInUrl));
   const parts = parsed.pathname.split("/").filter(Boolean);
   const slug = decodeURIComponent(parts[1] ?? "").replace(/\/+$/, "");
   const slugLooksHuman = /^[a-z][a-z0-9-]{2,}$/i.test(slug) && !/^\d+$/.test(slug);
@@ -143,7 +146,7 @@ Flag examples: valid_url_structure, human_slug, weak_slug, young_account_signal,
           role: "user",
           content: JSON.stringify({
             managerName: context.managerName,
-            relationship: context.relationship,
+            relationship: relationshipLabel(context.relationship) || context.relationship,
             signals,
           }),
         },

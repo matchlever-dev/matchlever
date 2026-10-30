@@ -10,8 +10,9 @@ import {
   referenceFormSchema,
   type ReferenceFormValues,
 } from "@/lib/reference/schema";
+import { isReferenceRelationship } from "@/lib/reference/relationship";
 import { BrandMark } from "@/components/brand/brand-mark";
-import { ReferrerCandidateCta } from "@/components/reference/referrer-candidate-cta";
+import { ReferrerTalentCta } from "@/components/reference/referrer-talent-cta";
 import { Progress } from "@/components/ui/progress";
 import {
   StepEndorsement,
@@ -26,8 +27,8 @@ type Invite = {
   relationship: string | null;
   reference_name: string | null;
   reference_linkedin_url: string | null;
-  candidate_title: string;
-  candidate_tagline: string;
+  talent_title: string;
+  talent_tagline: string;
   demo?: boolean;
 };
 
@@ -70,11 +71,8 @@ export function ReferenceVerificationWizard({ token }: { token: string }) {
         }
         if (!active) return;
         setInvite(data as Invite);
-        if (data.relationship) {
-          form.setValue(
-            "relationship",
-            data.relationship as ReferenceFormValues["relationship"]
-          );
+        if (isReferenceRelationship(data.relationship)) {
+          form.setValue("relationship", data.relationship);
         }
         if (data.reference_name) {
           form.setValue("managerName", data.reference_name);
@@ -227,7 +225,7 @@ export function ReferenceVerificationWizard({ token }: { token: string }) {
               /100.
             </p>
           </div>
-          <ReferrerCandidateCta className="mt-8 text-left" />
+          <ReferrerTalentCta className="mt-8 text-left" />
         </div>
       </div>
     );
@@ -239,7 +237,7 @@ export function ReferenceVerificationWizard({ token }: { token: string }) {
         <header className="sticky top-0 z-20 border-b border-[#2B5B84]/10 bg-[#F7F6F3]/95 backdrop-blur">
           <div className="mx-auto flex max-w-lg items-center justify-between gap-3 px-5 py-3">
             <div className="flex items-center gap-2">
-              <BrandMark className="h-8 w-auto" />
+              <BrandMark className="h-10 w-auto" />
               <p className="font-display text-xs font-bold tracking-[0.16em] text-[#2A2D34] uppercase">
                 Reference
               </p>
@@ -255,7 +253,7 @@ export function ReferenceVerificationWizard({ token }: { token: string }) {
             />
             {invite && (
               <p className="mt-2 truncate text-xs text-[#5B616B]">
-                For {invite.candidate_title}
+                For {invite.talent_title}
               </p>
             )}
           </div>
@@ -271,7 +269,7 @@ export function ReferenceVerificationWizard({ token }: { token: string }) {
             >
               {step === 1 && (
                 <StepIdentity
-                  candidateTitle={invite?.candidate_title}
+                  talentTitle={invite?.talent_title}
                   lockedLinkedInUrl={invite?.reference_linkedin_url}
                 />
               )}

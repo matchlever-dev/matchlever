@@ -12,7 +12,7 @@ import { getSupabaseEnv } from "@/lib/supabase/env";
 
 /**
  * Refreshes the Auth session on each matched request.
- * Gates /dashboard (signed-in candidate), /admin (is_admin), and /superuser (is_superuser).
+ * Gates /dashboard (signed-in talent), /admin (is_admin), and /superuser (is_superuser).
  */
 function redirectToLogin(request: NextRequest, nextPath: string) {
   const url = request.nextUrl.clone();
@@ -28,10 +28,10 @@ export async function updateSession(request: NextRequest) {
   });
 
   const pathname = request.nextUrl.pathname;
-  const needsCandidate = pathname.startsWith("/dashboard");
+  const needsTalent = pathname.startsWith("/dashboard");
   const needsAdmin = pathname.startsWith("/admin");
   const needsSuperuser = pathname.startsWith("/superuser");
-  const needsAuth = needsCandidate || needsAdmin || needsSuperuser;
+  const needsAuth = needsTalent || needsAdmin || needsSuperuser;
 
   const env = getSupabaseEnv();
   if (!env) {
@@ -76,6 +76,26 @@ export async function updateSession(request: NextRequest) {
     console.warn("[supabase middleware] session refresh skipped:", error);
   }
 
+  // Rolling 60-minute window: renew on every request (including /onboarding and
+  // API calls). Previously this only ran for /dashboard|/admin|/superuser, so
+  // a long onboarding session could lose ml_stay_signed_in + auth cookies and
+  // Complete profile returned Unauthorized.
+  if (staySignedIn) {
+    supabaseResponse.cookies.set(
+      STAY_SIGNED_IN_COOKIE,
+      "1",
+      staySignedInCookieWriteOptions()
+    );
+    for (const cookie of request.cookies.getAll()) {
+      if (!cookie.name.startsWith("sb-") || !cookie.value) continue;
+      supabaseResponse.cookies.set(
+        cookie.name,
+        cookie.value,
+        withStaySignedInCookieOptions(true, { path: "/" })
+      );
+    }
+  }
+
   if (!needsAuth) {
     return supabaseResponse;
   }
@@ -88,14 +108,6 @@ export async function updateSession(request: NextRequest) {
     return redirectToLogin(
       request,
       `${pathname}${request.nextUrl.search}`
-    );
-  }
-
-  if (staySignedIn) {
-    supabaseResponse.cookies.set(
-      STAY_SIGNED_IN_COOKIE,
-      "1",
-      staySignedInCookieWriteOptions()
     );
   }
 

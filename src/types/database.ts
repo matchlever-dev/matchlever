@@ -19,6 +19,7 @@ export type Database = {
           email: string | null;
           full_name: string | null;
           avatar_url: string | null;
+          linkedin_url: string | null;
           is_admin: boolean;
           is_superuser: boolean;
           role: string;
@@ -30,6 +31,7 @@ export type Database = {
           email?: string | null;
           full_name?: string | null;
           avatar_url?: string | null;
+          linkedin_url?: string | null;
           is_admin?: boolean;
           is_superuser?: boolean;
           role?: string;
@@ -41,6 +43,7 @@ export type Database = {
           email?: string | null;
           full_name?: string | null;
           avatar_url?: string | null;
+          linkedin_url?: string | null;
           is_admin?: boolean;
           is_superuser?: boolean;
           role?: string;
@@ -49,7 +52,7 @@ export type Database = {
         };
         Relationships: [];
       };
-      candidate_profiles: {
+      talent_profiles: {
         Row: {
           id: string;
           user_id: string;
@@ -57,6 +60,7 @@ export type Database = {
           bio: string | null;
           global_city: string | null;
           global_country: string | null;
+          timezone: string | null;
           timezone_offset: number | null;
           work_hours_start: string | null;
           work_hours_end: string | null;
@@ -74,7 +78,7 @@ export type Database = {
           min_salary: number | null;
           visa_status: string | null;
           years_experience: number | null;
-          seeker_tos_accepted_at: string | null;
+          talent_tos_accepted_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -85,6 +89,7 @@ export type Database = {
           bio?: string | null;
           global_city?: string | null;
           global_country?: string | null;
+          timezone?: string | null;
           timezone_offset?: number | null;
           work_hours_start?: string | null;
           work_hours_end?: string | null;
@@ -102,7 +107,7 @@ export type Database = {
           min_salary?: number | null;
           visa_status?: string | null;
           years_experience?: number | null;
-          seeker_tos_accepted_at?: string | null;
+          talent_tos_accepted_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -113,6 +118,7 @@ export type Database = {
           bio?: string | null;
           global_city?: string | null;
           global_country?: string | null;
+          timezone?: string | null;
           timezone_offset?: number | null;
           work_hours_start?: string | null;
           work_hours_end?: string | null;
@@ -130,13 +136,13 @@ export type Database = {
           min_salary?: number | null;
           visa_status?: string | null;
           years_experience?: number | null;
-          seeker_tos_accepted_at?: string | null;
+          talent_tos_accepted_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Relationships: [
           {
-            foreignKeyName: "candidate_profiles_user_id_fkey";
+            foreignKeyName: "talent_profiles_user_id_fkey";
             columns: ["user_id"];
             isOneToOne: true;
             referencedRelation: "user_profiles";
@@ -144,10 +150,10 @@ export type Database = {
           },
         ];
       };
-      candidate_references: {
+      talent_references: {
         Row: {
           id: string;
-          candidate_profile_id: string;
+          talent_profile_id: string;
           reference_name: string | null;
           reference_email: string;
           reference_linkedin_url: string | null;
@@ -167,7 +173,7 @@ export type Database = {
         };
         Insert: {
           id?: string;
-          candidate_profile_id: string;
+          talent_profile_id: string;
           reference_name?: string | null;
           reference_email: string;
           reference_linkedin_url?: string | null;
@@ -187,7 +193,7 @@ export type Database = {
         };
         Update: {
           id?: string;
-          candidate_profile_id?: string;
+          talent_profile_id?: string;
           reference_name?: string | null;
           reference_email?: string;
           reference_linkedin_url?: string | null;
@@ -207,15 +213,15 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: "candidate_references_candidate_profile_id_fkey";
-            columns: ["candidate_profile_id"];
+            foreignKeyName: "talent_references_talent_profile_id_fkey";
+            columns: ["talent_profile_id"];
             isOneToOne: false;
-            referencedRelation: "candidate_profiles";
+            referencedRelation: "talent_profiles";
             referencedColumns: ["id"];
           },
         ];
       };
-      hirer_profiles: {
+      employer_profiles: {
         Row: {
           id: string;
           user_id: string;
@@ -223,6 +229,22 @@ export type Database = {
           title: string | null;
           global_city: string | null;
           global_country: string | null;
+          status: string;
+          user_role: string | null;
+          company_website: string | null;
+          industry: string | null;
+          company_size: string | null;
+          estimated_roles: number | null;
+          hiring_departments: string[];
+          work_arrangement: string | null;
+          first_match_free_claimed: boolean;
+          free_matches_used: number;
+          ap_invoicing_email: string | null;
+          po_number: string | null;
+          has_payment_method: boolean;
+          stripe_payment_method_brand: string | null;
+          stripe_payment_method_last4: string | null;
+          employer_tos_accepted_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -233,6 +255,22 @@ export type Database = {
           title?: string | null;
           global_city?: string | null;
           global_country?: string | null;
+          status?: string;
+          user_role?: string | null;
+          company_website?: string | null;
+          industry?: string | null;
+          company_size?: string | null;
+          estimated_roles?: number | null;
+          hiring_departments?: string[];
+          work_arrangement?: string | null;
+          first_match_free_claimed?: boolean;
+          free_matches_used?: number;
+          ap_invoicing_email?: string | null;
+          po_number?: string | null;
+          has_payment_method?: boolean;
+          stripe_payment_method_brand?: string | null;
+          stripe_payment_method_last4?: string | null;
+          employer_tos_accepted_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -243,12 +281,28 @@ export type Database = {
           title?: string | null;
           global_city?: string | null;
           global_country?: string | null;
+          status?: string;
+          user_role?: string | null;
+          company_website?: string | null;
+          industry?: string | null;
+          company_size?: string | null;
+          estimated_roles?: number | null;
+          hiring_departments?: string[];
+          work_arrangement?: string | null;
+          first_match_free_claimed?: boolean;
+          free_matches_used?: number;
+          ap_invoicing_email?: string | null;
+          po_number?: string | null;
+          has_payment_method?: boolean;
+          stripe_payment_method_brand?: string | null;
+          stripe_payment_method_last4?: string | null;
+          employer_tos_accepted_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Relationships: [
           {
-            foreignKeyName: "hirer_profiles_user_id_fkey";
+            foreignKeyName: "employer_profiles_user_id_fkey";
             columns: ["user_id"];
             isOneToOne: true;
             referencedRelation: "user_profiles";
@@ -259,43 +313,91 @@ export type Database = {
       job_postings: {
         Row: {
           id: string;
-          hirer_profile_id: string;
+          employer_profile_id: string;
           title: string;
           company_name: string | null;
           description: string | null;
           status: string;
           kanban_columns: Json;
+          verified_skills: Json;
+          years_experience: number | null;
+          suggested_taglines: Json;
+          endorsed_skills: Json;
+          location_modes: string[];
+          max_commute_miles: number | null;
+          open_to_relocation: boolean | null;
+          global_city: string | null;
+          global_country: string | null;
+          timezone: string | null;
+          work_hours_start: string | null;
+          work_hours_end: string | null;
+          min_salary: number | null;
+          visa_statuses: string[];
+          accepted_match_count: number;
+          match_bundle_purchased_at: string | null;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
-          hirer_profile_id: string;
+          employer_profile_id: string;
           title: string;
           company_name?: string | null;
           description?: string | null;
           status?: string;
           kanban_columns?: Json;
+          verified_skills?: Json;
+          years_experience?: number | null;
+          suggested_taglines?: Json;
+          endorsed_skills?: Json;
+          location_modes?: string[];
+          max_commute_miles?: number | null;
+          open_to_relocation?: boolean | null;
+          global_city?: string | null;
+          global_country?: string | null;
+          timezone?: string | null;
+          work_hours_start?: string | null;
+          work_hours_end?: string | null;
+          min_salary?: number | null;
+          visa_statuses?: string[];
+          accepted_match_count?: number;
+          match_bundle_purchased_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
-          hirer_profile_id?: string;
+          employer_profile_id?: string;
           title?: string;
           company_name?: string | null;
           description?: string | null;
           status?: string;
           kanban_columns?: Json;
+          verified_skills?: Json;
+          years_experience?: number | null;
+          suggested_taglines?: Json;
+          endorsed_skills?: Json;
+          location_modes?: string[];
+          max_commute_miles?: number | null;
+          open_to_relocation?: boolean | null;
+          global_city?: string | null;
+          global_country?: string | null;
+          timezone?: string | null;
+          work_hours_start?: string | null;
+          work_hours_end?: string | null;
+          min_salary?: number | null;
+          visa_statuses?: string[];
+          accepted_match_count?: number;
+          match_bundle_purchased_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Relationships: [
           {
-            foreignKeyName: "job_postings_hirer_profile_id_fkey";
-            columns: ["hirer_profile_id"];
+            foreignKeyName: "job_postings_employer_profile_id_fkey";
+            columns: ["employer_profile_id"];
             isOneToOne: false;
-            referencedRelation: "hirer_profiles";
+            referencedRelation: "employer_profiles";
             referencedColumns: ["id"];
           },
         ];
@@ -304,7 +406,7 @@ export type Database = {
         Row: {
           id: string;
           job_posting_id: string;
-          candidate_profile_id: string;
+          talent_profile_id: string;
           kanban_column: string;
           is_manual_match: boolean;
           matched_by: string | null;
@@ -315,7 +417,7 @@ export type Database = {
         Insert: {
           id?: string;
           job_posting_id: string;
-          candidate_profile_id: string;
+          talent_profile_id: string;
           kanban_column?: string;
           is_manual_match?: boolean;
           matched_by?: string | null;
@@ -326,7 +428,7 @@ export type Database = {
         Update: {
           id?: string;
           job_posting_id?: string;
-          candidate_profile_id?: string;
+          talent_profile_id?: string;
           kanban_column?: string;
           is_manual_match?: boolean;
           matched_by?: string | null;
@@ -343,10 +445,10 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "match_handshakes_candidate_profile_id_fkey";
-            columns: ["candidate_profile_id"];
+            foreignKeyName: "match_handshakes_talent_profile_id_fkey";
+            columns: ["talent_profile_id"];
             isOneToOne: false;
-            referencedRelation: "candidate_profiles";
+            referencedRelation: "talent_profiles";
             referencedColumns: ["id"];
           },
         ];
@@ -387,6 +489,66 @@ export type Database = {
         };
         Relationships: [];
       };
+      email_unsubscribes: {
+        Row: {
+          email: string;
+          unsubscribed_at: string;
+        };
+        Insert: {
+          email: string;
+          unsubscribed_at?: string;
+        };
+        Update: {
+          email?: string;
+          unsubscribed_at?: string;
+        };
+        Relationships: [];
+      };
+      site_copy: {
+        Row: {
+          id: number;
+          hero_taglines: string[];
+          brand_tagline: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: number;
+          hero_taglines: string[];
+          brand_tagline: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: number;
+          hero_taglines?: string[];
+          brand_tagline?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      faq_items: {
+        Row: {
+          id: string;
+          question: string;
+          answer: string;
+          sort_order: number;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          question: string;
+          answer: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          question?: string;
+          answer?: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -405,8 +567,9 @@ export type Database = {
           status: string;
           relationship: string | null;
           reference_name: string | null;
-          candidate_title: string;
-          candidate_tagline: string;
+          reference_linkedin_url: string | null;
+          talent_title: string;
+          talent_tagline: string;
         }[];
       };
     };

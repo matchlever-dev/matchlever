@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { requireSuperuserApi } from "@/lib/auth/api-guards";
 import {
-  DEMO_ACTIVE_CANDIDATES,
+  DEMO_ACTIVE_TALENT,
   DEMO_ACTIVE_JOBS,
 } from "@/lib/admin/demo";
 import { createClient } from "@/lib/supabase/server";
@@ -23,65 +23,65 @@ export async function GET() {
   if (auth.actor.demo) {
     return NextResponse.json({
       demo: true,
-      candidates: DEMO_ACTIVE_CANDIDATES,
+      talent: DEMO_ACTIVE_TALENT,
       jobs: DEMO_ACTIVE_JOBS,
     });
   }
 
   const supabase = await createClient();
 
-  const [{ data: candidates }, { data: jobs }] = await Promise.all([
+  const [{ data: talent }, { data: jobs }] = await Promise.all([
     supabase
-      .from("candidate_profiles")
+      .from("talent_profiles")
       .select("id, headline, status, user_id")
       .eq("status", "actively_looking")
       .order("updated_at", { ascending: false }),
     supabase
       .from("job_postings")
       .select(
-        "id, title, company_name, status, kanban_columns, hirer_profile_id"
+        "id, title, company_name, status, kanban_columns, employer_profile_id"
       )
       .eq("status", "active")
       .order("updated_at", { ascending: false }),
   ]);
 
-  const userIds = [...new Set((candidates ?? []).map((c) => c.user_id))];
-  const hirerIds = [
-    ...new Set((jobs ?? []).map((j) => j.hirer_profile_id)),
+  const userIds = [...new Set((talent ?? []).map((c) => c.user_id))];
+  const employerIds = [
+    ...new Set((jobs ?? []).map((j) => j.employer_profile_id)),
   ];
 
-  const [{ data: users }, { data: hirers }] = await Promise.all([
+  const [{ data: users }, { data: employers }] = await Promise.all([
     userIds.length
       ? supabase
           .from("user_profiles")
           .select("id, email, full_name")
           .in("id", userIds)
       : Promise.resolve({ data: [] as { id: string; email: string | null; full_name: string | null }[] }),
-    hirerIds.length
+    employerIds.length
       ? supabase
-          .from("hirer_profiles")
+          .from("employer_profiles")
           .select("id, user_id, company_name")
-          .in("id", hirerIds)
+          .in("id", employerIds)
       : Promise.resolve({
           data: [] as { id: string; user_id: string; company_name: string }[],
         }),
   ]);
 
-  const hirerUserIds = [...new Set((hirers ?? []).map((h) => h.user_id))];
-  const { data: hirerUsers } = hirerUserIds.length
+  const employerUserIds = [...new Set((employers ?? []).map((h) => h.user_id))];
+  const { data: employerUsers } = employerUserIds.length
     ? await supabase
         .from("user_profiles")
         .select("id, full_name")
-        .in("id", hirerUserIds)
+        .in("id", employerUserIds)
     : { data: [] as { id: string; full_name: string | null }[] };
 
   const userMap = new Map((users ?? []).map((u) => [u.id, u]));
-  const hirerMap = new Map((hirers ?? []).map((h) => [h.id, h]));
-  const hirerUserMap = new Map((hirerUsers ?? []).map((u) => [u.id, u]));
+  const employerMap = new Map((employers ?? []).map((h) => [h.id, h]));
+  const employerUserMap = new Map((employerUsers ?? []).map((u) => [u.id, u]));
 
   return NextResponse.json({
     demo: false,
-    candidates: (candidates ?? []).map((c) => {
+    talent: (talent ?? []).map((c) => {
       const user = userMap.get(c.user_id);
       return {
         id: c.id,
@@ -92,22 +92,24 @@ export async function GET() {
       };
     }),
     jobs: (jobs ?? []).map((j) => {
-      const hirer = hirerMap.get(j.hirer_profile_id);
-      const hirerUser = hirer ? hirerUserMap.get(hirer.user_id) : null;
+      const employer = employerMap.get(j.employer_profile_id);
+      const employerUser = employer
+        ? employerUserMap.get(employer.user_id)
+        : null;
       return {
         id: j.id,
         title: j.title,
-        company_name: j.company_name || hirer?.company_name || null,
+        company_name: j.company_name || employer?.company_name || null,
         status: j.status,
         kanban_columns: columnsFromJson(j.kanban_columns),
-        hirer_name: hirerUser?.full_name ?? null,
+        employer_name: employerUser?.full_name ?? null,
       };
     }),
   });
 }
 
 const matchSchema = z.object({
-  candidateProfileId: z.string().min(1),
+  talentProfileId: z.string().min(1),
   jobPostingId: z.string().min(1),
   kanbanColumn: z.string().min(1).default("sourced"),
   notes: z.string().max(500).optional(),
@@ -137,11 +139,11 @@ export async function POST(request: Request) {
 
   const supabase = await createClient();
 
-  const [{ data: candidate }, { data: job }] = await Promise.all([
+  const [{ data: talent }, { data: job }] = await Promise.all([
     supabase
-      .from("candidate_profiles")
+      .from("talent_profiles")
       .select("id, status")
-      .eq("id", parsed.data.candidateProfileId)
+      .eq("id", parsed.data.talentProfileId)
       .maybeSingle(),
     supabase
       .from("job_postings")
@@ -150,9 +152,9 @@ export async function POST(request: Request) {
       .maybeSingle(),
   ]);
 
-  if (!candidate || candidate.status !== "actively_looking") {
+  if (!talent || talent.status !== "actively_looking") {
     return NextResponse.json(
-      { error: "Candidate must be actively looking" },
+      { error: "Talent must be actively looking" },
       { status: 400 }
     );
   }
@@ -173,15 +175,15 @@ export async function POST(request: Request) {
     .upsert(
       {
         job_posting_id: parsed.data.jobPostingId,
-        candidate_profile_id: parsed.data.candidateProfileId,
+        talent_profile_id: parsed.data.talentProfileId,
         kanban_column: column,
         is_manual_match: true,
         matched_by: auth.actor.userId,
         notes: parsed.data.notes ?? "Concierge Match",
       },
-      { onConflict: "job_posting_id,candidate_profile_id" }
+      { onConflict: "job_posting_id,talent_profile_id" }
     )
-    .select("id, job_posting_id, candidate_profile_id, kanban_column, is_manual_match")
+    .select("id, job_posting_id, talent_profile_id, kanban_column, is_manual_match")
     .maybeSingle();
 
   if (error) {

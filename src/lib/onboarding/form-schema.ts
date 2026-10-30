@@ -1,7 +1,12 @@
 import { z } from "zod";
 
 import { OTHER_CITY_VALUE } from "@/lib/onboarding/locations";
+import {
+  referenceRelationshipSchema,
+  UNSELECTED_RELATIONSHIP,
+} from "@/lib/reference/relationship";
 import { linkedInUrlSchema } from "@/lib/reference/schema";
+import { tryParseHttpUrl } from "@/lib/url";
 
 export const ONBOARDING_STEPS = [
   { id: 1, key: "auth", title: "Identity", description: "Sign in privately" },
@@ -22,12 +27,14 @@ function needsCommuteFields(modes: LocationModeValue[]) {
 }
 
 export const onboardingFormObjectSchema = z.object({
-  candidateTosAgreed: z.boolean(),
+  talentTosAgreed: z.boolean(),
   linkedInConnected: z.boolean(),
+  talentLinkedInUrl: z.string(),
   incognitoAgreed: z.boolean(),
   resumeFileName: z.string(),
   anonymousTitle: z.string().optional(),
   sanitizedSummary: z.string().optional(),
+  rawResumeText: z.string().optional(),
   verifiedSkills: z.array(z.string()),
   yearsExperience: z.number().int().nonnegative().optional(),
   suggestedTaglines: z.array(z.string()),
@@ -50,7 +57,7 @@ export const onboardingFormObjectSchema = z.object({
       z.object({
         email: z.string().email("Enter a valid email address"),
         linkedInUrl: linkedInUrlSchema,
-        relationship: z.enum(["manager", "peer"]),
+        relationship: referenceRelationshipSchema,
       })
     )
     .length(3)
@@ -68,21 +75,17 @@ export const onboardingFormObjectSchema = z.object({
         }
         seenEmail.add(email);
 
-        try {
-          const key = new URL(ref.linkedInUrl.trim()).pathname
-            .replace(/\/+$/, "")
-            .toLowerCase();
-          if (key && seenLinkedIn.has(key)) {
-            ctx.addIssue({
-              code: "custom",
-              message: "Each reference needs a unique LinkedIn profile",
-              path: [index, "linkedInUrl"],
-            });
-          }
-          seenLinkedIn.add(key);
-        } catch {
-          // linkedInUrlSchema already validates format
+        const parsedUrl = tryParseHttpUrl(ref.linkedInUrl);
+        if (!parsedUrl) return;
+        const key = parsedUrl.pathname.replace(/\/+$/, "").toLowerCase();
+        if (key && seenLinkedIn.has(key)) {
+          ctx.addIssue({
+            code: "custom",
+            message: "Each reference needs a unique LinkedIn profile",
+            path: [index, "linkedInUrl"],
+          });
         }
+        seenLinkedIn.add(key);
       });
     }),
 });
@@ -150,11 +153,20 @@ function refinePreferences(
 
 export const onboardingFormSchema = onboardingFormObjectSchema
   .superRefine((data, ctx) => {
-    if (!data.candidateTosAgreed) {
+    if (!data.talentTosAgreed) {
       ctx.addIssue({
         code: "custom",
-        message: "Agree to the Job Candidate Terms of Service to continue",
-        path: ["candidateTosAgreed"],
+        message: "Agree to the Talent Terms of Service to continue",
+        path: ["talentTosAgreed"],
+      });
+    }
+    const linkedIn = linkedInUrlSchema.safeParse(data.talentLinkedInUrl);
+    if (!linkedIn.success) {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "Add your public LinkedIn profile URL (https://www.linkedin.com/in/...)",
+        path: ["talentLinkedInUrl"],
       });
     }
     refinePreferences(data, ctx);
@@ -163,12 +175,14 @@ export const onboardingFormSchema = onboardingFormObjectSchema
 export type OnboardingFormValues = z.infer<typeof onboardingFormObjectSchema>;
 
 export const defaultOnboardingValues: OnboardingFormValues = {
-  candidateTosAgreed: false,
+  talentTosAgreed: false,
   linkedInConnected: false,
+  talentLinkedInUrl: "",
   incognitoAgreed: false,
   resumeFileName: "",
   anonymousTitle: "",
   sanitizedSummary: "",
+  rawResumeText: "",
   verifiedSkills: [],
   yearsExperience: undefined,
   suggestedTaglines: [],
@@ -185,9 +199,9 @@ export const defaultOnboardingValues: OnboardingFormValues = {
   visaStatus: "none",
   selectedTagline: "",
   references: [
-    { email: "", linkedInUrl: "", relationship: "manager" },
-    { email: "", linkedInUrl: "", relationship: "manager" },
-    { email: "", linkedInUrl: "", relationship: "manager" },
+    { email: "", linkedInUrl: "", relationship: UNSELECTED_RELATIONSHIP },
+    { email: "", linkedInUrl: "", relationship: UNSELECTED_RELATIONSHIP },
+    { email: "", linkedInUrl: "", relationship: UNSELECTED_RELATIONSHIP },
   ],
 };
 
@@ -206,16 +220,17 @@ export function getStepSchema(step: OnboardingStepId) {
     case 1:
       return z
         .object({
-          candidateTosAgreed: z.boolean(),
+          talentTosAgreed: z.boolean(),
           linkedInConnected: z.boolean(),
+          talentLinkedInUrl: z.string(),
           incognitoAgreed: z.boolean(),
         })
         .superRefine((data, ctx) => {
-          if (!data.candidateTosAgreed) {
+          if (!data.talentTosAgreed) {
             ctx.addIssue({
               code: "custom",
-              message: "Agree to the Job Candidate Terms of Service to continue",
-              path: ["candidateTosAgreed"],
+              message: "Agree to the Talent Terms of Service to continue",
+              path: ["talentTosAgreed"],
             });
           }
           if (!data.linkedInConnected) {
@@ -223,6 +238,15 @@ export function getStepSchema(step: OnboardingStepId) {
               code: "custom",
               message: "Connect LinkedIn to continue",
               path: ["linkedInConnected"],
+            });
+          }
+          const linkedIn = linkedInUrlSchema.safeParse(data.talentLinkedInUrl);
+          if (!linkedIn.success) {
+            ctx.addIssue({
+              code: "custom",
+              message:
+                "Add your public LinkedIn profile URL (https://www.linkedin.com/in/...)",
+              path: ["talentLinkedInUrl"],
             });
           }
           if (!data.incognitoAgreed) {
@@ -247,10 +271,14 @@ export function getStepSchema(step: OnboardingStepId) {
               path: ["resumeFileName"],
             });
           }
-          if (data.suggestedTaglines.length !== 3) {
+          const trimmedTaglines = data.suggestedTaglines.map((t) => t.trim());
+          if (
+            trimmedTaglines.length !== 3 ||
+            trimmedTaglines.some((t) => t.length < 8)
+          ) {
             ctx.addIssue({
               code: "custom",
-              message: "Wait for AI extraction to finish",
+              message: "Each Superpower Tagline needs at least 8 characters",
               path: ["suggestedTaglines"],
             });
           }

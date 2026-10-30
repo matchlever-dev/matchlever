@@ -1,5 +1,6 @@
 import Image from "next/image";
 
+import { DEFAULT_BRAND_TAGLINE } from "@/lib/marketing/site-copy";
 import { cn } from "@/lib/utils";
 
 /** Official MatchLever monogram (extracted from brand artwork). */
@@ -28,7 +29,7 @@ export function BrandWordmark({
   className,
   showTagline = false,
   align = "left",
-  tagline,
+  tagline = DEFAULT_BRAND_TAGLINE,
 }: {
   className?: string;
   showTagline?: boolean;
@@ -47,7 +48,7 @@ export function BrandWordmark({
       </p>
       {showTagline && (
         <p className="mt-2.5 font-display text-[clamp(0.7rem,2.2vw,0.85rem)] font-medium tracking-wide text-[#6B7280]">
-          {tagline ?? "No names. No bias. Just the right match."}
+          {tagline}
         </p>
       )}
     </div>

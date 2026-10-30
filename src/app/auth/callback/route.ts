@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 
+import { captureTalentLinkedInUrl } from "@/lib/auth/linkedin-url";
 import {
   resolvePostLoginPath,
   sanitizeNextPath,
 } from "@/lib/auth/post-login-redirect";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
@@ -12,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * OAuth return handler. Exchanges the auth code for a session, then routes
- * candidates / admins / superusers to the right surface.
+ * talent / admins / superusers to the right surface.
  */
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -27,14 +29,15 @@ export async function GET(request: Request) {
   }
 
   if (!isSupabaseConfigured()) {
-    return NextResponse.redirect(new URL(next || "/dashboard/candidate", url.origin));
+    return NextResponse.redirect(new URL(next || "/dashboard/talent", url.origin));
   }
 
   try {
     const supabase = await createClient();
 
+    let providerToken: string | null = null;
     if (code) {
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
       if (error) {
         return NextResponse.redirect(
           new URL(
@@ -42,6 +45,28 @@ export async function GET(request: Request) {
             url.origin
           )
         );
+      }
+      providerToken = data.session?.provider_token ?? null;
+    }
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const user = session?.user;
+    const linkedInUrl = user
+      ? await captureTalentLinkedInUrl({
+          authUser: user,
+          accessToken: providerToken || session?.provider_token,
+        })
+      : null;
+    if (user && linkedInUrl) {
+      const writer = createAdminClient() ?? supabase;
+      const { error: linkedInError } = await writer
+        .from("user_profiles")
+        .update({ linkedin_url: linkedInUrl })
+        .eq("id", user.id);
+      if (linkedInError) {
+        console.error("[auth callback linkedin_url]", linkedInError.message);
       }
     }
 

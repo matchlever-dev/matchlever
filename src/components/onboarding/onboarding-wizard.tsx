@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FormProvider, useForm } from "react-hook-form";
+import { FormProvider, useForm, type FieldPath } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -20,11 +20,23 @@ import { StepAuth } from "@/components/onboarding/steps/step-auth";
 import { StepResume } from "@/components/onboarding/steps/step-resume";
 import { StepPreferences } from "@/components/onboarding/steps/step-preferences";
 import { StepReferences } from "@/components/onboarding/steps/step-references";
+import { SESSION_EXPIRED_MESSAGE, setStaySignedInPreference } from "@/lib/auth/stay-signed-in";
+import { createClient } from "@/lib/supabase/client";
+
+function scrollToFirstFieldError() {
+  window.requestAnimationFrame(() => {
+    const el = document.querySelector<HTMLElement>(
+      "[data-field-error], .text-destructive"
+    );
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+}
 
 export function OnboardingWizard() {
   const router = useRouter();
   const [step, setStep] = useState<OnboardingStepId>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckingLinkedIn, setIsCheckingLinkedIn] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const form = useForm<OnboardingFormValues>({
@@ -43,19 +55,133 @@ export function OnboardingWizard() {
     }
 
     for (const issue of parsed.error.issues) {
-      const path = issue.path.join(".") || "root";
-      form.setError(path as keyof OnboardingFormValues, {
+      const path = (issue.path.join(".") || "root") as FieldPath<OnboardingFormValues>;
+      form.setError(path, {
         type: "manual",
         message: issue.message,
       });
     }
+    const firstPath = parsed.error.issues[0]?.path.join(".");
+    if (firstPath) {
+      try {
+        form.setFocus(firstPath as FieldPath<OnboardingFormValues>);
+      } catch {
+        // Some fields (e.g. selects) may not register a focusable ref.
+      }
+    }
+    scrollToFirstFieldError();
     return false;
+  }
+
+  async function validateReferencePagesOpen() {
+    const refs = form.getValues("references");
+    const res = await fetch("/api/reference/validate-linkedin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ urls: refs.map((ref) => ref.linkedInUrl) }),
+    });
+    const data = (await res.json()) as {
+      error?: string;
+      results?: Array<{
+        valid: boolean;
+        normalizedUrl: string;
+        error: string | null;
+      }>;
+    };
+    if (!res.ok) {
+      if (res.status === 401) {
+        throw new Error(data.error || SESSION_EXPIRED_MESSAGE);
+      }
+      throw new Error(data.error || "Unable to check LinkedIn profile pages");
+    }
+
+    let allOpen = true;
+    (data.results ?? []).forEach((result, index) => {
+      if (!result.valid) {
+        allOpen = false;
+        form.setError(`references.${index}.linkedInUrl`, {
+          type: "manual",
+          message:
+            result.error ||
+            "This LinkedIn page could not be opened. Check the URL.",
+        });
+        return;
+      }
+      form.clearErrors(`references.${index}.linkedInUrl`);
+      form.setValue(`references.${index}.linkedInUrl`, result.normalizedUrl, {
+        shouldDirty: true,
+        shouldValidate: false,
+      });
+    });
+    return allOpen;
+  }
+
+  async function ensureSignedInSession(): Promise<boolean> {
+    try {
+      // Keep the rolling stay-signed-in window alive while the user finishes.
+      setStaySignedInPreference(true);
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.getUser();
+      if (!error && data.user) return true;
+      const { data: refreshed } = await supabase.auth.refreshSession();
+      return Boolean(refreshed.session?.user);
+    } catch {
+      return false;
+    }
+  }
+
+  function promptReauthenticate(message = SESSION_EXPIRED_MESSAGE) {
+    form.setValue("linkedInConnected", false, { shouldValidate: true });
+    setStep(1);
+    setSubmitError(message);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function handleNext() {
     setSubmitError(null);
     const ok = await validateCurrentStep();
-    if (!ok) return;
+    if (!ok) {
+      setSubmitError("Please fix the highlighted fields above.");
+      return;
+    }
+
+    if (step === 4) {
+      const signedIn = await ensureSignedInSession();
+      if (!signedIn) {
+        promptReauthenticate();
+        return;
+      }
+
+      setIsCheckingLinkedIn(true);
+      try {
+        const pagesOpen = await validateReferencePagesOpen();
+        if (!pagesOpen) {
+          setSubmitError(
+            "One or more LinkedIn profile URLs could not be opened. Check the highlighted fields."
+          );
+          scrollToFirstFieldError();
+          return;
+        }
+      } catch (err) {
+        const message =
+          err instanceof Error
+            ? err.message
+            : "Unable to check LinkedIn profile pages";
+        if (
+          message === SESSION_EXPIRED_MESSAGE ||
+          /unauthorized|sign in with linkedin|session expired/i.test(message)
+        ) {
+          promptReauthenticate(
+            message === "Unauthorized" ? SESSION_EXPIRED_MESSAGE : message
+          );
+          return;
+        }
+        setSubmitError(message);
+        return;
+      } finally {
+        setIsCheckingLinkedIn(false);
+      }
+    }
 
     if (step < ONBOARDING_STEPS.length) {
       setStep((step + 1) as OnboardingStepId);
@@ -65,6 +191,12 @@ export function OnboardingWizard() {
 
     setIsSubmitting(true);
     try {
+      const stillSignedIn = await ensureSignedInSession();
+      if (!stillSignedIn) {
+        promptReauthenticate();
+        return;
+      }
+
       const payload = form.getValues();
       const res = await fetch("/api/onboarding/complete", {
         method: "POST",
@@ -74,18 +206,36 @@ export function OnboardingWizard() {
       const data = (await res.json()) as {
         error?: string;
         warning?: string;
+        referenceIndex?: number;
       };
       if (!res.ok) {
+        if (res.status === 401) {
+          promptReauthenticate(data.error || SESSION_EXPIRED_MESSAGE);
+          return;
+        }
+        if (typeof data.referenceIndex === "number") {
+          form.setError(`references.${data.referenceIndex}.linkedInUrl`, {
+            type: "manual",
+            message:
+              data.error ||
+              "This LinkedIn page could not be opened. Check the URL.",
+          });
+          setSubmitError(
+            "One or more LinkedIn profile URLs could not be opened. Check the highlighted fields."
+          );
+          scrollToFirstFieldError();
+          return;
+        }
         throw new Error(data.error || "Could not complete onboarding");
       }
       if (data.warning) {
         // Keep a soft signal in the URL so the dashboard can surface it.
         router.push(
-          `/dashboard/candidate?onboarding=complete&warning=${encodeURIComponent(data.warning)}`
+          `/dashboard/talent?onboarding=complete&warning=${encodeURIComponent(data.warning)}`
         );
         return;
       }
-      router.push("/dashboard/candidate?onboarding=complete");
+      router.push("/dashboard/talent?onboarding=complete");
     } catch (err) {
       setSubmitError(
         err instanceof Error ? err.message : "Could not complete onboarding"
@@ -121,16 +271,22 @@ export function OnboardingWizard() {
               {step === 4 && <StepReferences />}
             </motion.div>
           </AnimatePresence>
-          {submitError && (
-            <p className="mt-6 text-sm text-destructive">{submitError}</p>
-          )}
         </main>
         <WizardFooter
           step={step}
-          isSubmitting={isSubmitting}
+          isSubmitting={isSubmitting || isCheckingLinkedIn}
+          error={submitError}
           onBack={handleBack}
           onNext={handleNext}
-          nextLabel={step === 4 ? "Complete profile" : "Continue"}
+          nextLabel={
+            isCheckingLinkedIn
+              ? "Checking LinkedIn pages…"
+              : isSubmitting
+                ? "Saving…"
+                : step === 4
+                  ? "Complete profile"
+                  : "Continue"
+          }
         />
       </div>
     </FormProvider>

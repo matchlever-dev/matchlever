@@ -9,13 +9,15 @@
     "start": "next start",
     "lint": "eslint",
     "db:query": "node scripts/run-sql.mjs",
-    "db:delete-candidate": "node scripts/delete-candidate-by-name.mjs"
+    "db:delete-talent": "node scripts/delete-talent-by-name.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
     "@hookform/resolvers": "^5.4.0",
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.8",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.42.2",
@@ -27,6 +29,7 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-hook-form": "^7.82.0",
+    "recharts": "^3.10.1",
     "resend": "^6.18.0",
     "shadcn": "^4.14.0",
     "tailwind-merge": "^3.6.0",

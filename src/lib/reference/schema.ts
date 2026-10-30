@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+import { normalizePublicLinkedInProfileUrl } from "@/lib/auth/linkedin-url";
+import {
+  referenceRelationshipSchema,
+  UNSELECTED_RELATIONSHIP,
+} from "@/lib/reference/relationship";
 import { SUPERPOWER_TAXONOMY } from "@/lib/reference/taxonomy";
 
 const superpowerIds = SUPERPOWER_TAXONOMY.map((s) => s.id) as [
@@ -10,17 +15,16 @@ const superpowerIds = SUPERPOWER_TAXONOMY.map((s) => s.id) as [
 export const linkedInUrlSchema = z
   .string()
   .trim()
-  .url("Enter a valid URL")
+  .min(1, "Enter a valid URL")
   .refine(
-    (value) =>
-      /^https:\/\/(www\.)?linkedin\.com\/in\/[A-Za-z0-9\-_%]+\/?$/i.test(value),
+    (value) => Boolean(normalizePublicLinkedInProfileUrl(value)),
     "Use a full LinkedIn profile URL (https://linkedin.com/in/...)"
   );
 
 export const referenceVerifySchema = z.object({
   token: z.string().min(16, "Invalid verification token"),
   managerName: z.string().trim().min(2, "Enter the manager / peer name"),
-  relationship: z.enum(["manager", "peer", "skip_level", "other"]),
+  relationship: referenceRelationshipSchema,
   linkedInUrl: linkedInUrlSchema,
   superpowers: z
     .array(z.enum(superpowerIds))
@@ -43,7 +47,7 @@ export type ReferenceFormValues = z.infer<typeof referenceFormSchema>;
 
 export const defaultReferenceFormValues: ReferenceFormValues = {
   managerName: "",
-  relationship: "manager",
+  relationship: UNSELECTED_RELATIONSHIP,
   linkedInUrl: "",
   superpowers: [],
   reliability: 4,

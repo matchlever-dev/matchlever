@@ -1,17 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 
 import type { OnboardingFormValues } from "@/lib/onboarding/form-schema";
+import type { ReferenceRelationship } from "@/lib/reference/relationship";
+import { ensureAbsoluteHttpUrl, urlTextInputProps } from "@/lib/url";
+import { RelationshipSelect } from "@/components/reference/relationship-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 const REFERENCE_SLOTS = [
   { index: 0 },
@@ -21,10 +18,57 @@ const REFERENCE_SLOTS = [
 
 export function StepReferences() {
   const {
-    register,
     control,
+    setError,
+    clearErrors,
+    setValue,
     formState: { errors },
   } = useFormContext<OnboardingFormValues>();
+  const [checkingIndex, setCheckingIndex] = useState<number | null>(null);
+
+  async function checkLinkedInPage(index: number, rawUrl: string) {
+    const url = rawUrl.trim();
+    if (!url) return;
+    setCheckingIndex(index);
+    try {
+      const res = await fetch("/api/reference/validate-linkedin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ urls: [url] }),
+      });
+      const data = (await res.json()) as {
+        error?: string;
+        results?: Array<{
+          valid: boolean;
+          normalizedUrl: string;
+          error: string | null;
+        }>;
+      };
+      const result = data.results?.[0];
+      if (!res.ok || !result?.valid) {
+        setError(`references.${index}.linkedInUrl`, {
+          type: "manual",
+          message:
+            result?.error ||
+            data.error ||
+            "This LinkedIn page could not be opened. Check the URL.",
+        });
+        return;
+      }
+      clearErrors(`references.${index}.linkedInUrl`);
+      setValue(`references.${index}.linkedInUrl`, result.normalizedUrl, {
+        shouldDirty: true,
+        shouldValidate: false,
+      });
+    } catch {
+      setError(`references.${index}.linkedInUrl`, {
+        type: "manual",
+        message: "This LinkedIn page could not be opened. Check the URL.",
+      });
+    } finally {
+      setCheckingIndex(null);
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -33,10 +77,21 @@ export function StepReferences() {
           Reference intake
         </h2>
         <p className="mt-2 text-sm text-[#2A2D34]/70 sm:text-base">
-          Add three references — any mix of former managers or peers is fine.
-          Include each person&apos;s email and LinkedIn profile URL so we can
-          verify they&apos;re real professionals before invites go out.
+          Add all three references — any mix of Peer, Direct Report, Former
+          Manager, or Skip Level Manager is fine. Each LinkedIn profile URL is
+          checked live and must actually open before you can finish this step.
         </p>
+        <div className="mt-4 rounded-xl border border-[#2B5B84]/15 bg-white p-4 text-sm leading-relaxed text-[#2A2D34]">
+          <p className="font-display text-[11px] font-semibold tracking-[0.18em] text-[#E87A5D] uppercase">
+            How this works
+          </p>
+          <p className="mt-2">
+            No one from MatchLever or an employer will call or contact your
+            references directly. They do not need to speak with anyone right
+            away. Each person will get an email with a link and just answer a
+            few questions online.
+          </p>
+        </div>
       </div>
 
       <div className="space-y-5">
@@ -50,14 +105,28 @@ export function StepReferences() {
             </p>
             <div className="grid gap-2">
               <Label htmlFor={`ref-email-${slot.index}`}>Email address</Label>
-              <Input
-                id={`ref-email-${slot.index}`}
-                type="email"
-                placeholder="name@gmail.com or name@company.com"
-                {...register(`references.${slot.index}.email`)}
+              <Controller
+                control={control}
+                name={`references.${slot.index}.email`}
+                render={({ field }) => (
+                  <Input
+                    id={`ref-email-${slot.index}`}
+                    type="email"
+                    autoComplete="off"
+                    placeholder="name@gmail.com or name@company.com"
+                    name={field.name}
+                    value={field.value}
+                    onBlur={field.onBlur}
+                    ref={field.ref}
+                    onChange={(event) => field.onChange(event.currentTarget.value)}
+                  />
+                )}
               />
               {errors.references?.[slot.index]?.email && (
-                <p className="text-xs text-destructive">
+                <p
+                  className="text-xs text-destructive"
+                  data-field-error={`references.${slot.index}.email`}
+                >
                   {errors.references[slot.index]?.email?.message}
                 </p>
               )}
@@ -66,14 +135,46 @@ export function StepReferences() {
               <Label htmlFor={`ref-linkedin-${slot.index}`}>
                 LinkedIn profile URL
               </Label>
-              <Input
-                id={`ref-linkedin-${slot.index}`}
-                type="url"
-                placeholder="https://www.linkedin.com/in/their-profile"
-                {...register(`references.${slot.index}.linkedInUrl`)}
+              <Controller
+                control={control}
+                name={`references.${slot.index}.linkedInUrl`}
+                render={({ field }) => (
+                  <Input
+                    id={`ref-linkedin-${slot.index}`}
+                    {...urlTextInputProps}
+                    autoComplete="off"
+                    placeholder="https://www.linkedin.com/in/their-profile"
+                    name={field.name}
+                    value={field.value}
+                    ref={field.ref}
+                    onChange={(event) => field.onChange(event.currentTarget.value)}
+                    onBlur={(event) => {
+                      field.onBlur();
+                      const completed = ensureAbsoluteHttpUrl(
+                        event.currentTarget.value
+                      );
+                      if (completed && completed !== field.value) {
+                        setValue(
+                          `references.${slot.index}.linkedInUrl`,
+                          completed,
+                          { shouldDirty: true, shouldValidate: false }
+                        );
+                      }
+                      void checkLinkedInPage(slot.index, completed);
+                    }}
+                  />
+                )}
               />
+              {checkingIndex === slot.index && (
+                <p className="text-xs text-[#5B616B]" aria-live="polite">
+                  Checking that this LinkedIn page opens…
+                </p>
+              )}
               {errors.references?.[slot.index]?.linkedInUrl && (
-                <p className="text-xs text-destructive">
+                <p
+                  className="text-xs text-destructive"
+                  data-field-error={`references.${slot.index}.linkedInUrl`}
+                >
                   {errors.references[slot.index]?.linkedInUrl?.message}
                 </p>
               )}
@@ -84,22 +185,22 @@ export function StepReferences() {
                 control={control}
                 name={`references.${slot.index}.relationship`}
                 render={({ field }) => (
-                  <Select
+                  <RelationshipSelect
                     value={field.value}
-                    onValueChange={(value) =>
-                      field.onChange(value as "manager" | "peer")
+                    onValueChange={(value: ReferenceRelationship) =>
+                      field.onChange(value)
                     }
-                  >
-                    <SelectTrigger className="w-full min-w-0">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="manager">Former manager</SelectItem>
-                      <SelectItem value="peer">Peer</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  />
                 )}
               />
+              {errors.references?.[slot.index]?.relationship && (
+                <p
+                  className="text-xs text-destructive"
+                  data-field-error={`references.${slot.index}.relationship`}
+                >
+                  {errors.references[slot.index]?.relationship?.message}
+                </p>
+              )}
             </div>
           </div>
         ))}

@@ -1,0 +1,273 @@
+import { randomBytes } from "crypto";
+import { NextResponse } from "next/server";
+import { z } from "zod";
+
+import { talentNameForInvite } from "@/lib/auth/display-name";
+import { sendReferenceInviteEmail } from "@/lib/email/resend";
+import { UNSUBSCRIBED_EMAIL_MESSAGE } from "@/lib/email/unsubscribe";
+import { linkedInUrlSchema } from "@/lib/reference/schema";
+import { referenceRelationshipSchema } from "@/lib/reference/relationship";
+import {
+  linkedInUrlsMatch,
+  REFERRER_LINKEDIN_INVALID_MESSAGE,
+  validateReferrerLinkedIn,
+} from "@/lib/reference/linkedin-validation";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { createClient } from "@/lib/supabase/server";
+import type { Json } from "@/types/database";
+
+const bodySchema = z
+  .object({
+    referenceId: z.string().min(1),
+    email: z.string().trim().email("Enter a valid email").optional(),
+    linkedInUrl: linkedInUrlSchema.optional(),
+    relationship: referenceRelationshipSchema.optional(),
+  })
+  .refine((data) => Boolean(data.email || data.linkedInUrl || data.relationship), {
+    message: "Provide an email, LinkedIn URL, and/or relationship to update",
+  });
+
+function newVerificationToken() {
+  return randomBytes(24).toString("hex");
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const parsed = bodySchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0]?.message || "Invalid payload" },
+        { status: 400 }
+      );
+    }
+
+    const nextEmail = parsed.data.email?.trim().toLowerCase();
+    let nextLinkedIn = parsed.data.linkedInUrl?.trim();
+    const nextRelationship = parsed.data.relationship;
+    let linkedInFlags: string[] | null = null;
+
+    if (nextLinkedIn) {
+      const validation = await validateReferrerLinkedIn(nextLinkedIn);
+      if (!validation.valid) {
+        console.info("[references linkedin invalid]", {
+          referenceId: parsed.data.referenceId,
+          mode: validation.mode,
+          checks: validation.checks,
+          flags: validation.flags,
+        });
+        return NextResponse.json(
+          { error: REFERRER_LINKEDIN_INVALID_MESSAGE },
+          { status: 400 }
+        );
+      }
+      nextLinkedIn = validation.normalizedUrl;
+      linkedInFlags = [
+        "talent_provided_linkedin",
+        `validation_mode:${validation.mode}`,
+        ...validation.flags,
+      ];
+    }
+
+    if (!isSupabaseConfigured()) {
+      return NextResponse.json({
+        ok: true,
+        demo: true,
+        reference_email: nextEmail,
+        reference_linkedin_url: nextLinkedIn,
+        relationship: nextRelationship,
+        message: "Demo: reference updated (configure Supabase to persist).",
+      });
+    }
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const [{ data: profile }, { data: userProfile }] = await Promise.all([
+      supabase
+        .from("talent_profiles")
+        .select("id, headline")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("user_profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .maybeSingle(),
+    ]);
+
+    if (!profile) {
+      return NextResponse.json(
+        { error: "Talent profile not found" },
+        { status: 404 }
+      );
+    }
+
+    const { data: reference, error } = await supabase
+      .from("talent_references")
+      .select(
+        "id, reference_email, reference_linkedin_url, relationship, verification_token, status, talent_profile_id, authenticity_flags"
+      )
+      .eq("id", parsed.data.referenceId)
+      .eq("talent_profile_id", profile.id)
+      .maybeSingle();
+
+    if (error || !reference) {
+      return NextResponse.json({ error: "Reference not found" }, { status: 404 });
+    }
+
+    if (reference.status === "verified") {
+      return NextResponse.json(
+        { error: "Verified references cannot be edited" },
+        { status: 409 }
+      );
+    }
+
+    const emailChanged =
+      Boolean(nextEmail) &&
+      nextEmail !== reference.reference_email.toLowerCase();
+    const linkedInChanged =
+      Boolean(nextLinkedIn) &&
+      nextLinkedIn !== (reference.reference_linkedin_url || "");
+    const relationshipChanged =
+      Boolean(nextRelationship) &&
+      nextRelationship !== (reference.relationship || "");
+
+    if (!emailChanged && !linkedInChanged && !relationshipChanged) {
+      return NextResponse.json({
+        ok: true,
+        reference_email: reference.reference_email,
+        reference_linkedin_url: reference.reference_linkedin_url,
+        relationship: reference.relationship,
+        unchanged: true,
+      });
+    }
+
+    if (emailChanged && nextEmail) {
+      const { data: duplicate } = await supabase
+        .from("talent_references")
+        .select("id")
+        .eq("talent_profile_id", profile.id)
+        .eq("reference_email", nextEmail)
+        .neq("id", reference.id)
+        .maybeSingle();
+
+      if (duplicate) {
+        return NextResponse.json(
+          { error: "That email is already used for another reference" },
+          { status: 409 }
+        );
+      }
+    }
+
+    if (linkedInChanged && nextLinkedIn) {
+      const { data: duplicates } = await supabase
+        .from("talent_references")
+        .select("id, reference_linkedin_url")
+        .eq("talent_profile_id", profile.id)
+        .neq("id", reference.id);
+
+      const clash = (duplicates ?? []).some((row) => {
+        const existing = row.reference_linkedin_url;
+        if (!existing || !nextLinkedIn) return false;
+        return linkedInUrlsMatch(existing, nextLinkedIn);
+      });
+
+      if (clash) {
+        return NextResponse.json(
+          { error: "That LinkedIn profile is already used for another reference" },
+          { status: 409 }
+        );
+      }
+    }
+
+    const token = emailChanged
+      ? newVerificationToken()
+      : reference.verification_token;
+
+    const updatePayload: {
+      reference_email?: string;
+      reference_linkedin_url?: string;
+      relationship?: string;
+      verification_token?: string;
+      authenticity_flags?: Json;
+    } = {};
+
+    if (emailChanged && nextEmail) {
+      updatePayload.reference_email = nextEmail;
+      updatePayload.verification_token = token;
+    }
+    if (linkedInChanged && nextLinkedIn) {
+      updatePayload.reference_linkedin_url = nextLinkedIn;
+      if (linkedInFlags) {
+        updatePayload.authenticity_flags = linkedInFlags as Json;
+      }
+    }
+    if (relationshipChanged && nextRelationship) {
+      updatePayload.relationship = nextRelationship;
+    }
+
+    const { error: updateError } = await supabase
+      .from("talent_references")
+      .update(updatePayload)
+      .eq("id", reference.id)
+      .eq("talent_profile_id", profile.id);
+
+    if (updateError) {
+      console.error("[references update]", updateError.message);
+      return NextResponse.json(
+        { error: "Unable to update reference" },
+        { status: 500 }
+      );
+    }
+
+    let invite:
+      | { demo: boolean; inviteUrl: string; id?: string; skipped?: boolean }
+      | { error: string }
+      | null = null;
+
+    if (emailChanged && nextEmail) {
+      try {
+        const sent = await sendReferenceInviteEmail({
+          to: nextEmail,
+          talentName: talentNameForInvite(user, userProfile?.full_name),
+          talentTitle: profile.headline || "MatchLever talent",
+          token,
+        });
+        invite = sent;
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Failed to send invite";
+        console.error("[references email invite]", nextEmail, message);
+        invite = { error: message };
+      }
+    }
+
+    return NextResponse.json({
+      ok: true,
+      reference_email: nextEmail ?? reference.reference_email,
+      reference_linkedin_url:
+        nextLinkedIn ?? reference.reference_linkedin_url,
+      relationship: nextRelationship ?? reference.relationship,
+      inviteSent: Boolean(
+        invite && !("error" in invite) && !invite.skipped
+      ),
+      invite,
+      warning:
+        invite && "error" in invite
+          ? `Saved, but invite failed to send: ${invite.error}`
+          : invite && "skipped" in invite && invite.skipped
+            ? UNSUBSCRIBED_EMAIL_MESSAGE
+            : undefined,
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unable to update reference";
+    console.error("[/api/dashboard/talent/references]", message);
+    return NextResponse.json({ error: message }, { status: 502 });
+  }
+}

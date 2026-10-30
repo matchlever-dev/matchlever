@@ -7,7 +7,7 @@
  * "use server";
  * import { createClient } from "@/lib/supabase/server-action";
  *
- * export async function updateCandidateProfile(formData: FormData) {
+ * export async function updateTalentProfile(formData: FormData) {
  *   const supabase = await createClient();
  *   // ...
  * }

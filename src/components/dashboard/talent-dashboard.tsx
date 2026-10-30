@@ -1,0 +1,463 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+
+import {
+  DEMO_TALENT_DASHBOARD,
+  hasCompleteReferences,
+  REQUIRED_VERIFIED_REFERENCES,
+  type TalentAvailability,
+  type TalentDashboardData,
+} from "@/lib/dashboard/talent";
+import { BrandMark } from "@/components/brand/brand-mark";
+import { RoleSwitcher } from "@/components/auth/role-switcher";
+import { useNavSession } from "@/components/brand/nav-session-provider";
+import { AnonymousTalentCard } from "@/components/dashboard/anonymous-talent-card";
+import { ReferenceStatusTracker } from "@/components/dashboard/reference-status-tracker";
+import { ReferrerLinkedInLink } from "@/components/reference/referrer-linkedin-link";
+import {
+  DeleteAccountDialog,
+  EditProfileModal,
+} from "@/components/dashboard/talent-modals";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/client";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { ensureAbsoluteHttpUrl, urlTextInputProps } from "@/lib/url";
+
+export function TalentDashboard() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { session } = useNavSession();
+  const [data, setData] = useState<TalentDashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [statusBusy, setStatusBusy] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const [inviteWarning, setInviteWarning] = useState<string | null>(null);
+  const [linkedinDraft, setLinkedinDraft] = useState("");
+  const [linkedinBusy, setLinkedinBusy] = useState(false);
+  const [employerRequestBusy, setEmployerRequestBusy] = useState(false);
+  const [employerRequestMessage, setEmployerRequestMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const warning = searchParams.get("warning");
+    if (warning) setInviteWarning(warning);
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (searchParams.get("edit") !== "1") return;
+    if (!data || needsOnboarding) return;
+    setEditOpen(true);
+    // Drop the query so refresh/back don't keep reopening the modal.
+    router.replace("/dashboard/talent", { scroll: false });
+  }, [searchParams, data, needsOnboarding, router]);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    setNeedsOnboarding(false);
+    try {
+      const res = await fetch("/api/dashboard/talent");
+      const json = await res.json();
+      if (res.status === 401) {
+        router.replace("/login?next=/dashboard/talent");
+        return;
+      }
+      if (res.status === 404 && json.code === "PROFILE_MISSING") {
+        setNeedsOnboarding(true);
+        setData(null);
+        setError(json.error || "Complete onboarding to open your dashboard.");
+        return;
+      }
+      if (!res.ok) throw new Error(json.error || "Failed to load dashboard");
+      const next = json as TalentDashboardData;
+      setData(next);
+      setLinkedinDraft(next.linkedinUrl || "");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load dashboard");
+      // Demo fixtures only when Supabase itself is not configured.
+      if (!isSupabaseConfigured()) {
+        setData(DEMO_TALENT_DASHBOARD);
+      } else {
+        setData(null);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [router]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  async function toggleStatus(nextChecked: boolean) {
+    if (!data) return;
+    const nextStatus: TalentAvailability = nextChecked
+      ? "actively_looking"
+      : "on_hold";
+    if (
+      nextStatus === "actively_looking" &&
+      !hasCompleteReferences(data.references)
+    ) {
+      setError(
+        `Complete all ${REQUIRED_VERIFIED_REFERENCES} references before turning Actively Looking on.`
+      );
+      return;
+    }
+    const previous = data.status;
+    setError(null);
+    setData({ ...data, status: nextStatus });
+    setStatusBusy(true);
+    try {
+      const res = await fetch("/api/dashboard/talent", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setData({ ...data, status: previous });
+        throw new Error(json.error || "Unable to update status");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to update status");
+    } finally {
+      setStatusBusy(false);
+    }
+  }
+
+  async function saveLinkedInUrl() {
+    if (!data) return;
+    setLinkedinBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/me/linkedin", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: linkedinDraft.trim() }),
+      });
+      const json = (await res.json()) as { error?: string; url?: string };
+      if (!res.ok) throw new Error(json.error || "Unable to save LinkedIn URL");
+      setData({ ...data, linkedinUrl: json.url || linkedinDraft.trim() });
+      if (json.url) setLinkedinDraft(json.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to save LinkedIn URL");
+    } finally {
+      setLinkedinBusy(false);
+    }
+  }
+
+  async function requestEmployerAccount() {
+    setEmployerRequestBusy(true);
+    setEmployerRequestMessage(null);
+    setError(null);
+    try {
+      const res = await fetch("/api/dashboard/talent/employer-request", {
+        method: "POST",
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || "Unable to request employer account");
+      }
+      if (json.alreadyExists) {
+        setEmployerRequestMessage(
+          "You already have an employer profile. Switch to the employer dashboard to view status."
+        );
+        return;
+      }
+      setEmployerRequestMessage(
+        "Employer profile created. Complete onboarding, then post a job opening."
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Unable to request employer account"
+      );
+    } finally {
+      setEmployerRequestBusy(false);
+    }
+  }
+
+  async function signOut() {
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    } catch {
+      // Ignore when Supabase is unconfigured.
+    }
+    router.replace("/login");
+  }
+
+  if (loading && !data) {
+    return (
+      <div className="flex min-h-[60svh] items-center justify-center text-sm text-[#5B616B]">
+        Loading dashboard…
+      </div>
+    );
+  }
+
+  if (needsOnboarding) {
+    return (
+      <div className="flex min-h-[60svh] flex-col items-center justify-center gap-4 px-5 text-center">
+        <p className="max-w-md text-sm text-[#5B616B]">
+          {error ||
+            "Finish talent onboarding to create your anonymous profile and invite references."}
+        </p>
+        <Link
+          href="/onboarding"
+          className="inline-flex h-11 items-center justify-center rounded-md bg-[#2B5B84] px-5 font-display text-xs font-semibold tracking-[0.14em] text-white uppercase"
+        >
+          Continue onboarding
+        </Link>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="flex min-h-[60svh] flex-col items-center justify-center gap-4 px-5 text-center">
+        <p className="text-sm text-destructive">
+          {error || "Unable to load dashboard"}
+        </p>
+        <Link
+          href="/login?next=/dashboard/talent"
+          className="text-sm font-medium text-[#2B5B84] underline underline-offset-2"
+        >
+          Log in again
+        </Link>
+      </div>
+    );
+  }
+
+  const referencesComplete = hasCompleteReferences(data.references);
+  const activelyLooking =
+    data.status === "actively_looking" && referencesComplete;
+  const canGoActive = referencesComplete;
+
+  return (
+    <div className="flex min-h-[100svh] flex-col bg-[#F7F6F3] text-[#2A2D34]">
+      <header className="border-b border-[#2B5B84]/10 bg-white/80 backdrop-blur">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-5 py-4 sm:px-8">
+          <Link href="/" className="flex items-center gap-2">
+            <BrandMark className="h-10 w-auto" />
+            <span className="font-display text-xs font-bold tracking-[0.16em] uppercase">
+              Talent Dashboard
+            </span>
+          </Link>
+          <div className="flex items-center gap-4">
+            <RoleSwitcher current="talent" />
+            <button
+              type="button"
+              onClick={() => void signOut()}
+              className="text-xs font-medium text-[#5B616B] hover:text-[#2B5B84] hover:underline"
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto grid w-full max-w-5xl flex-1 gap-6 px-5 py-8 sm:px-8 lg:grid-cols-[1.15fr_0.85fr]">
+        <div className="space-y-6">
+          <AnonymousTalentCard data={data} />
+
+          <section className="border border-[#2B5B84]/15 bg-white p-5 sm:p-6">
+            <p className="font-display text-[11px] font-semibold tracking-[0.22em] text-[#E87A5D] uppercase">
+              Availability
+            </p>
+            <h2 className="mt-2 font-display text-xl font-semibold text-[#2B5B84]">
+              Status
+            </h2>
+            <p className="mt-2 max-w-lg text-sm text-[#5B616B]">
+              {!canGoActive
+                ? `Your profile stays hidden until all ${REQUIRED_VERIFIED_REFERENCES} references are verified — then you can turn Actively Looking on.`
+                : activelyLooking
+                  ? "Your anonymous card is visible to matched employers."
+                  : "Your profile is hidden from all searches until you turn looking back on."}
+            </p>
+            {error && (
+              <p className="mt-2 text-sm text-destructive" role="alert">
+                {error}
+              </p>
+            )}
+
+            <div className="mt-5 flex flex-col gap-4 rounded-lg border border-[#2B5B84]/15 bg-[#F7F6F3] p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <span
+                  className={`font-display text-sm font-semibold ${
+                    !activelyLooking ? "text-[#E87A5D]" : "text-[#5B616B]"
+                  }`}
+                >
+                  On Hold (Snoozed)
+                </span>
+                <Switch
+                  checked={activelyLooking}
+                  disabled={statusBusy || (!canGoActive && !activelyLooking)}
+                  onCheckedChange={(checked) => void toggleStatus(checked)}
+                  aria-label="Toggle on hold versus actively looking"
+                  className="data-checked:bg-[#2B5B84] data-unchecked:bg-[#E87A5D]"
+                />
+                <span
+                  className={`font-display text-sm font-semibold ${
+                    activelyLooking ? "text-[#2B5B84]" : "text-[#5B616B]"
+                  }`}
+                >
+                  Actively Looking
+                </span>
+              </div>
+              {!activelyLooking && (
+                <div className="inline-flex items-center self-start rounded-md bg-[#E87A5D] px-2.5 py-1 font-display text-[10px] font-bold tracking-[0.18em] text-white uppercase">
+                  Hidden from searches
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+
+        <div className="space-y-6">
+          {inviteWarning && (
+            <div
+              role="alert"
+              className="border border-[#E87A5D]/40 bg-[#E87A5D]/10 px-4 py-3 text-sm text-[#2A2D34]"
+            >
+              {inviteWarning}
+            </div>
+          )}
+          <ReferenceStatusTracker
+            references={data.references}
+            onChanged={() => void load()}
+          />
+
+          <section className="border border-[#2B5B84]/15 bg-white p-5 sm:p-6">
+            <p className="font-display text-[11px] font-semibold tracking-[0.22em] text-[#E87A5D] uppercase">
+              Account
+            </p>
+            <div className="mt-3 space-y-2">
+              <p className="text-[11px] font-semibold tracking-[0.14em] text-[#5B616B] uppercase">
+                LinkedIn
+              </p>
+              {data.linkedinUrl ? (
+                <ReferrerLinkedInLink
+                  url={data.linkedinUrl}
+                  className="block text-sm break-all"
+                />
+              ) : (
+                <p className="text-sm text-[#5B616B]">
+                  LinkedIn sign-in does not include your public profile link.
+                  Paste it below so admins can open your profile.
+                </p>
+              )}
+              <input
+                {...urlTextInputProps}
+                value={linkedinDraft}
+                onChange={(e) => setLinkedinDraft(e.target.value)}
+                onBlur={() => {
+                  const completed = ensureAbsoluteHttpUrl(linkedinDraft);
+                  if (completed && completed !== linkedinDraft) {
+                    setLinkedinDraft(completed);
+                  }
+                }}
+                placeholder="https://www.linkedin.com/in/your-profile"
+                className="h-10 w-full rounded-md border border-[#2B5B84]/20 bg-white px-2.5 text-sm outline-none focus-visible:border-[#2B5B84] focus-visible:ring-2 focus-visible:ring-[#2B5B84]/20"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                disabled={
+                  linkedinBusy ||
+                  !linkedinDraft.trim() ||
+                  linkedinDraft.trim() === (data.linkedinUrl || "")
+                }
+                onClick={() => void saveLinkedInUrl()}
+                className="h-10 border-[#2B5B84]/25 text-[#2B5B84]"
+              >
+                {linkedinBusy ? "Saving…" : "Save LinkedIn URL"}
+              </Button>
+            </div>
+            <div className="mt-4 flex flex-col gap-3">
+              {!session.hasEmployerProfile ? (
+                <div className="rounded-md border border-[#2B5B84]/12 bg-[#F7F6F3] p-4">
+                  <p className="font-display text-[11px] font-semibold tracking-[0.18em] text-[#2B5B84] uppercase">
+                    Employer account
+                  </p>
+                  <p className="mt-2 text-sm text-[#5B616B]">
+                    Hiring on MatchLever too? Create an employer profile and post
+                    a job opening.
+                  </p>
+                  {employerRequestMessage && (
+                    <p className="mt-2 text-sm text-[#2B5B84]">
+                      {employerRequestMessage}
+                    </p>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={employerRequestBusy}
+                    className="mt-3 h-10 border-[#E87A5D] text-[#E87A5D]"
+                    onClick={() => void requestEmployerAccount()}
+                  >
+                    {employerRequestBusy
+                      ? "Submitting…"
+                      : "Request employer account"}
+                  </Button>
+                  <Button
+                    type="button"
+                    className="mt-1 h-9 px-0 text-[#2B5B84] hover:bg-transparent"
+                    variant="ghost"
+                    onClick={() => router.push("/employer/onboarding")}
+                  >
+                    Complete employer onboarding
+                  </Button>
+                  <Button
+                    type="button"
+                    className="mt-1 h-9 px-0 text-[#2B5B84] hover:bg-transparent"
+                    variant="ghost"
+                    onClick={() => router.push("/dashboard/employer/jobs/new")}
+                  >
+                    Post a job opening
+                  </Button>
+                </div>
+              ) : null}
+              <Button
+                type="button"
+                className="h-11 bg-[#2B5B84] text-white hover:bg-[#244e71]"
+                onClick={() => setEditOpen(true)}
+              >
+                Edit Profile
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 border-destructive/40 text-destructive"
+                onClick={() => setDeleteOpen(true)}
+              >
+                Delete Account
+              </Button>
+            </div>
+            {data.demo && (
+              <p className="mt-4 text-xs text-[#5B616B]">
+                Demo mode — connect Supabase auth to persist live profile changes.
+              </p>
+            )}
+            {error && <p className="mt-3 text-xs text-destructive">{error}</p>}
+          </section>
+        </div>
+      </main>
+
+      <EditProfileModal
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        data={data}
+        onSaved={(next) => {
+          setData((prev) => (prev ? { ...prev, ...next } : prev));
+          if (!data.demo) void load();
+        }}
+      />
+      <DeleteAccountDialog open={deleteOpen} onOpenChange={setDeleteOpen} />
+    </div>
+  );
+}

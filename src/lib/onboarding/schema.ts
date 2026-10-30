@@ -24,6 +24,35 @@ export const TIMEZONE_OPTIONS: TimezoneOption[] = [
   { value: "Australia/Sydney", label: "Sydney (UTC+10)", offsetMinutes: 600 },
 ];
 
+export const TIMEZONE_VALUES = TIMEZONE_OPTIONS.map((tz) => tz.value) as [
+  string,
+  ...string[],
+];
+
+export function findTimezoneOption(
+  timezone: string | null | undefined
+): TimezoneOption | undefined {
+  if (!timezone) return undefined;
+  return TIMEZONE_OPTIONS.find((tz) => tz.value === timezone);
+}
+
+export function timezoneOffsetMinutes(
+  timezone: string | null | undefined
+): number | null {
+  return findTimezoneOption(timezone)?.offsetMinutes ?? null;
+}
+
+/** Prefer IANA id; fall back to matching a known offset for legacy rows. */
+export function resolveTimezoneOption(
+  timezone: string | null | undefined,
+  offsetMinutes?: number | null
+): TimezoneOption | undefined {
+  const byId = findTimezoneOption(timezone);
+  if (byId) return byId;
+  if (offsetMinutes == null || Number.isNaN(offsetMinutes)) return undefined;
+  return TIMEZONE_OPTIONS.find((tz) => tz.offsetMinutes === offsetMinutes);
+}
+
 export const VISA_OPTIONS = [
   { value: "none", label: "No visa sponsorship needed" },
   { value: "us_h1b", label: "US — H-1B" },

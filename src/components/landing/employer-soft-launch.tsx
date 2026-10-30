@@ -1,0 +1,162 @@
+"use client";
+
+import Link from "next/link";
+import {
+  BadgeCheck,
+  CircleDollarSign,
+  ShieldCheck,
+  Sparkles,
+  UserCheck,
+  Workflow,
+} from "lucide-react";
+
+const VALUE_PROPS = [
+  {
+    icon: ShieldCheck,
+    title: "Pre-Validated Talent",
+    body: "Access top-tier talent with fully verified professional references before you ever review a profile.",
+  },
+  {
+    icon: BadgeCheck,
+    title: "Zero Noise Matching",
+    body: "Receive high-confidence matches only — never unvetted applicants flooding your pipeline.",
+  },
+  {
+    icon: CircleDollarSign,
+    title: "Pay-Per-Match Pricing",
+    body: "Pay only when you accept a match. Additional matches for that role are free until filled or set inactive.",
+  },
+  {
+    icon: Sparkles,
+    title: "First Match Free",
+    body: "New employer accounts receive their first accepted match 100% free.",
+  },
+] as const;
+
+const PROCESS_STEPS = [
+  {
+    step: "1",
+    title: "Talent verified via references",
+    body: "Professionals complete reference verification before entering the match pool.",
+  },
+  {
+    step: "2",
+    title: "Employer & job posting verified",
+    body: "We validate hiring teams and role requirements during employer onboarding.",
+  },
+  {
+    step: "3",
+    title: "High-match engine runs",
+    body: "MatchLever surfaces incognito profiles that meet your role signal — not volume.",
+  },
+  {
+    step: "4",
+    title: "Accept, unlock, hire",
+    body: "Accept an incognito profile, unlock the full resume, and the match fee applies (waived for your first match).",
+  },
+] as const;
+
+export function StreamlineHiringSection({ showCta = true }: { showCta?: boolean }) {
+  return (
+    <section className="border-y border-[#2B5B84]/10 bg-white py-16 sm:py-24">
+      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+        <div className="max-w-3xl">
+          <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+            <span className="text-[#E87A5D]">Why MatchLever?</span>{" "}
+            <span className="text-[#2B5B84]">
+              Streamline hiring with pre-validated talents
+            </span>
+          </h2>
+          <p className="mt-4 text-base leading-relaxed text-[#5B616B] sm:text-lg">
+            MatchLever is open for employers who want high-signal introductions —
+            not another applicant tracking firehose.
+          </p>
+            <p className="mt-3 text-sm text-[#5B616B]">
+              <span className="font-semibold text-[#2A2D34]">Employers</span>{" "}
+              include hiring managers, corporate recruiters, and employment
+              agencies that are actively seeking candidates.
+            </p>
+        </div>
+
+        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {VALUE_PROPS.map((item) => (
+            <div
+              key={item.title}
+              className="border border-[#2B5B84]/12 bg-[#F7F6F3] p-5"
+            >
+              <item.icon className="size-5 text-[#2B5B84]" aria-hidden />
+              <h3 className="mt-4 font-display text-sm font-semibold tracking-wide text-[#2A2D34] uppercase">
+                {item.title}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-[#5B616B]">
+                {item.body}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {showCta && (
+          <div className="mt-10 flex flex-wrap gap-3">
+            <Link
+              href="/employer/onboarding#employer-form"
+              className="inline-flex h-12 items-center justify-center rounded-md bg-[#E87A5D] px-8 font-display text-xs font-semibold tracking-[0.14em] text-white uppercase transition hover:bg-[#d66a4f]"
+            >
+              Create employer profile
+            </Link>
+            <Link
+              href="/dashboard/employer/jobs/new"
+              className="inline-flex h-12 items-center justify-center rounded-md border border-[#2B5B84]/25 px-8 font-display text-xs font-semibold tracking-[0.14em] text-[#2B5B84] uppercase transition hover:border-[#E87A5D] hover:text-[#E87A5D]"
+            >
+              Post a job opening
+            </Link>
+            <Link
+              href="/faq"
+              className="inline-flex h-12 items-center justify-center rounded-md border border-[#2B5B84]/25 px-8 font-display text-xs font-semibold tracking-[0.14em] text-[#2B5B84] uppercase transition hover:border-[#E87A5D] hover:text-[#E87A5D]"
+            >
+              Read the FAQ
+            </Link>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+export function HowMatchLeverWorksSection() {
+  return (
+    <section className="border-y border-[#2B5B84]/10 bg-[#F7F6F3] py-8 sm:py-10">
+      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+        <div className="flex items-center gap-2">
+          <Workflow className="size-5 text-[#E87A5D]" aria-hidden />
+          <h2 className="font-display text-lg font-semibold text-[#2B5B84] sm:text-xl">
+            How MatchLever Works
+          </h2>
+        </div>
+        <ol className="mt-4 grid gap-4 lg:grid-cols-4">
+          {PROCESS_STEPS.map((step, index) => (
+            <li
+              key={step.step}
+              className="relative border border-[#2B5B84]/12 p-5"
+            >
+              <span className="inline-flex size-8 items-center justify-center rounded-full bg-[#2B5B84] font-display text-xs font-bold text-white">
+                {step.step}
+              </span>
+              <h3 className="mt-4 font-display text-lg font-semibold leading-snug text-[#2A2D34] sm:text-xl">
+                {step.title}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-[#5B616B]">
+                {step.body}
+              </p>
+              {index < PROCESS_STEPS.length - 1 && (
+                <UserCheck
+                  aria-hidden
+                  className="absolute top-1/2 -right-3 hidden size-5 -translate-y-1/2 text-[#E87A5D] lg:block"
+                />
+              )}
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  );
+}

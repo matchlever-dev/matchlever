@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { PortalShell } from "@/components/admin/portal-shell";
+import { AdminPortalShell } from "@/components/admin/admin-portal-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -28,12 +28,6 @@ import {
   type ContactStatus,
 } from "@/lib/contact/schema";
 import { cn } from "@/lib/utils";
-
-const ADMIN_LINKS = [
-  { href: "/admin/users", label: "Users" },
-  { href: "/admin/candidates", label: "Candidates" },
-  { href: "/admin/contact", label: "Contact" },
-];
 
 function statusBadgeClass(status: ContactStatus) {
   if (status === "New") return "bg-[#2B5B84]/12 text-[#2B5B84]";
@@ -139,7 +133,7 @@ export function AdminContactPage() {
   }
 
   return (
-    <PortalShell title="Admin Portal" links={ADMIN_LINKS}>
+    <AdminPortalShell title="Contact">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="font-display text-[11px] font-semibold tracking-[0.22em] text-[#E87A5D] uppercase">
@@ -320,6 +314,6 @@ export function AdminContactPage() {
           )}
         </aside>
       </div>
-    </PortalShell>
+    </AdminPortalShell>
   );
 }

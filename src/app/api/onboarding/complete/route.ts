@@ -1,25 +1,34 @@
 import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 
+import {
+  talentNameForInvite,
+  displayNameFromAuthUser,
+} from "@/lib/auth/display-name";
+import {
+  linkedinUrlFromAuthUser,
+  normalizePublicLinkedInProfileUrl,
+} from "@/lib/auth/linkedin-url";
 import { sendReferenceInviteEmail } from "@/lib/email/resend";
 import { onboardingFormSchema, resolveOnboardingCity } from "@/lib/onboarding/form-schema";
-import { TIMEZONE_OPTIONS } from "@/lib/onboarding/schema";
+import {
+  toPostgresStringArray,
+  toPostgresText,
+  toPostgresTextOrNull,
+} from "@/lib/postgres-text";
+import { timezoneOffsetMinutes } from "@/lib/onboarding/schema";
 import {
   REFERRER_LINKEDIN_INVALID_MESSAGE,
   validateReferrerLinkedIn,
 } from "@/lib/reference/linkedin-validation";
+import { SESSION_EXPIRED_MESSAGE } from "@/lib/auth/stay-signed-in";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-function timezoneOffsetMinutes(timezone: string): number | null {
-  return (
-    TIMEZONE_OPTIONS.find((tz) => tz.value === timezone)?.offsetMinutes ?? null
-  );
-}
+export const maxDuration = 60;
 
 function normalizeTime(value: string): string {
   // Accept "HH:MM" or "HH:MM:SS" → Postgres time
@@ -55,42 +64,41 @@ export async function POST(request: Request) {
       );
     }
 
-    const validatedRefs: {
-      email: string;
-      linkedInUrl: string;
-      relationship: "manager" | "peer";
-      flags: string[];
-    }[] = [];
+    const linkedInResults = await Promise.all(
+      data.references.map((ref) => validateReferrerLinkedIn(ref.linkedInUrl))
+    );
+    const failedIndex = linkedInResults.findIndex((result) => !result.valid);
+    if (failedIndex >= 0) {
+      const failed = linkedInResults[failedIndex];
+      console.info("[onboarding linkedin invalid]", {
+        index: failedIndex,
+        email: data.references[failedIndex]?.email,
+        mode: failed?.mode,
+        checks: failed?.checks,
+        flags: failed?.flags,
+      });
+      return NextResponse.json(
+        {
+          error: REFERRER_LINKEDIN_INVALID_MESSAGE,
+          referenceIndex: failedIndex,
+        },
+        { status: 400 }
+      );
+    }
 
-    for (const [index, ref] of data.references.entries()) {
-      const validation = await validateReferrerLinkedIn(ref.linkedInUrl);
-      if (!validation.valid) {
-        console.info("[onboarding linkedin invalid]", {
-          index,
-          email: ref.email,
-          mode: validation.mode,
-          checks: validation.checks,
-          flags: validation.flags,
-        });
-        return NextResponse.json(
-          {
-            error: REFERRER_LINKEDIN_INVALID_MESSAGE,
-            referenceIndex: index,
-          },
-          { status: 400 }
-        );
-      }
-      validatedRefs.push({
+    const validatedRefs = data.references.map((ref, index) => {
+      const validation = linkedInResults[index]!;
+      return {
         email: ref.email.trim().toLowerCase(),
         linkedInUrl: validation.normalizedUrl,
         relationship: ref.relationship,
         flags: [
-          "seeker_provided_linkedin",
+          "talent_provided_linkedin",
           `validation_mode:${validation.mode}`,
           ...validation.flags,
         ],
-      });
-    }
+      };
+    });
 
     if (!isSupabaseConfigured()) {
       console.info("[onboarding/complete demo]", {
@@ -117,23 +125,20 @@ export async function POST(request: Request) {
 
     if (userError || !user) {
       return NextResponse.json(
-        { error: "Sign in with LinkedIn before completing onboarding." },
+        { error: SESSION_EXPIRED_MESSAGE },
         { status: 401 }
       );
     }
 
     // Ensure app profile row exists (auth trigger normally creates it).
-    const fullName =
-      (typeof user.user_metadata?.full_name === "string"
-        ? user.user_metadata.full_name
-        : null) ||
-      (typeof user.user_metadata?.name === "string"
-        ? user.user_metadata.name
-        : null);
+    const fullName = displayNameFromAuthUser(user);
     const avatarUrl =
       typeof user.user_metadata?.avatar_url === "string"
         ? user.user_metadata.avatar_url
         : null;
+    const linkedInUrl =
+      normalizePublicLinkedInProfileUrl(data.talentLinkedInUrl) ||
+      linkedinUrlFromAuthUser(user);
 
     const { data: existingUserProfile } = await supabase
       .from("user_profiles")
@@ -148,7 +153,8 @@ export async function POST(request: Request) {
           email: user.email ?? null,
           full_name: fullName,
           avatar_url: avatarUrl,
-          role: "candidate",
+          role: "talent",
+          ...(linkedInUrl ? { linkedin_url: linkedInUrl } : {}),
         })
         .eq("id", user.id);
       if (profileUpdateError) {
@@ -176,7 +182,8 @@ export async function POST(request: Request) {
           email: user.email ?? null,
           full_name: fullName,
           avatar_url: avatarUrl,
-          role: "candidate",
+          role: "talent",
+          linkedin_url: linkedInUrl,
         });
       if (profileInsertError) {
         console.error("[onboarding user_profiles insert]", profileInsertError.message);
@@ -194,15 +201,19 @@ export async function POST(request: Request) {
       orderedModes.includes("hybrid") || orderedModes.includes("onsite");
     const resolvedCity = resolveOnboardingCity(data);
 
-    const candidatePayload = {
+    const talentPayload = {
       user_id: user.id,
-      headline: data.anonymousTitle?.trim() || "MatchLever Candidate",
-      sanitized_summary: data.sanitizedSummary?.trim() || null,
-      verified_skills: data.verifiedSkills,
-      suggested_taglines: data.suggestedTaglines.map((t) => t.trim()),
-      selected_tagline: data.selectedTagline.trim(),
-      global_city: resolvedCity,
-      global_country: data.globalCountry,
+      headline:
+        toPostgresText(data.anonymousTitle?.trim() || "") ||
+        "MatchLever Talent",
+      sanitized_summary: toPostgresTextOrNull(data.sanitizedSummary),
+      raw_resume_text: toPostgresTextOrNull(data.rawResumeText)?.slice(0, 60_000) ?? null,
+      verified_skills: toPostgresStringArray(data.verifiedSkills),
+      suggested_taglines: toPostgresStringArray(data.suggestedTaglines),
+      selected_tagline: toPostgresText(data.selectedTagline.trim()),
+      global_city: toPostgresText(resolvedCity),
+      global_country: toPostgresText(data.globalCountry),
+      timezone: toPostgresText(data.timezone),
       timezone_offset: timezoneOffsetMinutes(data.timezone),
       work_hours_start: normalizeTime(data.workHoursStart),
       work_hours_end: normalizeTime(data.workHoursEnd),
@@ -211,54 +222,79 @@ export async function POST(request: Request) {
       max_commute_miles: needsLocal ? data.maxCommuteMiles : null,
       open_to_relocation: needsLocal ? data.openToRelocation : null,
       min_salary: data.minSalary,
-      visa_status: data.visaStatus,
+      visa_status: toPostgresText(data.visaStatus),
       years_experience: data.yearsExperience ?? null,
-      seeker_tos_accepted_at: new Date().toISOString(),
+      talent_tos_accepted_at: new Date().toISOString(),
       // Hidden until all three references are verified.
       status: "on_hold",
     };
 
-    const { data: existingCandidate } = await supabase
-      .from("candidate_profiles")
+    const { data: existingTalent } = await supabase
+      .from("talent_profiles")
       .select("id")
       .eq("user_id", user.id)
       .maybeSingle();
 
-    let candidateId = existingCandidate?.id ?? null;
+    let talentId = existingTalent?.id ?? null;
 
-    if (candidateId) {
-      const { error: updateError } = await supabase
-        .from("candidate_profiles")
-        .update(candidatePayload)
-        .eq("id", candidateId);
+    if (talentId) {
+      let { error: updateError } = await supabase
+        .from("talent_profiles")
+        .update(talentPayload)
+        .eq("id", talentId);
+      if (updateError?.message?.includes("timezone")) {
+        const { timezone: _timezone, ...withoutTimezone } = talentPayload;
+        ({ error: updateError } = await supabase
+          .from("talent_profiles")
+          .update(withoutTimezone)
+          .eq("id", talentId));
+      }
       if (updateError) {
-        console.error("[onboarding candidate update]", updateError.message);
+        console.error(
+          "[onboarding talent update]",
+          updateError.message,
+          updateError.code,
+          updateError.details
+        );
         return NextResponse.json(
-          { error: "Unable to update candidate profile" },
+          { error: "Unable to update talent profile" },
           { status: 500 }
         );
       }
     } else {
-      const { data: inserted, error: insertError } = await supabase
-        .from("candidate_profiles")
-        .insert(candidatePayload)
+      let { data: inserted, error: insertError } = await supabase
+        .from("talent_profiles")
+        .insert(talentPayload)
         .select("id")
         .single();
+      if (insertError?.message?.includes("timezone")) {
+        const { timezone: _timezone, ...withoutTimezone } = talentPayload;
+        ({ data: inserted, error: insertError } = await supabase
+          .from("talent_profiles")
+          .insert(withoutTimezone)
+          .select("id")
+          .single());
+      }
       if (insertError || !inserted) {
-        console.error("[onboarding candidate insert]", insertError?.message);
+        console.error(
+          "[onboarding talent insert]",
+          insertError?.message,
+          insertError?.code,
+          insertError?.details
+        );
         return NextResponse.json(
-          { error: "Unable to create candidate profile" },
+          { error: "Unable to create talent profile" },
           { status: 500 }
         );
       }
-      candidateId = inserted.id;
+      talentId = inserted.id;
     }
 
     // Replace reference invites on (re)completion.
     const { error: deleteRefsError } = await supabase
-      .from("candidate_references")
+      .from("talent_references")
       .delete()
-      .eq("candidate_profile_id", candidateId);
+      .eq("talent_profile_id", talentId);
 
     if (deleteRefsError) {
       console.error("[onboarding refs delete]", deleteRefsError.message);
@@ -269,7 +305,7 @@ export async function POST(request: Request) {
     }
 
     const referenceRows = validatedRefs.map((ref) => ({
-      candidate_profile_id: candidateId!,
+      talent_profile_id: talentId!,
       reference_email: ref.email,
       reference_linkedin_url: ref.linkedInUrl,
       relationship: ref.relationship,
@@ -279,7 +315,7 @@ export async function POST(request: Request) {
     }));
 
     const { data: insertedRefs, error: insertRefsError } = await supabase
-      .from("candidate_references")
+      .from("talent_references")
       .insert(referenceRows)
       .select("id, reference_email, verification_token");
 
@@ -291,27 +327,31 @@ export async function POST(request: Request) {
       );
     }
 
-    const candidateTitle =
-      data.anonymousTitle?.trim() || "a MatchLever candidate";
+    const talentTitle =
+      data.anonymousTitle?.trim() || "a MatchLever talent";
+    const talentName = talentNameForInvite(user, fullName);
 
     const emailResults: {
       email: string;
       demo: boolean;
       inviteUrl: string;
       error?: string;
+      skipped?: boolean;
     }[] = [];
 
     for (const ref of insertedRefs) {
       try {
         const sent = await sendReferenceInviteEmail({
           to: ref.reference_email,
-          candidateTitle,
+          talentName,
+          talentTitle,
           token: ref.verification_token,
         });
         emailResults.push({
           email: ref.reference_email,
           demo: sent.demo,
           inviteUrl: sent.inviteUrl,
+          skipped: sent.skipped,
         });
       } catch (err) {
         const message =
@@ -328,12 +368,15 @@ export async function POST(request: Request) {
 
     const failedEmails = emailResults.filter((r) => r.error);
     const demoEmails = emailResults.filter((r) => r.demo && !r.error);
+    const skippedEmails = emailResults.filter((r) => r.skipped);
     const firstError = failedEmails[0]?.error;
     const warning =
       failedEmails.length > 0
         ? failedEmails.length === insertedRefs.length
           ? `Reference emails failed to send${firstError ? `: ${firstError}` : ""}. You can resend from the dashboard. Check RESEND_FROM_EMAIL uses a verified Resend domain.`
           : "Some reference emails failed — you can resend from the dashboard."
+        : skippedEmails.length > 0
+          ? "Some referrers have unsubscribed from automated MatchLever emails, so we didn't email them."
         : demoEmails.length > 0
           ? "Reference invites were saved but not emailed — RESEND_API_KEY is missing. Add it and use Resend Link on the dashboard."
           : undefined;
@@ -341,7 +384,7 @@ export async function POST(request: Request) {
     // Profile + invites are already saved; never block onboarding completion on email delivery.
     return NextResponse.json({
       ok: true,
-      candidateId,
+      talentId,
       referencesCreated: insertedRefs.length,
       emailsSent: emailResults.filter((r) => !r.error && !r.demo).length,
       emailResults,

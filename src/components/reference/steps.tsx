@@ -4,36 +4,25 @@ import { Controller, useFormContext } from "react-hook-form";
 
 import type { ReferenceFormValues } from "@/lib/reference/schema";
 import { groupSuperpowersByCategory } from "@/lib/reference/taxonomy";
-import { ReferrerCandidateCta } from "@/components/reference/referrer-candidate-cta";
+import { ensureAbsoluteHttpUrl, urlTextInputProps } from "@/lib/url";
+import { ReferrerTalentCta } from "@/components/reference/referrer-talent-cta";
+import { RelationshipSelect } from "@/components/reference/relationship-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 
-const RELATIONSHIP_OPTIONS = [
-  { value: "manager", label: "Former manager" },
-  { value: "skip_level", label: "Skip-level / director" },
-  { value: "peer", label: "Peer collaborator" },
-  { value: "other", label: "Other" },
-] as const;
-
 export function StepIdentity({
-  candidateTitle,
+  talentTitle,
   lockedLinkedInUrl,
 }: {
-  candidateTitle?: string;
+  talentTitle?: string;
   lockedLinkedInUrl?: string | null;
 }) {
   const {
     register,
     control,
+    setValue,
     formState: { errors },
   } = useFormContext<ReferenceFormValues>();
 
@@ -49,9 +38,9 @@ export function StepIdentity({
         <p className="mt-2 text-sm leading-relaxed text-[#5B616B]">
           You&apos;re verifying{" "}
           <span className="font-medium text-[#2A2D34]">
-            {candidateTitle || "a MatchLever candidate"}
+            {talentTitle || "a MatchLever talent"}
           </span>
-          . LinkedIn must match the profile the candidate provided.
+          . LinkedIn must match the profile the talent provided.
         </p>
       </div>
 
@@ -70,28 +59,16 @@ export function StepIdentity({
       </div>
 
       <div className="grid gap-2">
-        <Label>Relationship to candidate</Label>
+        <Label>Relationship to talent</Label>
         <Controller
           control={control}
           name="relationship"
           render={({ field }) => (
-            <Select
+            <RelationshipSelect
               value={field.value}
-              onValueChange={(value) =>
-                field.onChange(value as ReferenceFormValues["relationship"])
-              }
-            >
-              <SelectTrigger className="h-12 w-full min-w-0 text-base">
-                <SelectValue placeholder="Select relationship" />
-              </SelectTrigger>
-              <SelectContent>
-                {RELATIONSHIP_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onValueChange={field.onChange}
+              className="h-12 text-base"
+            />
           )}
         />
         {errors.relationship && (
@@ -103,19 +80,23 @@ export function StepIdentity({
         <Label htmlFor="linkedInUrl">Full LinkedIn profile URL</Label>
         <Input
           id="linkedInUrl"
-          type="url"
-          inputMode="url"
-          autoCapitalize="off"
-          autoCorrect="off"
+          {...urlTextInputProps}
           placeholder="https://linkedin.com/in/your-profile"
           className="h-12 text-base"
           readOnly={Boolean(lockedLinkedInUrl)}
-          {...register("linkedInUrl")}
+          {...register("linkedInUrl", {
+            onBlur: (event) => {
+              const completed = ensureAbsoluteHttpUrl(event.target.value);
+              if (completed && completed !== event.target.value) {
+                setValue("linkedInUrl", completed, { shouldValidate: true });
+              }
+            },
+          })}
         />
         <p className="text-xs text-[#5B616B]">
           {lockedLinkedInUrl
-            ? "Locked to the LinkedIn URL the candidate submitted for you."
-            : "Must be a profile URL like https://linkedin.com/in/..."}
+            ? "Locked to the LinkedIn URL the talent submitted for you."
+            : "A profile URL like linkedin.com/in/... is enough — https:// is added if you leave it off."}
         </p>
         {errors.linkedInUrl && (
           <p className="text-xs text-destructive">{errors.linkedInUrl.message}</p>
@@ -294,7 +275,7 @@ export function StepEndorsement() {
           One sentence that matters
         </h2>
         <p className="mt-2 text-sm text-[#5B616B]">
-          Write a single high-signal endorsement recruiters can trust.
+          Write a single high-signal endorsement employers can trust.
         </p>
       </div>
 
@@ -317,7 +298,7 @@ export function StepEndorsement() {
         )}
       </div>
 
-      <ReferrerCandidateCta />
+      <ReferrerTalentCta />
     </div>
   );
 }

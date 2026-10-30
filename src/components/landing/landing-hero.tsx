@@ -4,18 +4,18 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-import { BrandMark, BrandWordmark } from "@/components/brand/brand-mark";
-
-const HERO_TAGLINES = [
-  "Upload your profile, find your match",
-  "Where Tech Talent Meets Tech Innovators",
-  "Your Lever into the Tech Industry",
-] as const;
+import { useNavSession } from "@/components/brand/nav-session-provider";
+import { DEFAULT_HERO_TAGLINES } from "@/lib/marketing/site-copy";
 
 const TAGLINE_INTERVAL_MS = 3000;
 
-function RotatingHeroTagline() {
+function RotatingHeroTagline({
+  taglines,
+}: {
+  taglines: [string, string, string];
+}) {
   const [index, setIndex] = useState(0);
+  const lines = taglines.length === 3 ? taglines : [...DEFAULT_HERO_TAGLINES];
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia(
@@ -24,34 +24,42 @@ function RotatingHeroTagline() {
     if (prefersReducedMotion) return;
 
     const id = window.setInterval(() => {
-      setIndex((current) => (current + 1) % HERO_TAGLINES.length);
+      setIndex((current) => (current + 1) % lines.length);
     }, TAGLINE_INTERVAL_MS);
     return () => window.clearInterval(id);
-  }, []);
+  }, [lines.length]);
 
   return (
-    <h1 className="max-w-xl font-display text-[1.5rem] font-semibold leading-[1.2] tracking-tight text-[#2A2D34] sm:max-w-2xl sm:text-[1.75rem] md:text-[2rem]">
-      <span className="sr-only">{HERO_TAGLINES.join(". ")}</span>
+    <h1 className="max-w-3xl font-display text-lg font-semibold tracking-tight text-[#2A2D34] sm:text-xl md:text-2xl">
+      <span className="sr-only">{lines.join(". ")}</span>
       <AnimatePresence mode="wait" initial={false}>
         <motion.span
-          key={HERO_TAGLINES[index]}
+          key={lines[index]}
           aria-hidden
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
           className="block"
         >
-          {HERO_TAGLINES[index]}
+          {lines[index]}
         </motion.span>
       </AnimatePresence>
     </h1>
   );
 }
 
-export function LandingHero() {
+export function LandingHero({
+  heroTaglines = [...DEFAULT_HERO_TAGLINES],
+}: {
+  heroTaglines?: [string, string, string];
+}) {
+  const { session, ready } = useNavSession();
+  const isSignedIn = ready && session.authenticated;
+  const dashboardHref = session.dashboardHref || "/dashboard/employer";
+
   return (
-    <section className="relative isolate min-h-[100svh] overflow-hidden bg-[#F7F6F3]">
+    <section className="relative isolate overflow-hidden bg-[#F7F6F3]">
       <div
         aria-hidden
         className="absolute inset-0 bg-[radial-gradient(ellipse_at_15%_20%,rgba(43,91,132,0.12),transparent_50%),radial-gradient(ellipse_at_85%_15%,rgba(232,122,93,0.14),transparent_45%),linear-gradient(180deg,#F7F6F3_0%,#F3F1EC_100%)]"
@@ -85,50 +93,32 @@ export function LandingHero() {
         />
       </svg>
 
-      <div className="relative mx-auto flex min-h-[100svh] w-full max-w-6xl flex-col justify-start px-5 pb-16 pt-10 sm:px-8 sm:pb-20 sm:pt-14">
-        <div className="flex flex-col items-start gap-5 sm:gap-6">
-          <motion.div
-            initial={false}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:gap-5"
-          >
-            <BrandMark
-              priority
-              className="h-20 w-auto sm:h-28 md:h-32"
-            />
-            <BrandWordmark className="pb-0.5 sm:pb-1" />
-          </motion.div>
+      <div className="relative mx-auto flex w-full max-w-6xl flex-col justify-start px-5 pb-5 pt-4 sm:px-8 sm:pb-6 sm:pt-5">
+        <div className="flex flex-col items-start gap-2 sm:gap-3">
+          <RotatingHeroTagline taglines={heroTaglines} />
 
-          <div className="h-px w-16 bg-gradient-to-r from-[#2B5B84] to-[#E87A5D] sm:w-24" />
-
-          <RotatingHeroTagline />
-
-          <p className="max-w-lg text-base leading-relaxed text-[#5B616B] sm:text-xl">
-            Connect with vetted talents at no cost until a match is made.
-          </p>
-
-          <div className="flex w-full flex-col gap-3 pt-1 sm:w-auto sm:flex-row sm:flex-wrap">
-            <Link
-              href="/onboarding"
-              className="inline-flex h-12 w-full items-center justify-center rounded-md bg-[#2B5B84] px-6 font-display text-xs font-semibold tracking-[0.14em] text-white uppercase transition hover:bg-[#244e71] sm:w-auto"
-            >
-              Start as a Candidate
-            </Link>
-            <a
-              href="#featured"
-              className="inline-flex h-12 w-full items-center justify-center rounded-md border border-[#2B5B84]/25 bg-transparent px-6 font-display text-xs font-semibold tracking-[0.14em] text-[#2B5B84] uppercase transition hover:border-[#E87A5D] hover:text-[#E87A5D] sm:w-auto"
-            >
-              Browse Talent
-            </a>
-          </div>
-          <p className="text-sm text-[#5B616B]">
-            Already joined?{" "}
-            <Link
-              href="/login"
-              className="font-semibold text-[#2B5B84] underline underline-offset-2"
-            >
-              Log in to your dashboard
-            </Link>
+          <p className="text-xs text-[#5B616B] sm:text-sm">
+            {!ready ? null : isSignedIn ? (
+              <>
+                Welcome back.{" "}
+                <Link
+                  href={dashboardHref}
+                  className="font-semibold text-[#2B5B84] underline underline-offset-2"
+                >
+                  Open your dashboard
+                </Link>
+              </>
+            ) : (
+              <>
+                Already joined?{" "}
+                <Link
+                  href="/login"
+                  className="font-semibold text-[#2B5B84] underline underline-offset-2"
+                >
+                  Log in to your dashboard
+                </Link>
+              </>
+            )}
           </p>
         </div>
       </div>

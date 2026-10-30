@@ -4,7 +4,7 @@ import { ReferenceVerificationWizard } from "@/components/reference/verification
 
 export const metadata: Metadata = {
   title: "Verify Reference · MatchLever",
-  description: "Confirm a MatchLever candidate reference with verified signal.",
+  description: "Confirm a MatchLever talent reference with verified signal.",
 };
 
 type PageProps = {

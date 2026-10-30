@@ -1,3 +1,5 @@
+import { REQUIRED_VERIFIED_REFERENCES } from "@/lib/dashboard/talent";
+
 /** Shared demo payloads + helpers for admin / superuser portals. */
 
 export type AdminUserRow = {
@@ -13,6 +15,8 @@ export type AdminUserRow = {
 export type AdminReferenceRow = {
   id: string;
   reference_email: string;
+  reference_name: string | null;
+  relationship: string | null;
   reference_linkedin_url: string | null;
   authenticity_score: number | null;
   authenticity_flags: string[];
@@ -20,26 +24,137 @@ export type AdminReferenceRow = {
   lowTrust: boolean;
 };
 
-export type AdminCandidateRow = {
+export type AdminTalentRow = {
   id: string;
   user_id: string;
+  /** False when the user has logged in but never finished creating a talent_profiles row. */
+  has_talent_profile: boolean;
   headline: string | null;
   status: string;
   global_city: string | null;
   global_country: string | null;
+  timezone: string | null;
   timezone_offset: number | null;
   work_hours_start: string | null;
   work_hours_end: string | null;
+  location_modes: string[];
   raw_resume_text: string | null;
   sanitized_summary: string | null;
   email: string | null;
   full_name: string | null;
+  linkedin_url: string | null;
+  updated_at: string;
+  /** Mean authenticity score across scored references; null if none scored. */
+  avg_authenticity_score: number | null;
   references: AdminReferenceRow[];
+  missing: {
+    resume: boolean;
+    profile: boolean;
+    references: boolean;
+  };
 };
+
+export type AdminEmployerRow = {
+  id: string;
+  user_id: string;
+  email: string | null;
+  full_name: string | null;
+  linkedin_url: string | null;
+  company_name: string;
+  title: string | null;
+  status: string;
+  user_role: string | null;
+  company_website: string | null;
+  industry: string | null;
+  company_size: string | null;
+  estimated_roles: number | null;
+  hiring_departments: string[];
+  work_arrangement: string | null;
+  first_match_free_claimed: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export function computeTalentMissing(input: {
+  has_talent_profile: boolean;
+  headline: string | null;
+  global_city: string | null;
+  global_country: string | null;
+  work_hours_start: string | null;
+  work_hours_end: string | null;
+  raw_resume_text: string | null;
+  sanitized_summary: string | null;
+  references: Pick<AdminReferenceRow, "status">[];
+}): AdminTalentRow["missing"] {
+  const hasResume = Boolean(
+    input.raw_resume_text?.trim() || input.sanitized_summary?.trim()
+  );
+  const hasProfileInfo =
+    input.has_talent_profile &&
+    Boolean(input.headline?.trim()) &&
+    Boolean(input.global_city?.trim()) &&
+    Boolean(input.global_country?.trim()) &&
+    Boolean(input.work_hours_start) &&
+    Boolean(input.work_hours_end);
+  const verifiedRefs = input.references.filter(
+    (r) => r.status === "verified"
+  ).length;
+  return {
+    resume: !hasResume,
+    profile: !hasProfileInfo,
+    references: verifiedRefs < REQUIRED_VERIFIED_REFERENCES,
+  };
+}
+
+/** Privilege rank for admin Users "Score" sort: superuser > admin > none. */
+export function userPrivilegeScore(user: Pick<AdminUserRow, "is_admin" | "is_superuser">): number {
+  if (user.is_superuser) return 2;
+  if (user.is_admin) return 1;
+  return 0;
+}
+
+/** Display-only account types for the admin Users table. A user can be Talent and Employer. */
+export function userAccountTypeLabels(role: string): {
+  talent: string | null;
+  employer: string | null;
+} {
+  switch (role.trim().toLowerCase()) {
+    case "both":
+      return { talent: "Talent", employer: "Employer" };
+    case "talent":
+      return { talent: "Talent", employer: null };
+    case "employer":
+      return { talent: null, employer: "Employer" };
+    case "staff":
+      return { talent: "Staff", employer: null };
+    default:
+      return { talent: role || null, employer: null };
+  }
+}
+
+export function userMatchesAccountTypeFilter(
+  role: string,
+  filter: string
+): boolean {
+  if (filter === "talent") return role === "talent" || role === "both";
+  if (filter === "employer") return role === "employer" || role === "both";
+  if (filter === "staff") return role === "staff";
+  return true;
+}
+
+export function averageAuthenticityScore(
+  references: Pick<AdminReferenceRow, "authenticity_score">[]
+): number | null {
+  const scores = references
+    .map((r) => r.authenticity_score)
+    .filter((s): s is number => typeof s === "number" && !Number.isNaN(s));
+  if (scores.length === 0) return null;
+  return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+}
 
 export type DirectoryPerson = {
   id: string;
-  kind: "seeker" | "hirer";
+  kind: "talent" | "employer";
   email: string | null;
   full_name: string | null;
   title: string | null;
@@ -47,6 +162,8 @@ export type DirectoryPerson = {
   location: string | null;
   status: string | null;
   created_at: string;
+  /** Mean authenticity score for talent; null for employers / unscored. */
+  avg_authenticity_score: number | null;
 };
 
 export type ActiveJobPosting = {
@@ -55,10 +172,10 @@ export type ActiveJobPosting = {
   company_name: string | null;
   status: string;
   kanban_columns: string[];
-  hirer_name: string | null;
+  employer_name: string | null;
 };
 
-export type ActiveCandidateOption = {
+export type ActiveTalentOption = {
   id: string;
   headline: string | null;
   email: string | null;
@@ -89,18 +206,18 @@ export const DEMO_ADMIN_USERS: AdminUserRow[] = [
   },
   {
     id: "user-2",
-    email: "sam.seeker@example.com",
+    email: "sam.talent@example.com",
     full_name: "Sam Patel",
-    role: "seeker",
+    role: "talent",
     is_admin: false,
     is_superuser: false,
     created_at: "2026-06-12T15:30:00.000Z",
   },
   {
     id: "user-3",
-    email: "jordan.hirer@acme.io",
+    email: "jordan.employer@acme.io",
     full_name: "Jordan Lee",
-    role: "hirer",
+    role: "employer",
     is_admin: false,
     is_superuser: false,
     created_at: "2026-06-18T09:10:00.000Z",
@@ -114,29 +231,55 @@ export const DEMO_ADMIN_USERS: AdminUserRow[] = [
     is_superuser: false,
     created_at: "2026-07-01T11:00:00.000Z",
   },
+  {
+    id: "user-5",
+    email: "super@matchlever.demo",
+    full_name: "Riley Super",
+    role: "staff",
+    is_admin: false,
+    is_superuser: true,
+    created_at: "2026-07-08T08:45:00.000Z",
+  },
+  {
+    id: "user-8",
+    email: "morgan.both@example.com",
+    full_name: "Morgan Ellis",
+    role: "both",
+    is_admin: false,
+    is_superuser: false,
+    created_at: "2026-07-15T10:20:00.000Z",
+  },
 ];
 
-export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
+export const DEMO_ADMIN_TALENT: AdminTalentRow[] = [
   {
     id: "cand-1",
     user_id: "user-2",
+    has_talent_profile: true,
     headline: "Staff Platform Engineer",
     status: "actively_looking",
     global_city: "Austin",
     global_country: "United States",
+    timezone: "America/New_York",
     timezone_offset: -300,
     work_hours_start: "09:00:00",
     work_hours_end: "17:00:00",
+    location_modes: ["remote", "hybrid"],
     raw_resume_text:
-      "Sam Patel\nsam.seeker@example.com\n+1 512-555-0199\nBuilt Kafka pipelines at Acme…",
+      "Sam Patel\nsam.talent@example.com\n+1 512-555-0199\nBuilt Kafka pipelines at Acme…",
     sanitized_summary:
       "Staff platform engineer who cut p99 latency 62% on a multi-region event bus.",
-    email: "sam.seeker@example.com",
+    email: "sam.talent@example.com",
     full_name: "Sam Patel",
+    linkedin_url: "https://www.linkedin.com/in/sam-patel",
+    updated_at: "2026-07-20T16:00:00.000Z",
+    avg_authenticity_score: 65,
     references: [
       {
         id: "ref-a",
         reference_email: "manager.one@example.com",
+        reference_name: "Jordan Lee",
+        relationship: "manager",
         reference_linkedin_url: "https://linkedin.com/in/manager-one",
         authenticity_score: 88,
         authenticity_flags: [],
@@ -146,6 +289,8 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
       {
         id: "ref-b",
         reference_email: "peer.two@example.com",
+        reference_name: null,
+        relationship: "peer",
         reference_linkedin_url: "https://linkedin.com/in/peer-two",
         authenticity_score: 41,
         authenticity_flags: ["linkedin_mismatch", "tenure_gap"],
@@ -153,26 +298,35 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
         lowTrust: true,
       },
     ],
+    missing: { resume: false, profile: false, references: true },
   },
   {
     id: "cand-2",
     user_id: "user-5",
+    has_talent_profile: true,
     headline: "Senior Backend Engineer",
     status: "on_hold",
     global_city: "Berlin",
     global_country: "Germany",
+    timezone: "Europe/Athens",
     timezone_offset: 120,
     work_hours_start: "10:00:00",
     work_hours_end: "18:00:00",
+    location_modes: ["onsite"],
     raw_resume_text: "Resume PDF extract with personal identifiers…",
     sanitized_summary:
       "Backend engineer specializing in Postgres performance and API design.",
     email: "taylor@example.com",
     full_name: "Taylor Nguyen",
+    linkedin_url: "https://www.linkedin.com/in/taylor-nguyen",
+    updated_at: "2026-07-10T09:00:00.000Z",
+    avg_authenticity_score: null,
     references: [
       {
         id: "ref-c",
         reference_email: "dir@example.com",
+        reference_name: null,
+        relationship: "skip_level",
         reference_linkedin_url: null,
         authenticity_score: null,
         authenticity_flags: ["awaiting_linkedin"],
@@ -180,24 +334,72 @@ export const DEMO_ADMIN_CANDIDATES: AdminCandidateRow[] = [
         lowTrust: true,
       },
     ],
+    missing: { resume: false, profile: false, references: true },
+  },
+  {
+    id: "cand-3",
+    user_id: "user-6",
+    has_talent_profile: true,
+    headline: "Product Designer",
+    status: "on_hold",
+    global_city: "Toronto",
+    global_country: "Canada",
+    timezone: null,
+    timezone_offset: -240,
+    work_hours_start: "09:00:00",
+    work_hours_end: "17:00:00",
+    location_modes: ["remote"],
+    raw_resume_text: null,
+    sanitized_summary: null,
+    email: "riley@example.com",
+    full_name: "Riley Chen",
+    linkedin_url: null,
+    updated_at: "2026-07-28T12:00:00.000Z",
+    avg_authenticity_score: null,
+    references: [],
+    missing: { resume: true, profile: false, references: true },
+  },
+  {
+    id: "user-7",
+    user_id: "user-7",
+    has_talent_profile: false,
+    headline: null,
+    status: "incomplete",
+    global_city: null,
+    global_country: null,
+    timezone: null,
+    timezone_offset: null,
+    work_hours_start: null,
+    work_hours_end: null,
+    location_modes: [],
+    raw_resume_text: null,
+    sanitized_summary: null,
+    email: "morgan@example.com",
+    full_name: "Morgan Ellis",
+    linkedin_url: null,
+    updated_at: "2026-08-01T08:00:00.000Z",
+    avg_authenticity_score: null,
+    references: [],
+    missing: { resume: true, profile: true, references: true },
   },
 ];
 
 export const DEMO_DIRECTORY: DirectoryPerson[] = [
   {
     id: "dir-s1",
-    kind: "seeker",
-    email: "sam.seeker@example.com",
+    kind: "talent",
+    email: "sam.talent@example.com",
     full_name: "Sam Patel",
     title: "Staff Platform Engineer",
     company: null,
     location: "Austin, United States",
     status: "actively_looking",
     created_at: "2026-06-12T15:30:00.000Z",
+    avg_authenticity_score: 65,
   },
   {
     id: "dir-s2",
-    kind: "seeker",
+    kind: "talent",
     email: "taylor@example.com",
     full_name: "Taylor Nguyen",
     title: "Senior Backend Engineer",
@@ -205,21 +407,23 @@ export const DEMO_DIRECTORY: DirectoryPerson[] = [
     location: "Berlin, Germany",
     status: "on_hold",
     created_at: "2026-06-20T10:00:00.000Z",
+    avg_authenticity_score: null,
   },
   {
     id: "dir-h1",
-    kind: "hirer",
-    email: "jordan.hirer@acme.io",
+    kind: "employer",
+    email: "jordan.employer@acme.io",
     full_name: "Jordan Lee",
     title: "VP Engineering",
     company: "Acme Systems",
     location: "San Francisco, United States",
     status: "active",
     created_at: "2026-06-18T09:10:00.000Z",
+    avg_authenticity_score: null,
   },
   {
     id: "dir-h2",
-    kind: "hirer",
+    kind: "employer",
     email: "priya@northwind.dev",
     full_name: "Priya Shah",
     title: "Head of Talent",
@@ -227,6 +431,7 @@ export const DEMO_DIRECTORY: DirectoryPerson[] = [
     location: "Toronto, Canada",
     status: "active",
     created_at: "2026-07-02T14:00:00.000Z",
+    avg_authenticity_score: null,
   },
 ];
 
@@ -237,7 +442,7 @@ export const DEMO_ACTIVE_JOBS: ActiveJobPosting[] = [
     company_name: "Acme Systems",
     status: "active",
     kanban_columns: ["sourced", "screening", "interview", "offer", "hired"],
-    hirer_name: "Jordan Lee",
+    employer_name: "Jordan Lee",
   },
   {
     id: "job-2",
@@ -245,12 +450,55 @@ export const DEMO_ACTIVE_JOBS: ActiveJobPosting[] = [
     company_name: "Northwind",
     status: "active",
     kanban_columns: ["sourced", "screening", "interview", "offer", "hired"],
-    hirer_name: "Priya Shah",
+    employer_name: "Priya Shah",
   },
 ];
 
-export const DEMO_ACTIVE_CANDIDATES: ActiveCandidateOption[] =
-  DEMO_ADMIN_CANDIDATES.filter((c) => c.status === "actively_looking").map(
+export const DEMO_ADMIN_EMPLOYERS: AdminEmployerRow[] = [
+  {
+    id: "emp-1",
+    user_id: "user-h1",
+    email: "jordan.employer@acme.io",
+    full_name: "Jordan Lee",
+    linkedin_url: "https://www.linkedin.com/in/jordan-lee",
+    company_name: "Acme Systems",
+    title: "Head of Talent",
+    status: "active",
+    user_role: "recruiter",
+    company_website: "https://acme.example.com",
+    industry: "Enterprise Software",
+    company_size: "51-200",
+    estimated_roles: 4,
+    hiring_departments: ["Engineering", "Product"],
+    work_arrangement: "hybrid",
+    first_match_free_claimed: true,
+    created_at: "2026-07-10T10:00:00.000Z",
+    updated_at: "2026-07-10T10:00:00.000Z",
+  },
+  {
+    id: "emp-2",
+    user_id: "user-h2",
+    email: "priya@northwind.dev",
+    full_name: "Priya Shah",
+    linkedin_url: "https://www.linkedin.com/in/priya-shah",
+    company_name: "Northwind",
+    title: "VP Engineering",
+    status: "active",
+    user_role: "hiring_manager",
+    company_website: "https://northwind.dev",
+    industry: "Developer Tools",
+    company_size: "11-50",
+    estimated_roles: 2,
+    hiring_departments: ["Engineering"],
+    work_arrangement: "remote",
+    first_match_free_claimed: true,
+    created_at: "2026-06-18T09:10:00.000Z",
+    updated_at: "2026-07-02T14:00:00.000Z",
+  },
+];
+
+export const DEMO_ACTIVE_TALENT: ActiveTalentOption[] =
+  DEMO_ADMIN_TALENT.filter((c) => c.status === "actively_looking").map(
     (c) => ({
       id: c.id,
       headline: c.headline,
@@ -292,7 +540,7 @@ export const DEMO_CONTACT_REQUESTS: DemoContactRequest[] = [
     email: "ops@acme.io",
     topic: "Partnership",
     message:
-      "We're a 40-person hiring team interested in early hirer access this quarter.",
+      "We're a 40-person hiring team interested in early employer access this quarter.",
     attachment_url: null,
     attachment_download_url: null,
     admin_notes: "Forwarded to partnerships — waiting on calendar hold.",
@@ -302,9 +550,9 @@ export const DEMO_CONTACT_REQUESTS: DemoContactRequest[] = [
   },
   {
     id: "contact-3",
-    email: "sam.seeker@example.com",
+    email: "sam.talent@example.com",
     topic: "Account help",
-    message: "Please confirm whether deleting my seeker profile also removes references.",
+    message: "Please confirm whether deleting my talent profile also removes references.",
     attachment_url: null,
     attachment_download_url: null,
     admin_notes: "Replied with privacy FAQ link.",

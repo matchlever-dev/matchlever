@@ -6,7 +6,7 @@ import {
   type ContactRequestRow,
   type ContactStatus,
 } from "@/lib/contact/schema";
-import { requireAdminApi } from "@/lib/auth/api-guards";
+import { requireAdminFlagApi } from "@/lib/auth/api-guards";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -45,7 +45,7 @@ async function withSignedAttachmentUrls(
 }
 
 export async function GET() {
-  const auth = await requireAdminApi();
+  const auth = await requireAdminFlagApi();
   if (!auth.ok) return auth.response;
 
   if (auth.actor.demo) {
@@ -82,7 +82,7 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  const auth = await requireAdminApi();
+  const auth = await requireAdminFlagApi();
   if (!auth.ok) return auth.response;
 
   const parsed = contactAdminPatchSchema.safeParse(await request.json());

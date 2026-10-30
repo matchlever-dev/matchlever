@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { normalizePublicLinkedInProfileUrl } from "@/lib/auth/linkedin-url";
 import { scoreLinkedInAuthenticity } from "@/lib/reference/authenticity";
 import {
   linkedInUrlsMatch,
@@ -59,8 +60,8 @@ export async function POST(request: Request) {
     }
 
     const { data: reference, error: refError } = await admin
-      .from("candidate_references")
-      .select("id, candidate_profile_id, status, reference_linkedin_url")
+      .from("talent_references")
+      .select("id, talent_profile_id, status, reference_linkedin_url")
       .eq("verification_token", input.token)
       .maybeSingle();
 
@@ -83,13 +84,21 @@ export async function POST(request: Request) {
       );
     }
 
+    const linkedInUrl = normalizePublicLinkedInProfileUrl(input.linkedInUrl);
+    if (!linkedInUrl) {
+      return NextResponse.json(
+        { error: REFERRER_LINKEDIN_INVALID_MESSAGE },
+        { status: 400 }
+      );
+    }
+
     if (
       reference.reference_linkedin_url &&
-      !linkedInUrlsMatch(reference.reference_linkedin_url, input.linkedInUrl)
+      !linkedInUrlsMatch(reference.reference_linkedin_url, linkedInUrl)
     ) {
       console.info("[reference verify] linkedin mismatch", {
         expected: reference.reference_linkedin_url,
-        received: input.linkedInUrl,
+        received: linkedInUrl,
       });
       return NextResponse.json(
         { error: REFERRER_LINKEDIN_INVALID_MESSAGE },
@@ -97,7 +106,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const authenticity = await scoreLinkedInAuthenticity(input.linkedInUrl, {
+    const authenticity = await scoreLinkedInAuthenticity(linkedInUrl, {
       managerName: input.managerName,
       relationship: input.relationship,
     });
@@ -109,11 +118,11 @@ export async function POST(request: Request) {
     }));
 
     const { error: updateError } = await admin
-      .from("candidate_references")
+      .from("talent_references")
       .update({
         reference_name: input.managerName,
         relationship: input.relationship,
-        reference_linkedin_url: input.linkedInUrl,
+        reference_linkedin_url: linkedInUrl,
         authenticity_score: authenticity.authenticity_score,
         authenticity_flags: authenticity.authenticity_flags as Json,
         superpowers: superpowersPayload as Json,
@@ -135,9 +144,9 @@ export async function POST(request: Request) {
     }
 
     const { data: verifiedRows, error: listError } = await admin
-      .from("candidate_references")
+      .from("talent_references")
       .select("superpowers")
-      .eq("candidate_profile_id", reference.candidate_profile_id)
+      .eq("talent_profile_id", reference.talent_profile_id)
       .eq("status", "verified");
 
     if (listError) {
@@ -175,14 +184,14 @@ export async function POST(request: Request) {
     );
 
     const { error: profileError } = await admin
-      .from("candidate_profiles")
+      .from("talent_profiles")
       .update({ verified_superpowers: aggregated as Json })
-      .eq("id", reference.candidate_profile_id);
+      .eq("id", reference.talent_profile_id);
 
     if (profileError) {
       console.error("[reference verify] profile", profileError.message);
       return NextResponse.json(
-        { error: "Saved reference but failed to update candidate profile" },
+        { error: "Saved reference but failed to update talent profile" },
         { status: 500 }
       );
     }
