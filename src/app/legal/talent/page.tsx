@@ -95,12 +95,14 @@ export default function TalentTermsPage() {
           is the authoritative version of this agreement.
         </p>
 
-        <Link
-          href="/onboarding"
-          className="mt-8 inline-flex text-sm font-medium text-[#2B5B84] hover:underline"
-        >
-          ← Back to onboarding
-        </Link>
+        <div className="mt-8 flex flex-wrap gap-4 text-sm font-medium text-[#2B5B84]">
+          <Link href="/onboarding" className="hover:underline">
+            ← Back to onboarding
+          </Link>
+          <Link href="/legal/employers" className="hover:underline">
+            Employer Terms
+          </Link>
+        </div>
       </main>
     </div>
   );

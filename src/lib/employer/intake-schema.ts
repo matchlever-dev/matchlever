@@ -35,7 +35,8 @@ export const EMPLOYER_STATUSES = ["active", "on_hold", "inactive"] as const;
 
 export type EmployerStatus = (typeof EMPLOYER_STATUSES)[number];
 
-export const employerIntakeSchema = z.object({
+export const employerIntakeObjectSchema = z.object({
+  employerTosAgreed: z.boolean(),
   userRole: z.enum(["recruiter", "hiring_manager"]),
   companyWebsite: z.string().url("Enter a valid company website URL"),
   industry: z.string().min(1, "Industry is required"),
@@ -48,7 +49,19 @@ export const employerIntakeSchema = z.object({
   firstMatchFreeClaimed: z.literal(true),
 });
 
-export type EmployerIntakeValues = z.infer<typeof employerIntakeSchema>;
+export const employerIntakeSchema = employerIntakeObjectSchema.superRefine(
+  (data, ctx) => {
+    if (!data.employerTosAgreed) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Agree to the Employer Terms of Service to continue",
+        path: ["employerTosAgreed"],
+      });
+    }
+  }
+);
+
+export type EmployerIntakeValues = z.infer<typeof employerIntakeObjectSchema>;
 
 export function employerStatusLabel(status: string): string {
   switch (status) {

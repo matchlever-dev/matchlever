@@ -101,6 +101,11 @@ const nextConfig: NextConfig = {
         destination: "/api/talent/:path*",
         permanent: true,
       },
+      {
+        source: "/legal/employer",
+        destination: "/legal/employers",
+        permanent: true,
+      },
       // Legacy employer intake URLs → current onboarding / forms
       {
         source: "/employer/waitlist",

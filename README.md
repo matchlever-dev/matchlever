@@ -69,7 +69,8 @@ Requires `GROQ_API_KEY` in `.env.local`.
 ## Landing & onboarding
 
 - `/` — hero, featured talent carousel (timezone / work-hour overlap), talent + employer CTAs
-- `/employer/onboarding` — employer profile intake (LinkedIn + company details)
+- `/employer/onboarding` — employer profile intake (LinkedIn + company details; requires Employer Terms)
+- `/legal/employers` — Employer Terms of Service (matching engine; no quality guarantee)
 - `/dashboard/employer` — employer portal with job openings and billing
 - `/dashboard/employer/jobs/new` — create a job opening (JD autofill supported)
 - `/onboarding` — 4-step talent wizard (Terms of Service → LinkedIn + Incognito → resume sanitize → global prefs + taglines → references)

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, FileText } from "lucide-react";
 
 import { setStaySignedInPreference } from "@/lib/auth/stay-signed-in";
 import {
@@ -16,6 +16,7 @@ import {
   employerIntakeSchema,
   type EmployerIntakeValues,
 } from "@/lib/employer/intake-schema";
+import { EMPLOYER_TOS } from "@/lib/legal/employer-tos";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { StreamlineHiringSection } from "@/components/landing/employer-soft-launch";
@@ -60,6 +61,7 @@ export function EmployerOnboardingPage() {
   const form = useForm<EmployerIntakeValues>({
     resolver: zodResolver(employerIntakeSchema),
     defaultValues: {
+      employerTosAgreed: false,
       userRole: "recruiter",
       companyWebsite: "",
       industry: "",
@@ -70,6 +72,8 @@ export function EmployerOnboardingPage() {
       firstMatchFreeClaimed: true,
     },
   });
+
+  const employerTosAgreed = form.watch("employerTosAgreed");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -92,6 +96,14 @@ export function EmployerOnboardingPage() {
 
   async function connectLinkedIn() {
     setOauthError(null);
+    if (!form.getValues("employerTosAgreed")) {
+      form.setError("employerTosAgreed", {
+        type: "manual",
+        message: "Agree to the Employer Terms of Service to continue",
+      });
+      return;
+    }
+
     if (!isSupabaseConfigured()) {
       setAuthenticated(true);
       setPrefill({
@@ -199,28 +211,57 @@ export function EmployerOnboardingPage() {
             </div>
           </div>
         ) : !authenticated ? (
-          <div className="rounded-lg border border-[#2B5B84]/15 bg-white p-6">
-            <p className="text-sm text-[#5B616B]">
-              Sign in with LinkedIn to verify your identity and pre-fill your
-              employer profile.
-            </p>
-            <Button
-              type="button"
-              className="mt-4 h-11 w-full bg-[#0A66C2] text-white hover:bg-[#004182] sm:w-auto"
-              onClick={() => void connectLinkedIn()}
-            >
-              <LinkedInIcon className="mr-2 size-4" />
-              Continue with LinkedIn
-            </Button>
-            {oauthError && (
-              <p className="mt-3 text-sm text-destructive">{oauthError}</p>
-            )}
+          <div className="space-y-6 rounded-lg border border-[#2B5B84]/15 bg-white p-6">
+            <EmployerTosAgreement
+              agreed={employerTosAgreed}
+              error={form.formState.errors.employerTosAgreed?.message}
+              onAgreedChange={(checked) =>
+                form.setValue("employerTosAgreed", checked, {
+                  shouldValidate: true,
+                })
+              }
+            />
+            <div>
+              <p className="text-sm text-[#5B616B]">
+                Sign in with LinkedIn to verify your identity and pre-fill your
+                employer profile. MatchLever is a matching engine — not a
+                recruiting firm — and does not guarantee candidate quality.
+              </p>
+              <Button
+                type="button"
+                disabled={!employerTosAgreed}
+                className="mt-4 h-11 w-full bg-[#0A66C2] text-white hover:bg-[#004182] disabled:opacity-50 sm:w-auto"
+                onClick={() => void connectLinkedIn()}
+              >
+                <LinkedInIcon className="mr-2 size-4" />
+                Continue with LinkedIn
+              </Button>
+              {!employerTosAgreed && (
+                <p className="mt-3 text-xs text-[#5B616B]">
+                  Accept the Employer Terms of Service to unlock LinkedIn
+                  sign-in.
+                </p>
+              )}
+              {oauthError && (
+                <p className="mt-3 text-sm text-destructive">{oauthError}</p>
+              )}
+            </div>
           </div>
         ) : (
           <form
             className="space-y-8 rounded-lg border border-[#2B5B84]/15 bg-white p-6"
             onSubmit={form.handleSubmit(onSubmit)}
           >
+            <EmployerTosAgreement
+              agreed={employerTosAgreed}
+              error={form.formState.errors.employerTosAgreed?.message}
+              onAgreedChange={(checked) =>
+                form.setValue("employerTosAgreed", checked, {
+                  shouldValidate: true,
+                })
+              }
+            />
+
             <div>
               <p className="font-display text-[11px] font-semibold tracking-[0.22em] text-[#E87A5D] uppercase">
                 Pre-filled from LinkedIn
@@ -399,6 +440,68 @@ export function EmployerOnboardingPage() {
         )}
       </section>
     </main>
+  );
+}
+
+function EmployerTosAgreement({
+  agreed,
+  error,
+  onAgreedChange,
+}: {
+  agreed: boolean;
+  error?: string;
+  onAgreedChange: (checked: boolean) => void;
+}) {
+  return (
+    <div className="rounded-xl border border-[#E87A5D]/30 bg-[#F7F6F3] p-5">
+      <div className="flex items-start gap-3">
+        <FileText className="mt-0.5 size-5 shrink-0 text-[#E87A5D]" />
+        <div className="min-w-0 flex-1">
+          <Label htmlFor="employer-tos" className="text-base text-[#2A2D34]">
+            Employer Terms of Service
+          </Label>
+          <p className="mt-1 text-sm text-[#2A2D34]/65">
+            Effective {EMPLOYER_TOS.effectiveDate}. Operated by{" "}
+            {EMPLOYER_TOS.owner}. MatchLever is a matching engine — not a
+            recruiting agency — and does not guarantee candidate quality or
+            hiring outcomes.
+          </p>
+          <Link
+            href={EMPLOYER_TOS.pagePath}
+            target="_blank"
+            className="mt-3 inline-flex text-sm font-medium text-[#2B5B84] underline underline-offset-2"
+          >
+            Read Employer Terms
+          </Link>
+        </div>
+      </div>
+
+      <label
+        htmlFor="employer-tos"
+        className="mt-5 flex cursor-pointer items-start gap-3 border-t border-[#2B5B84]/10 pt-4"
+      >
+        <input
+          id="employer-tos"
+          type="checkbox"
+          checked={agreed}
+          onChange={(e) => onAgreedChange(e.target.checked)}
+          className="mt-1 size-4 accent-[#2B5B84]"
+        />
+        <span className="text-sm leading-relaxed text-[#2A2D34]">
+          I have read and agree to the{" "}
+          <Link
+            href={EMPLOYER_TOS.pagePath}
+            target="_blank"
+            className="font-semibold text-[#2B5B84] underline underline-offset-2"
+          >
+            MatchLever Employer Terms of Service
+          </Link>
+          , including that MatchLever is not a recruiting firm and provides no
+          quality guarantee.
+        </span>
+      </label>
+      {error ? <p className="mt-3 text-xs text-destructive">{error}</p> : null}
+    </div>
   );
 }
 

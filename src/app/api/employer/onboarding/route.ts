@@ -204,6 +204,7 @@ export async function POST(request: Request) {
         hiring_departments: parsed.data.hiringDepartments,
         work_arrangement: parsed.data.workArrangement,
         first_match_free_claimed: true,
+        employer_tos_accepted_at: new Date().toISOString(),
       },
       { onConflict: "user_id" }
     )

@@ -244,6 +244,7 @@ export type Database = {
           has_payment_method: boolean;
           stripe_payment_method_brand: string | null;
           stripe_payment_method_last4: string | null;
+          employer_tos_accepted_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -269,6 +270,7 @@ export type Database = {
           has_payment_method?: boolean;
           stripe_payment_method_brand?: string | null;
           stripe_payment_method_last4?: string | null;
+          employer_tos_accepted_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -294,6 +296,7 @@ export type Database = {
           has_payment_method?: boolean;
           stripe_payment_method_brand?: string | null;
           stripe_payment_method_last4?: string | null;
+          employer_tos_accepted_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
