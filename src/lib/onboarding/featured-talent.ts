@@ -14,20 +14,20 @@ export const FEATURED_TALENT: FeaturedTalent[] = [
     tagline:
       "Architecting scalable backends and leading agile development teams.",
     superPower: "⚡ React, Node.js, & Cloud Infrastructure",
-    profileHref: "/employer/waitlist",
+    profileHref: "/dashboard/employer/jobs/new",
   },
   {
     id: "2",
     title: "Staff Platform Engineer",
     tagline: "Cut p99 latency 62% on a multi-region event bus.",
     superPower: "⚡ Go, Kubernetes, & Distributed Systems",
-    profileHref: "/employer/waitlist",
+    profileHref: "/dashboard/employer/jobs/new",
   },
   {
     id: "3",
     title: "Principal Data Engineer",
     tagline: "Rebuilt warehouse pipelines — $1.4M annual cloud savings.",
     superPower: "⚡ Python, Spark, & Analytics Platforms",
-    profileHref: "/employer/waitlist",
+    profileHref: "/dashboard/employer/jobs/new",
   },
 ];

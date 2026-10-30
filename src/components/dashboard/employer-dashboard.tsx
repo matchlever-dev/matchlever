@@ -49,7 +49,7 @@ export function EmployerDashboard() {
         return;
       }
       if (res.status === 404 && json.code === "PROFILE_MISSING") {
-        router.replace("/employer/waitlist");
+        router.replace("/employer/onboarding");
         return;
       }
       if (!res.ok) throw new Error(json.error || "Failed to load dashboard");
@@ -85,13 +85,8 @@ export function EmployerDashboard() {
   }
 
   const statusBadge = useMemo(() => {
-    const status = data?.profile.status ?? "waitlisted";
-    const variant =
-      status === "active"
-        ? "default"
-        : status === "waitlisted"
-          ? "secondary"
-          : "outline";
+    const status = data?.profile.status ?? "active";
+    const variant = status === "active" ? "default" : "outline";
     return <Badge variant={variant}>{status.replaceAll("_", " ")}</Badge>;
   }, [data?.profile.status]);
 
@@ -236,8 +231,9 @@ export function EmployerDashboard() {
 
             {data.profile.status !== "active" ? (
               <div className="border border-[#2B5B84]/15 bg-white px-5 py-8 text-sm text-[#5B616B]">
-                Job posting unlocks when your employer account is activated.
-                You can still manage Billing while waitlisted.
+                Job posting is paused while your employer account is{" "}
+                {data.profile.status.replaceAll("_", " ")}. You can still manage
+                Billing, or contact support to restore access.
               </div>
             ) : data.jobs.length === 0 ? (
               <div className="border border-dashed border-[#2B5B84]/20 bg-white px-5 py-10 text-center">
@@ -245,6 +241,14 @@ export function EmployerDashboard() {
                   No job openings yet. Posting is free — you only pay when you
                   accept a match.
                 </p>
+                <Button
+                  type="button"
+                  className="mt-4 h-11 bg-[#2B5B84] text-white hover:bg-[#244d70]"
+                  onClick={() => router.push("/dashboard/employer/jobs/new")}
+                >
+                  <Plus className="size-4" data-icon="inline-start" />
+                  Post a job opening
+                </Button>
               </div>
             ) : (
               <ul className="space-y-3">

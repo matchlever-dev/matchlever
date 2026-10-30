@@ -29,7 +29,7 @@ const VALUE_PROPS = [
   {
     icon: Sparkles,
     title: "First Match Free",
-    body: "Early-access employers in the soft launch receive their first accepted match 100% free.",
+    body: "New employer accounts receive their first accepted match 100% free.",
   },
 ] as const;
 
@@ -42,7 +42,7 @@ const PROCESS_STEPS = [
   {
     step: "2",
     title: "Employer & job posting verified",
-    body: "We validate hiring teams and role requirements during soft launch onboarding.",
+    body: "We validate hiring teams and role requirements during employer onboarding.",
   },
   {
     step: "3",
@@ -68,8 +68,8 @@ export function StreamlineHiringSection({ showCta = true }: { showCta?: boolean 
             </span>
           </h2>
           <p className="mt-4 text-base leading-relaxed text-[#5B616B] sm:text-lg">
-            MatchLever is opening employer access for organizations that want
-            high-signal introductions — not another applicant tracking firehose.
+            MatchLever is open for employers who want high-signal introductions —
+            not another applicant tracking firehose.
           </p>
             <p className="mt-3 text-sm text-[#5B616B]">
               <span className="font-semibold text-[#2A2D34]">Employers</span>{" "}
@@ -98,10 +98,16 @@ export function StreamlineHiringSection({ showCta = true }: { showCta?: boolean 
         {showCta && (
           <div className="mt-10 flex flex-wrap gap-3">
             <Link
-              href="/employer/waitlist#waitlist-form"
+              href="/employer/onboarding#employer-form"
               className="inline-flex h-12 items-center justify-center rounded-md bg-[#E87A5D] px-8 font-display text-xs font-semibold tracking-[0.14em] text-white uppercase transition hover:bg-[#d66a4f]"
             >
-              Join the Employer Waitlist
+              Create employer profile
+            </Link>
+            <Link
+              href="/dashboard/employer/jobs/new"
+              className="inline-flex h-12 items-center justify-center rounded-md border border-[#2B5B84]/25 px-8 font-display text-xs font-semibold tracking-[0.14em] text-[#2B5B84] uppercase transition hover:border-[#E87A5D] hover:text-[#E87A5D]"
+            >
+              Post a job opening
             </Link>
             <Link
               href="/faq"

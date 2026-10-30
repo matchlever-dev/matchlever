@@ -38,7 +38,8 @@ export async function resolvePostLoginPath(
   if (safe?.startsWith("/superuser") && ctx.isSuperuser) return safe;
   if (safe?.startsWith("/admin") && ctx.isAdmin) return safe;
 
-  if (safe?.startsWith("/employer/waitlist")) return safe;
+  if (safe?.startsWith("/employer/onboarding")) return safe;
+  if (safe?.startsWith("/employer/waitlist")) return "/employer/onboarding";
   if (safe?.startsWith("/choose-role")) return safe;
 
   if (
@@ -51,7 +52,7 @@ export async function resolvePostLoginPath(
       return "/dashboard/talent?edit=1";
     }
     if (safe.startsWith("/dashboard/employer") && !ctx.hasEmployerProfile) {
-      return "/employer/waitlist";
+      return "/employer/onboarding";
     }
     if (safe.startsWith("/dashboard/talent") && !ctx.hasTalentProfile) {
       return "/onboarding";
@@ -60,7 +61,7 @@ export async function resolvePostLoginPath(
   }
 
   if (safe?.startsWith("/dashboard/employer")) {
-    return ctx.hasEmployerProfile ? safe : "/employer/waitlist";
+    return ctx.hasEmployerProfile ? safe : "/employer/onboarding";
   }
 
   // Prefer employer when dual-profile; otherwise land on the single profile.

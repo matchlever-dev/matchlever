@@ -25,8 +25,16 @@ export function JobOpeningCreatePage() {
     void (async () => {
       try {
         const res = await fetch("/api/dashboard/employer");
+        const json = await res.json().catch(() => ({}));
+        if (res.status === 401) {
+          router.replace("/login?next=/dashboard/employer/jobs/new");
+          return;
+        }
+        if (res.status === 404 && json.code === "PROFILE_MISSING") {
+          router.replace("/employer/onboarding#employer-form");
+          return;
+        }
         if (!res.ok) return;
-        const json = await res.json();
         setCreatedAt(json.billing?.createdAt);
         setFreeMatchesUsed(json.billing?.freeMatchesUsed ?? 0);
         setFounderEligible(
@@ -39,7 +47,7 @@ export function JobOpeningCreatePage() {
         // Ignore — form still works with default banner rules.
       }
     })();
-  }, []);
+  }, [router]);
 
   return (
     <Shell title="New job opening">

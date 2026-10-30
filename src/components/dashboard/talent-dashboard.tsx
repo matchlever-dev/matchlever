@@ -171,7 +171,7 @@ export function TalentDashboard() {
         return;
       }
       setEmployerRequestMessage(
-        "Employer profile created and waitlisted. Complete intake on the employer waitlist page."
+        "Employer profile created. Complete onboarding, then post a job opening."
       );
     } catch (err) {
       setError(
@@ -385,8 +385,8 @@ export function TalentDashboard() {
                     Employer account
                   </p>
                   <p className="mt-2 text-sm text-[#5B616B]">
-                    Hiring on MatchLever too? Request an employer profile to join
-                    the waitlist.
+                    Hiring on MatchLever too? Create an employer profile and post
+                    a job opening.
                   </p>
                   {employerRequestMessage && (
                     <p className="mt-2 text-sm text-[#2B5B84]">
@@ -408,9 +408,17 @@ export function TalentDashboard() {
                     type="button"
                     className="mt-1 h-9 px-0 text-[#2B5B84] hover:bg-transparent"
                     variant="ghost"
-                    onClick={() => router.push("/employer/waitlist")}
+                    onClick={() => router.push("/employer/onboarding")}
                   >
-                    Complete employer waitlist intake
+                    Complete employer onboarding
+                  </Button>
+                  <Button
+                    type="button"
+                    className="mt-1 h-9 px-0 text-[#2B5B84] hover:bg-transparent"
+                    variant="ghost"
+                    onClick={() => router.push("/dashboard/employer/jobs/new")}
+                  >
+                    Post a job opening
                   </Button>
                 </div>
               ) : null}

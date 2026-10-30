@@ -31,16 +31,11 @@ export const WORK_ARRANGEMENTS = [
   { value: "mixed", label: "Mixed / varies by role" },
 ] as const;
 
-export const EMPLOYER_STATUSES = [
-  "waitlisted",
-  "active",
-  "on_hold",
-  "inactive",
-] as const;
+export const EMPLOYER_STATUSES = ["active", "on_hold", "inactive"] as const;
 
 export type EmployerStatus = (typeof EMPLOYER_STATUSES)[number];
 
-export const employerWaitlistSchema = z.object({
+export const employerIntakeSchema = z.object({
   userRole: z.enum(["recruiter", "hiring_manager"]),
   companyWebsite: z.string().url("Enter a valid company website URL"),
   industry: z.string().min(1, "Industry is required"),
@@ -53,12 +48,10 @@ export const employerWaitlistSchema = z.object({
   firstMatchFreeClaimed: z.literal(true),
 });
 
-export type EmployerWaitlistValues = z.infer<typeof employerWaitlistSchema>;
+export type EmployerIntakeValues = z.infer<typeof employerIntakeSchema>;
 
 export function employerStatusLabel(status: string): string {
   switch (status) {
-    case "waitlisted":
-      return "Waitlisted";
     case "active":
       return "Active";
     case "on_hold":

@@ -3,10 +3,10 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
-/** Talent users can request an employer waitlist profile (status: waitlisted). */
+/** Talent users can create an employer profile and continue onboarding. */
 export async function POST() {
   if (!isSupabaseConfigured()) {
-    return NextResponse.json({ ok: true, demo: true, status: "waitlisted" });
+    return NextResponse.json({ ok: true, demo: true, status: "active" });
   }
 
   const supabase = await createClient();
@@ -60,7 +60,7 @@ export async function POST() {
     .insert({
       user_id: user.id,
       company_name: "Pending intake",
-      status: "waitlisted",
+      status: "active",
       first_match_free_claimed: true,
     })
     .select("id, status")
@@ -77,6 +77,6 @@ export async function POST() {
   return NextResponse.json({
     ok: true,
     employerId: employer?.id,
-    status: employer?.status ?? "waitlisted",
+    status: employer?.status ?? "active",
   });
 }

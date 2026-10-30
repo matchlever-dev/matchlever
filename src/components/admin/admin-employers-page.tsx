@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { AdminEmployerRow } from "@/lib/admin/demo";
-import { employerStatusLabel } from "@/lib/employer/waitlist-schema";
+import { employerStatusLabel } from "@/lib/employer/intake-schema";
 import {
   AdminListControls,
   matchesKeyword,
@@ -23,13 +23,12 @@ import {
 
 const EMPLOYER_STATUS_OPTIONS = [
   { value: "all", label: "All statuses" },
-  { value: "waitlisted", label: "Waitlisted" },
   { value: "active", label: "Active" },
   { value: "on_hold", label: "On Hold" },
   { value: "inactive", label: "Inactive" },
 ];
 
-const STATUS_VALUES = ["waitlisted", "active", "on_hold", "inactive"] as const;
+const STATUS_VALUES = ["active", "on_hold", "inactive"] as const;
 
 function roleLabel(role: string | null) {
   if (role === "recruiter") return "Recruiter / TA";
@@ -143,7 +142,7 @@ export function AdminEmployersPage() {
             Employers
           </h1>
           <p className="mt-1 text-sm text-[#5B616B]">
-            Manage employer waitlist, activation, and account status.
+            Manage employer accounts, activation, and account status.
           </p>
         </div>
 

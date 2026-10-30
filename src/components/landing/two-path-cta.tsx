@@ -12,7 +12,10 @@ export function TwoPathCta() {
     : "/onboarding";
   const employerHref = session.hasEmployerProfile
     ? "/dashboard/employer"
-    : "/employer/waitlist";
+    : "/employer/onboarding";
+  const jobOpeningHref = session.hasEmployerProfile
+    ? "/dashboard/employer/jobs/new"
+    : "/employer/onboarding#employer-form";
 
   return (
     <section className="bg-white py-6 sm:py-8">
@@ -28,14 +31,24 @@ export function TwoPathCta() {
             Your openings matched with best-fit candidates only! No more
             browsing thru fake profiles, we already verified them for you.
           </p>
-          <Link
-            href={employerHref}
-            className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-md bg-[#E87A5D] px-5 font-display text-xs font-semibold tracking-[0.14em] text-white uppercase transition hover:bg-[#d66a4f] sm:w-fit"
-          >
-            {isSignedIn && session.hasEmployerProfile
-              ? "Open employer dashboard"
-              : "Join Employer Waitlist"}
-          </Link>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Link
+              href={employerHref}
+              className="inline-flex h-11 w-full items-center justify-center rounded-md bg-[#E87A5D] px-5 font-display text-xs font-semibold tracking-[0.14em] text-white uppercase transition hover:bg-[#d66a4f] sm:w-fit"
+            >
+              {isSignedIn && session.hasEmployerProfile
+                ? "Open employer dashboard"
+                : "Create employer profile"}
+            </Link>
+            <Link
+              href={jobOpeningHref}
+              className="inline-flex h-11 w-full items-center justify-center rounded-md border border-[#2B5B84]/25 px-5 font-display text-xs font-semibold tracking-[0.14em] text-[#2B5B84] uppercase transition hover:border-[#E87A5D] hover:text-[#E87A5D] sm:w-fit"
+            >
+              {isSignedIn && session.hasEmployerProfile
+                ? "Post a job opening"
+                : "Start a job opening"}
+            </Link>
+          </div>
         </article>
 
         <article className="flex flex-col border border-[#2B5B84]/15 bg-[#F7F6F3] p-5 sm:p-6">

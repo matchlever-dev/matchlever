@@ -75,7 +75,7 @@ export async function GET() {
 
 const statusSchema = z.object({
   employerId: z.string().min(1),
-  status: z.enum(["waitlisted", "active", "on_hold", "inactive"]),
+  status: z.enum(["active", "on_hold", "inactive"]),
 });
 
 export async function PATCH(request: Request) {

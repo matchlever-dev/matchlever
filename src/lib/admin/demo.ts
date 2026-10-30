@@ -463,7 +463,7 @@ export const DEMO_ADMIN_EMPLOYERS: AdminEmployerRow[] = [
     linkedin_url: "https://www.linkedin.com/in/jordan-lee",
     company_name: "Acme Systems",
     title: "Head of Talent",
-    status: "waitlisted",
+    status: "active",
     user_role: "recruiter",
     company_website: "https://acme.example.com",
     industry: "Enterprise Software",

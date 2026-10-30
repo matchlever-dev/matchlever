@@ -6,7 +6,7 @@ import {
   splitNameFromAuthUser,
 } from "@/lib/auth/display-name";
 import { captureTalentLinkedInUrl } from "@/lib/auth/linkedin-url";
-import { employerWaitlistSchema } from "@/lib/employer/waitlist-schema";
+import { employerIntakeSchema } from "@/lib/employer/intake-schema";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
@@ -122,10 +122,10 @@ export async function POST(request: Request) {
   }
 
   const json = await request.json();
-  const parsed = employerWaitlistSchema.safeParse(json);
+  const parsed = employerIntakeSchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Invalid waitlist payload", details: parsed.error.flatten() },
+      { error: "Invalid employer onboarding payload", details: parsed.error.flatten() },
       { status: 400 }
     );
   }
@@ -181,7 +181,7 @@ export async function POST(request: Request) {
   );
 
   if (profileError) {
-    console.error("[employer waitlist user_profiles]", profileError.message);
+    console.error("[employer onboarding user_profiles]", profileError.message);
     return NextResponse.json(
       { error: "Unable to save employer profile" },
       { status: 500 }
@@ -195,7 +195,7 @@ export async function POST(request: Request) {
         user_id: user.id,
         company_name: companyName,
         title: jobTitle,
-        status: "waitlisted",
+        status: "active",
         user_role: parsed.data.userRole,
         company_website: parsed.data.companyWebsite,
         industry: parsed.data.industry,
@@ -211,9 +211,9 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (employerError) {
-    console.error("[employer waitlist employer_profiles]", employerError.message);
+    console.error("[employer onboarding employer_profiles]", employerError.message);
     return NextResponse.json(
-      { error: "Unable to join employer waitlist" },
+      { error: "Unable to create employer profile" },
       { status: 500 }
     );
   }
@@ -221,6 +221,6 @@ export async function POST(request: Request) {
   return NextResponse.json({
     ok: true,
     employerId: employer?.id,
-    status: employer?.status ?? "waitlisted",
+    status: employer?.status ?? "active",
   });
 }

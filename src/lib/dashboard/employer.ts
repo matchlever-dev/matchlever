@@ -3,7 +3,7 @@ import {
   EMPLOYER_USER_ROLES,
   WORK_ARRANGEMENTS,
   employerStatusLabel,
-} from "@/lib/employer/waitlist-schema";
+} from "@/lib/employer/intake-schema";
 import type { EmployerBillingProfile } from "@/lib/employer/billing";
 import {
   formatJobLocationLine,
@@ -122,8 +122,6 @@ export const DEMO_EMPLOYER_DASHBOARD: EmployerDashboardData = {
 
 export function employerStatusHeadline(status: string): string {
   switch (status) {
-    case "waitlisted":
-      return "You are on the Employer Soft Launch waitlist";
     case "active":
       return "Your employer account is active";
     case "on_hold":
@@ -137,8 +135,6 @@ export function employerStatusHeadline(status: string): string {
 
 export function employerStatusDescription(status: string): string {
   switch (status) {
-    case "waitlisted":
-      return "Our team is verifying employer accounts and onboarding hiring teams in batches. We will email you when your account is activated.";
     case "active":
       return "Post jobs, review incognito talent matches, and accept high-confidence introductions.";
     case "on_hold":

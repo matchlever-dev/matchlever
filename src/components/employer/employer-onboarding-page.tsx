@@ -13,9 +13,9 @@ import {
   EMPLOYER_USER_ROLES,
   HIRING_DEPARTMENTS,
   WORK_ARRANGEMENTS,
-  employerWaitlistSchema,
-  type EmployerWaitlistValues,
-} from "@/lib/employer/waitlist-schema";
+  employerIntakeSchema,
+  type EmployerIntakeValues,
+} from "@/lib/employer/intake-schema";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { StreamlineHiringSection } from "@/components/landing/employer-soft-launch";
@@ -48,7 +48,7 @@ function LinkedInIcon({ className }: { className?: string }) {
   );
 }
 
-export function EmployerWaitlistPage() {
+export function EmployerOnboardingPage() {
   const router = useRouter();
   const [authenticated, setAuthenticated] = useState(false);
   const [prefill, setPrefill] = useState<Prefill | null>(null);
@@ -57,8 +57,8 @@ export function EmployerWaitlistPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const form = useForm<EmployerWaitlistValues>({
-    resolver: zodResolver(employerWaitlistSchema),
+  const form = useForm<EmployerIntakeValues>({
+    resolver: zodResolver(employerIntakeSchema),
     defaultValues: {
       userRole: "recruiter",
       companyWebsite: "",
@@ -74,7 +74,7 @@ export function EmployerWaitlistPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/employer/waitlist");
+      const res = await fetch("/api/employer/onboarding");
       const json = await res.json();
       setAuthenticated(Boolean(json.authenticated));
       setPrefill(json.prefill ?? null);
@@ -109,7 +109,7 @@ export function EmployerWaitlistPage() {
       setStaySignedInPreference(true);
       const supabase = createClient();
       const redirectTo = new URL("/auth/callback", window.location.origin);
-      redirectTo.searchParams.set("next", "/employer/waitlist");
+      redirectTo.searchParams.set("next", "/employer/onboarding");
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "linkedin_oidc",
@@ -128,9 +128,9 @@ export function EmployerWaitlistPage() {
     }
   }
 
-  async function onSubmit(values: EmployerWaitlistValues) {
+  async function onSubmit(values: EmployerIntakeValues) {
     setSubmitError(null);
-    const res = await fetch("/api/employer/waitlist", {
+    const res = await fetch("/api/employer/onboarding", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -141,7 +141,7 @@ export function EmployerWaitlistPage() {
     });
     const json = await res.json();
     if (!res.ok) {
-      setSubmitError(json.error || "Unable to join waitlist");
+      setSubmitError(json.error || "Unable to complete employer onboarding");
       return;
     }
     setSubmitted(true);
@@ -154,16 +154,16 @@ export function EmployerWaitlistPage() {
     <main className="bg-[#F7F6F3] text-[#2A2D34]">
       <StreamlineHiringSection showCta={false} />
 
-      <section id="waitlist-form" className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
+      <section id="employer-form" className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
         <div className="mb-8 flex items-center gap-3">
           <BrandMark className="h-10 w-auto" />
           <div>
             <h1 className="font-display text-2xl font-semibold text-[#2B5B84]">
-              Join the Employer Waitlist
+              Create your employer profile
             </h1>
             <p className="mt-1 text-sm text-[#5B616B]">
               Whether you are an in-house recruiter or a hiring manager, set up
-              your profile to join the waitlist.
+              your employer profile to post openings and receive matches.
             </p>
           </div>
         </div>
@@ -176,18 +176,25 @@ export function EmployerWaitlistPage() {
               <CheckCircle2 className="mt-0.5 size-5 text-[#2B5B84]" />
               <div>
                 <p className="font-display text-lg font-semibold text-[#2B5B84]">
-                  You&apos;re on the employer waitlist
+                  Employer profile ready
                 </p>
                 <p className="mt-2 text-sm text-[#5B616B]">
-                  We&apos;ll email you when your account is activated for the
-                  soft launch.
+                  You can open your dashboard and post a job opening now.
                 </p>
-                <Link
-                  href="/dashboard/employer"
-                  className="mt-4 inline-flex h-10 items-center justify-center rounded-md bg-[#2B5B84] px-4 text-sm font-medium text-white hover:bg-[#244e71]"
-                >
-                  Go to employer dashboard
-                </Link>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <Link
+                    href="/dashboard/employer"
+                    className="inline-flex h-10 items-center justify-center rounded-md bg-[#2B5B84] px-4 text-sm font-medium text-white hover:bg-[#244e71]"
+                  >
+                    Go to employer dashboard
+                  </Link>
+                  <Link
+                    href="/dashboard/employer/jobs/new"
+                    className="inline-flex h-10 items-center justify-center rounded-md border border-[#2B5B84]/25 px-4 text-sm font-medium text-[#2B5B84] hover:border-[#E87A5D] hover:text-[#E87A5D]"
+                  >
+                    Post a job opening
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -275,7 +282,7 @@ export function EmployerWaitlistPage() {
                   onValueChange={(value) =>
                     form.setValue(
                       "companySize",
-                      value as EmployerWaitlistValues["companySize"],
+                      value as EmployerIntakeValues["companySize"],
                       { shouldValidate: true }
                     )
                   }
@@ -308,7 +315,7 @@ export function EmployerWaitlistPage() {
                   onValueChange={(value) =>
                     form.setValue(
                       "workArrangement",
-                      value as EmployerWaitlistValues["workArrangement"],
+                      value as EmployerIntakeValues["workArrangement"],
                       { shouldValidate: true }
                     )
                   }
@@ -374,8 +381,7 @@ export function EmployerWaitlistPage() {
                 aria-hidden
               />
               <span className="text-sm text-[#2A2D34]">
-                <span className="font-semibold">First Match Free</span> — soft
-                launch offer locked in for early-access employers.
+                <span className="font-semibold">First Match Free</span> — founder offer for new employer accounts.
               </span>
             </div>
 
@@ -387,7 +393,7 @@ export function EmployerWaitlistPage() {
               type="submit"
               className="h-11 w-full bg-[#E87A5D] text-white hover:bg-[#d66a4f] sm:w-auto"
             >
-              Submit waitlist application
+              Create employer account
             </Button>
           </form>
         )}

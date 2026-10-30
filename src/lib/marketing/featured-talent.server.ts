@@ -8,7 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 const FEATURED_COUNT = 3;
-const PROFILE_HREF = "/employer/waitlist";
+const PROFILE_HREF = "/dashboard/employer/jobs/new";
 
 type SuperpowerVote = {
   label?: unknown;
