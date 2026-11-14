@@ -49,6 +49,12 @@ export function TwoPathCta() {
                 : "Start a job opening"}
             </Link>
           </div>
+          <Link
+            href="/pricing"
+            className="mt-3 inline-flex w-fit text-sm font-medium text-[#5B616B] underline-offset-2 transition hover:text-[#2B5B84] hover:underline"
+          >
+            View Employer Pricing
+          </Link>
         </article>
 
         <article className="flex flex-col border border-[#2B5B84]/15 bg-[#F7F6F3] p-5 sm:p-6">
