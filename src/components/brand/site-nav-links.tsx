@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils";
 
 export const HEADER_NAV_LINKS = [
   { href: "/why-matchlever", label: "Why MatchLever" },
-  { href: "/pricing", label: "Pricing" },
 ] as const;
 
 export const FOOTER_NAV_LINKS = [
