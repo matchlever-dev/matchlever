@@ -52,36 +52,43 @@ Mismatch: The worst problem is finding the candidate not really suited after rou
   },
   {
     id: "default-3",
-    question: "Is my data private?",
-    answer: `Not only do we have industry-standard data privacy and security protection, we go one step beyond by operating on Incognito Privacy Mode!  Your identity remains completely anonymous to employers on your profiles unless they decide to go to next step with you.  Your contact email, real name, and original resume are only revealed after an employer accepts your match to advance you to the interview stage.  Hit the "On Hold (Snoozed)" toggle to vanish from employer searches, or use the "Delete Account" button to wipe your data permanently.`,
+    question: "How much does it cost for employers?",
+    answer:
+      'We offer a simple $600 pay-per-match tier (your first match is free) and a full-service contingency tier where you only pay when you make a hire. [View full pricing details](/pricing).',
     sortOrder: 3,
   },
   {
     id: "default-4",
-    question: "Why do you require reference checks?",
-    answer:
-      "Because your profile is completely anonymous, we need to prove you are as good as your stats. We use a peer-validated system where you provide three email addresses for former managers or peers. Our Multi-Signal AI Authenticity Scoring Matrix analyzes their LinkedIn profiles to check for bot-farm patterns and account maturity. It keeps platform trust high and ensures real professionals are vouching for your work.",
+    question: "Is my data private?",
+    answer: `Not only do we have industry-standard data privacy and security protection, we go one step beyond by operating on Incognito Privacy Mode!  Your identity remains completely anonymous to employers on your profiles unless they decide to go to next step with you.  Your contact email, real name, and original resume are only revealed after an employer accepts your match to advance you to the interview stage.  Hit the "On Hold (Snoozed)" toggle to vanish from employer searches, or use the "Delete Account" button to wipe your data permanently.`,
     sortOrder: 4,
   },
   {
     id: "default-5",
+    question: "Why do you require reference checks?",
+    answer:
+      "Because your profile is completely anonymous, we need to prove you are as good as your stats. We use a peer-validated system where you provide three email addresses for former managers or peers. Our Multi-Signal AI Authenticity Scoring Matrix analyzes their LinkedIn profiles to check for bot-farm patterns and account maturity. It keeps platform trust high and ensures real professionals are vouching for your work.",
+    sortOrder: 5,
+  },
+  {
+    id: "default-6",
     question: "What happens next after I set up my profile?",
     answer: `1. References: Make sure your references respond to reference check requests, see further actions in the next question.
 
 2.Match: Once your profile is completed and references checked out, AI and Concierge evaluation.Your anonymous profile is evaluated automatically by our Two-Tier Match Engine, or manually pushed to employer Kanban boards by our Concierge Superusers.
 
 3.Unlock & Interview: When an employer decides you are a fit, they pay to unlock your profile. Your identity is revealed, and you head straight into the interview stage.`,
-    sortOrder: 5,
+    sortOrder: 6,
   },
   {
-    id: "default-6",
+    id: "default-7",
     question: "How do I make sure references responds?",
     answer: `First of all, make sure these are legit reference that know you and will vouch for you.
 
 Also, be sure to let the references know that NO ONE will actually speak to them right away.  They just need to respond to an email with a few questions, which shouldn't take more than a couple of minutes.
 
 Finally, if they do not receive reference validation emails a few minutes after you submit your profile, please ask them to check their Spam/Junk folder for an email from MatchLever.`,
-    sortOrder: 6,
+    sortOrder: 7,
   },
 ];
 

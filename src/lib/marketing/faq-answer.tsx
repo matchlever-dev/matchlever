@@ -1,4 +1,37 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
+
+const MARKDOWN_LINK_RE = /\[([^\]]+)\]\((\/[^)\s]*)\)/g;
+
+function renderInline(text: string): ReactNode[] {
+  const nodes: ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let key = 0;
+
+  MARKDOWN_LINK_RE.lastIndex = 0;
+  while ((match = MARKDOWN_LINK_RE.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      nodes.push(text.slice(lastIndex, match.index));
+    }
+    nodes.push(
+      <Link
+        key={`faq-link-${key++}`}
+        href={match[2]}
+        className="font-semibold text-[#2B5B84] underline decoration-[#2B5B84]/30 underline-offset-2 transition hover:text-[#E87A5D] hover:decoration-[#E87A5D]"
+      >
+        {match[1]}
+      </Link>
+    );
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < text.length) {
+    nodes.push(text.slice(lastIndex));
+  }
+
+  return nodes.length > 0 ? nodes : [text];
+}
 
 function formatParagraph(text: string): ReactNode {
   const colonIndex = text.indexOf(": ");
@@ -7,12 +40,13 @@ function formatParagraph(text: string): ReactNode {
     const body = text.slice(colonIndex + 2);
     return (
       <>
-        <span className="font-semibold text-[#2B5B84]">{label}:</span> {body}
+        <span className="font-semibold text-[#2B5B84]">{label}:</span>{" "}
+        {renderInline(body)}
       </>
     );
   }
 
-  return text;
+  return <>{renderInline(text)}</>;
 }
 
 export function FaqAnswer({ answer }: { answer: string }) {
