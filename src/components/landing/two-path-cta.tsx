@@ -10,12 +10,10 @@ export function TwoPathCta() {
   const talentHref = session.hasTalentProfile
     ? "/dashboard/talent"
     : "/onboarding";
-  const employerHref = session.hasEmployerProfile
+  const hasEmployerProfile = isSignedIn && session.hasEmployerProfile;
+  const employerHref = hasEmployerProfile
     ? "/dashboard/employer"
     : "/employer/onboarding";
-  const jobOpeningHref = session.hasEmployerProfile
-    ? "/dashboard/employer/jobs/new"
-    : "/employer/onboarding#employer-form";
 
   return (
     <section className="bg-white py-6 sm:py-8">
@@ -36,18 +34,18 @@ export function TwoPathCta() {
               href={employerHref}
               className="inline-flex h-11 w-full items-center justify-center rounded-md bg-[#E87A5D] px-5 font-display text-xs font-semibold tracking-[0.14em] text-white uppercase transition hover:bg-[#d66a4f] sm:w-fit"
             >
-              {isSignedIn && session.hasEmployerProfile
+              {hasEmployerProfile
                 ? "Open employer dashboard"
                 : "Create employer profile"}
             </Link>
-            <Link
-              href={jobOpeningHref}
-              className="inline-flex h-11 w-full items-center justify-center rounded-md border border-[#2B5B84]/25 px-5 font-display text-xs font-semibold tracking-[0.14em] text-[#2B5B84] uppercase transition hover:border-[#E87A5D] hover:text-[#E87A5D] sm:w-fit"
-            >
-              {isSignedIn && session.hasEmployerProfile
-                ? "Post a job opening"
-                : "Start a job opening"}
-            </Link>
+            {hasEmployerProfile ? (
+              <Link
+                href="/dashboard/employer/jobs/new"
+                className="inline-flex h-11 w-full items-center justify-center rounded-md border border-[#2B5B84]/25 px-5 font-display text-xs font-semibold tracking-[0.14em] text-[#2B5B84] uppercase transition hover:border-[#E87A5D] hover:text-[#E87A5D] sm:w-fit"
+              >
+                Post a job opening
+              </Link>
+            ) : null}
           </div>
           <Link
             href="/pricing"
