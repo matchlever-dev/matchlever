@@ -29,9 +29,5 @@ export const ABOUT_MATCHLEVER = {
         },
       ],
     },
-    {
-      heading: "Better Matches. Faster Results.",
-      body: "At Arise Solutions, our partners are dedicated to respecting your time. Whether you’re looking to take the next step in your career or build a high-performing team, we’re here to help you skip the busywork and get straight to the right match.",
-    },
   ],
 } as const;
