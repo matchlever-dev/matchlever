@@ -5,7 +5,7 @@ import { StreamlineHiringSection } from "@/components/landing/employer-soft-laun
 export const metadata: Metadata = {
   title: "Why MatchLever · Arise Solutions",
   description:
-    "Why MatchLever? Streamline hiring with pre-validated talents — high-signal introductions for employers and hiring managers.",
+    "Why MatchLever? Talent gets precise matches without the black hole. Employers get pre-validated candidates without the firehose.",
 };
 
 export default function WhyMatchLeverPage() {

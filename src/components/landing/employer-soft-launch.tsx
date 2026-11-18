@@ -61,21 +61,13 @@ export function StreamlineHiringSection({ showCta = true }: { showCta?: boolean 
     <section className="border-y border-[#2B5B84]/10 bg-white py-16 sm:py-24">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         <div className="max-w-3xl">
-          <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-            <span className="text-[#E87A5D]">Why MatchLever?</span>{" "}
-            <span className="text-[#2B5B84]">
-              Streamline hiring with pre-validated talents
-            </span>
+          <h2 className="font-display text-3xl font-semibold tracking-tight text-[#E87A5D] sm:text-4xl">
+            Why MatchLever?
           </h2>
-          <p className="mt-4 text-base leading-relaxed text-[#5B616B] sm:text-lg">
-            MatchLever is open for employers who want high-signal introductions —
-            not another applicant tracking firehose.
+          <p className="mt-4 text-base leading-relaxed text-[#2B5B84] sm:text-lg">
+            Talent gets precise matches without the black hole. Employers get
+            pre-validated candidates without the firehose.
           </p>
-            <p className="mt-3 text-sm text-[#5B616B]">
-              <span className="font-semibold text-[#2A2D34]">Employers</span>{" "}
-              include hiring managers, corporate recruiters, and employment
-              agencies that are actively seeking candidates.
-            </p>
         </div>
 
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
