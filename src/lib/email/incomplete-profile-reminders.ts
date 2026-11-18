@@ -2,7 +2,9 @@ import { computeTalentMissing } from "@/lib/admin/demo";
 import { REQUIRED_VERIFIED_REFERENCES } from "@/lib/dashboard/talent";
 import {
   getTalentProfileReminderUrl,
-  sendIncompleteProfileReminderEmail,
+  sendMissingReferencesReminderEmail,
+  sendNoProgressReminderEmail,
+  sendReferenceInviteEmail,
 } from "@/lib/email/resend";
 import { listUnsubscribedEmails, normalizeEmail } from "@/lib/email/unsubscribe";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -10,6 +12,8 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 const TALENT_ROLES = new Set(["talent", "both"]);
 const PAGE_SIZE = 1000;
+/** Skip reference reminders for invites sent in the last 2 days. */
+const PENDING_REF_MIN_AGE_MS = 2 * 24 * 60 * 60 * 1000;
 
 type ReminderUser = {
   id: string;
@@ -30,6 +34,15 @@ type ReminderProfile = {
   sanitized_summary: string | null;
 };
 
+type ReminderReference = {
+  id: string;
+  talent_profile_id: string;
+  reference_email: string;
+  status: string;
+  verification_token: string;
+  created_at: string;
+};
+
 export type IncompleteProfileReminderResult = {
   ok: true;
   demo: boolean;
@@ -37,27 +50,13 @@ export type IncompleteProfileReminderResult = {
   sent: number;
   skipped: number;
   failed: number;
+  byType: {
+    noProgress: number;
+    missingReferences: number;
+    pendingReferences: number;
+  };
   errors: string[];
 };
-
-function incompleteItemLabels(input: {
-  missing: ReturnType<typeof computeTalentMissing>;
-  verifiedReferenceCount: number;
-}): string[] {
-  const items: string[] = [];
-  if (input.missing.resume) {
-    items.push("Upload your resume");
-  }
-  if (input.missing.profile) {
-    items.push("Add profile details (title, location, and working hours)");
-  }
-  if (input.missing.references) {
-    items.push(
-      `Complete verified references (${input.verifiedReferenceCount} of ${REQUIRED_VERIFIED_REFERENCES})`
-    );
-  }
-  return items;
-}
 
 async function fetchAllRows<T>(
   loadPage: (
@@ -88,6 +87,11 @@ export async function runIncompleteProfileReminders(): Promise<IncompleteProfile
       sent: 0,
       skipped: 0,
       failed: 0,
+      byType: {
+        noProgress: 0,
+        missingReferences: 0,
+        pendingReferences: 0,
+      },
       errors: [],
     };
   }
@@ -118,35 +122,53 @@ export async function runIncompleteProfileReminders(): Promise<IncompleteProfile
   const profileByUser = new Map(profiles.map((profile) => [profile.user_id, profile]));
   const profileIds = profiles.map((profile) => profile.id);
 
-  const references: { talent_profile_id: string; status: string }[] = [];
+  const references: ReminderReference[] = [];
   for (let i = 0; i < profileIds.length; i += PAGE_SIZE) {
     const chunk = profileIds.slice(i, i + PAGE_SIZE);
     if (chunk.length === 0) continue;
     const { data, error } = await admin
       .from("talent_references")
-      .select("talent_profile_id, status")
+      .select(
+        "id, talent_profile_id, reference_email, status, verification_token, created_at"
+      )
       .in("talent_profile_id", chunk);
     if (error) throw new Error(error.message);
-    references.push(...(data ?? []));
+    references.push(...((data ?? []) as ReminderReference[]));
   }
 
-  const refsByTalent = new Map<string, { status: string }[]>();
+  const refsByTalent = new Map<string, ReminderReference[]>();
   for (const ref of references) {
     const list = refsByTalent.get(ref.talent_profile_id) ?? [];
-    list.push({ status: ref.status });
+    list.push(ref);
     refsByTalent.set(ref.talent_profile_id, list);
   }
 
   const unsubscribed = await listUnsubscribedEmails();
+  const now = Date.now();
 
-  const recipients = users.flatMap((user) => {
+  type TalentJob =
+    | {
+        kind: "no_progress";
+        email: string;
+        fullName: string | null;
+      }
+    | {
+        kind: "missing_references";
+        email: string;
+        fullName: string | null;
+        invitedCount: number;
+      };
+
+  const talentJobs: TalentJob[] = [];
+
+  for (const user of users) {
     const email = user.email?.trim();
-    if (!email) return [];
-    if (unsubscribed.has(normalizeEmail(email))) return [];
+    if (!email) continue;
+    if (unsubscribed.has(normalizeEmail(email))) continue;
 
     const profile = profileByUser.get(user.id) ?? null;
     const isTalentRole = TALENT_ROLES.has(user.role);
-    if (!isTalentRole && !profile) return [];
+    if (!isTalentRole && !profile) continue;
 
     const refs = profile ? refsByTalent.get(profile.id) ?? [] : [];
     const missing = computeTalentMissing({
@@ -161,39 +183,113 @@ export async function runIncompleteProfileReminders(): Promise<IncompleteProfile
       references: refs,
     });
 
-    if (!missing.resume && !missing.profile && !missing.references) {
-      return [];
-    }
+    const profileReady = !missing.resume && !missing.profile;
+    const invitedCount = refs.length;
 
-    const verifiedReferenceCount = refs.filter((r) => r.status === "verified")
-      .length;
-
-    return [
-      {
+    if (!profileReady) {
+      talentJobs.push({
+        kind: "no_progress",
         email,
         fullName: user.full_name,
-        hasTalentProfile: Boolean(profile),
-        incompleteItems: incompleteItemLabels({
-          missing,
-          verifiedReferenceCount,
-        }),
-      },
-    ];
-  });
+      });
+      continue;
+    }
+
+    if (invitedCount < REQUIRED_VERIFIED_REFERENCES) {
+      talentJobs.push({
+        kind: "missing_references",
+        email,
+        fullName: user.full_name,
+        invitedCount,
+      });
+    }
+  }
+
+  type PendingRefJob = {
+    email: string;
+    talentName: string;
+    talentTitle: string;
+    token: string;
+  };
+
+  const pendingRefJobs: PendingRefJob[] = [];
+  const profileById = new Map(profiles.map((p) => [p.id, p]));
+  const userById = new Map(users.map((u) => [u.id, u]));
+
+  for (const ref of references) {
+    if (ref.status !== "pending") continue;
+    const createdAt = Date.parse(ref.created_at);
+    if (!Number.isNaN(createdAt) && now - createdAt < PENDING_REF_MIN_AGE_MS) {
+      continue;
+    }
+    const email = ref.reference_email?.trim();
+    if (!email) continue;
+    if (unsubscribed.has(normalizeEmail(email))) continue;
+
+    const profile = profileById.get(ref.talent_profile_id);
+    if (!profile) continue;
+    const owner = userById.get(profile.user_id);
+    pendingRefJobs.push({
+      email,
+      talentName: owner?.full_name?.trim() || "a MatchLever talent",
+      talentTitle: profile.headline?.trim() || "MatchLever talent",
+      token: ref.verification_token,
+    });
+  }
 
   const errors: string[] = [];
   let sent = 0;
   let skipped = 0;
   let failed = 0;
   let demo = false;
+  const byType = {
+    noProgress: 0,
+    missingReferences: 0,
+    pendingReferences: 0,
+  };
 
-  for (const recipient of recipients) {
+  for (const job of talentJobs) {
     try {
-      const result = await sendIncompleteProfileReminderEmail({
-        to: recipient.email,
-        talentName: recipient.fullName,
-        incompleteItems: recipient.incompleteItems,
-        profileUrl: getTalentProfileReminderUrl(recipient.hasTalentProfile),
+      const result =
+        job.kind === "no_progress"
+          ? await sendNoProgressReminderEmail({
+              to: job.email,
+              talentName: job.fullName,
+              onboardingUrl: getTalentProfileReminderUrl(false),
+            })
+          : await sendMissingReferencesReminderEmail({
+              to: job.email,
+              talentName: job.fullName,
+              invitedCount: job.invitedCount,
+              requiredCount: REQUIRED_VERIFIED_REFERENCES,
+              dashboardUrl: getTalentProfileReminderUrl(true),
+            });
+
+      if (result.skipped) {
+        skipped += 1;
+        continue;
+      }
+      if (result.demo) demo = true;
+      sent += 1;
+      if (job.kind === "no_progress") byType.noProgress += 1;
+      else byType.missingReferences += 1;
+    } catch (error) {
+      failed += 1;
+      const message =
+        error instanceof Error ? error.message : "Failed to send reminder";
+      errors.push(`${job.email}: ${message}`);
+      console.error("[incomplete-profile-reminders]", job.email, message);
+    }
+  }
+
+  for (const job of pendingRefJobs) {
+    try {
+      const result = await sendReferenceInviteEmail({
+        to: job.email,
+        talentName: job.talentName,
+        talentTitle: job.talentTitle,
+        token: job.token,
+        reminder: true,
       });
       if (result.skipped) {
         skipped += 1;
@@ -201,14 +297,15 @@ export async function runIncompleteProfileReminders(): Promise<IncompleteProfile
       }
       if (result.demo) demo = true;
       sent += 1;
+      byType.pendingReferences += 1;
     } catch (error) {
       failed += 1;
       const message =
         error instanceof Error ? error.message : "Failed to send reminder";
-      errors.push(`${recipient.email}: ${message}`);
+      errors.push(`${job.email}: ${message}`);
       console.error(
-        "[incomplete-profile-reminders]",
-        recipient.email,
+        "[incomplete-profile-reminders pending-ref]",
+        job.email,
         message
       );
     }
@@ -217,10 +314,11 @@ export async function runIncompleteProfileReminders(): Promise<IncompleteProfile
   return {
     ok: true,
     demo,
-    eligible: recipients.length,
+    eligible: talentJobs.length + pendingRefJobs.length,
     sent,
     skipped,
     failed,
+    byType,
     errors: errors.slice(0, 20),
   };
 }

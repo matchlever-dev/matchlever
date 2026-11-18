@@ -161,6 +161,14 @@ export function ReferenceStatusTracker({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [addEmail, setAddEmail] = useState("");
+  const [addLinkedIn, setAddLinkedIn] = useState("");
+  const [addRelationship, setAddRelationship] = useState<
+    ReferenceRelationship | ""
+  >("");
+  const [addBusy, setAddBusy] = useState(false);
+  const canAddMore = references.length < 3;
 
   async function resend(referenceId: string) {
     setBusyId(referenceId);
@@ -186,6 +194,40 @@ export function ReferenceStatusTracker({
     }
   }
 
+  async function addReference() {
+    setAddBusy(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/dashboard/talent/references", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: addEmail,
+          linkedInUrl: addLinkedIn,
+          relationship: addRelationship,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Unable to add reference");
+      setAddEmail("");
+      setAddLinkedIn("");
+      setAddRelationship("");
+      setAdding(false);
+      setMessage(
+        data.warning
+          ? data.warning
+          : data.demo
+            ? "Demo: reference invite logged."
+            : "Reference invited."
+      );
+      onChanged?.();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Unable to add reference");
+    } finally {
+      setAddBusy(false);
+    }
+  }
+
   return (
     <section className="border border-[#2B5B84]/15 bg-white p-5 sm:p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -197,6 +239,16 @@ export function ReferenceStatusTracker({
             {verified} of {total || 3} Complete
           </h2>
         </div>
+        {canAddMore && !adding ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setAdding(true)}
+            className="h-10 border-[#2B5B84]/25 text-[#2B5B84]"
+          >
+            Add reference
+          </Button>
+        ) : null}
       </div>
 
       <ul className="mt-5 space-y-3">
@@ -294,12 +346,81 @@ export function ReferenceStatusTracker({
             </li>
           );
         })}
-        {references.length === 0 && (
+        {references.length === 0 && !adding && (
           <li className="text-sm text-[#5B616B]">
-            No references yet. Complete onboarding to invite your references.
+            No references yet. Add three LinkedIn-verified references when
+            you&apos;re ready — employers won&apos;t see you until they complete
+            their forms.
           </li>
         )}
       </ul>
+
+      {adding && canAddMore ? (
+        <div className="mt-4 grid gap-3 border border-[#2B5B84]/15 bg-[#F7F6F3] p-4">
+          <p className="text-sm font-medium text-[#2B5B84]">
+            Invite reference {references.length + 1} of 3
+          </p>
+          <div className="grid gap-1.5">
+            <Label htmlFor="add-ref-email">Email</Label>
+            <input
+              id="add-ref-email"
+              type="email"
+              value={addEmail}
+              disabled={addBusy}
+              onChange={(e) => setAddEmail(e.target.value)}
+              autoComplete="off"
+              className="h-10 w-full rounded-md border border-[#2B5B84]/20 bg-white px-2.5 text-sm outline-none focus-visible:border-[#2B5B84] focus-visible:ring-2 focus-visible:ring-[#2B5B84]/20"
+            />
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="add-ref-linkedin">LinkedIn profile URL</Label>
+            <input
+              id="add-ref-linkedin"
+              {...urlTextInputProps}
+              value={addLinkedIn}
+              disabled={addBusy}
+              onChange={(e) => setAddLinkedIn(e.target.value)}
+              onBlur={() => {
+                const completed = ensureAbsoluteHttpUrl(addLinkedIn);
+                if (completed && completed !== addLinkedIn) {
+                  setAddLinkedIn(completed);
+                }
+              }}
+              className="h-10 w-full rounded-md border border-[#2B5B84]/20 bg-white px-2.5 text-sm outline-none focus-visible:border-[#2B5B84] focus-visible:ring-2 focus-visible:ring-[#2B5B84]/20"
+            />
+          </div>
+          <div className="grid gap-1.5">
+            <Label>Relationship</Label>
+            <RelationshipSelect
+              value={addRelationship}
+              onValueChange={(value: ReferenceRelationship) =>
+                setAddRelationship(value)
+              }
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              disabled={
+                addBusy || !addEmail.trim() || !addLinkedIn.trim() || !addRelationship
+              }
+              onClick={() => void addReference()}
+              className="h-10 bg-[#2B5B84] text-white hover:bg-[#244e71]"
+            >
+              {addBusy ? "Sending…" : "Send invite"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={addBusy}
+              onClick={() => setAdding(false)}
+              className="h-10 border-[#2B5B84]/25 text-[#2B5B84]"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       {message && (
         <p className="mt-4 text-xs text-[#2B5B84]">{message}</p>

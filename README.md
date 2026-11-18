@@ -73,14 +73,16 @@ Requires `GROQ_API_KEY` in `.env.local`.
 - `/legal/employers` — Employer Terms of Service (matching engine; no quality guarantee)
 - `/dashboard/employer` — employer portal with job openings and billing
 - `/dashboard/employer/jobs/new` — create a job opening (JD autofill supported)
-- `/onboarding` — 4-step talent wizard (Terms of Service → LinkedIn + Incognito → resume sanitize → global prefs + taglines → references)
+- `/onboarding` — 4-step talent wizard (Terms of Service → LinkedIn + Incognito → resume sanitize → global prefs + taglines → references). Progress autosaves; **Finish later** saves a draft without references.
 - `/legal/talent` — Talent Terms of Service (PDF + readable page; required before account creation)
 - `/reference/[token]` — mobile reference verification (identity → 7 superpowers → ratings → endorsement)
-- `/dashboard/talent` — anonymous employer card, availability toggle, reference tracker + Resend, edit/delete
+- `/dashboard/talent` — anonymous employer card, availability toggle, reference tracker + add/resend invites, edit/delete
 
 ## Talent dashboard
 
-`/dashboard/talent` shows the employer-facing anonymous card (initials, AI tagline, verified skills, location/timezone, reference progress), an **Actively Looking / On Hold** toggle (writes `talent_profiles.status`), Resend-powered **Resend Link** for pending references, plus Edit Profile and Delete Account.
+`/dashboard/talent` shows the employer-facing anonymous card (initials, AI tagline, verified skills, location/timezone, reference progress), an **Actively Looking / On Hold** toggle (writes `talent_profiles.status`), **Add reference** / Resend-powered **Resend Link** for pending references, plus Edit Profile and Delete Account.
+
+Weekly cron `GET /api/cron/incomplete-profile-reminders` (Mondays) sends three reminder types: (1) talent with no/partial progress, (2) talent missing reference invites, (3) pending referrers who have not responded.
 
 Env for invite email:
 

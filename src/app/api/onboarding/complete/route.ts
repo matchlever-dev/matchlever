@@ -1,40 +1,24 @@
 import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 
-import {
-  talentNameForInvite,
-  displayNameFromAuthUser,
-} from "@/lib/auth/display-name";
-import {
-  linkedinUrlFromAuthUser,
-  normalizePublicLinkedInProfileUrl,
-} from "@/lib/auth/linkedin-url";
+import { talentNameForInvite } from "@/lib/auth/display-name";
 import { sendReferenceInviteEmail } from "@/lib/email/resend";
-import { onboardingFormSchema, resolveOnboardingCity } from "@/lib/onboarding/form-schema";
+import { onboardingFormSchema } from "@/lib/onboarding/form-schema";
 import {
-  toPostgresStringArray,
-  toPostgresText,
-  toPostgresTextOrNull,
-} from "@/lib/postgres-text";
-import { timezoneOffsetMinutes } from "@/lib/onboarding/schema";
+  ensureUserProfileForTalent,
+  upsertTalentProfileDraft,
+} from "@/lib/onboarding/persist-talent-profile";
 import {
   REFERRER_LINKEDIN_INVALID_MESSAGE,
   validateReferrerLinkedIn,
 } from "@/lib/reference/linkedin-validation";
 import { SESSION_EXPIRED_MESSAGE } from "@/lib/auth/stay-signed-in";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
-
-function normalizeTime(value: string): string {
-  // Accept "HH:MM" or "HH:MM:SS" → Postgres time
-  if (/^\d{2}:\d{2}$/.test(value)) return `${value}:00`;
-  return value;
-}
 
 function newVerificationToken() {
   return randomBytes(24).toString("hex"); // 48 chars
@@ -130,165 +114,32 @@ export async function POST(request: Request) {
       );
     }
 
-    // Ensure app profile row exists (auth trigger normally creates it).
-    const fullName = displayNameFromAuthUser(user);
-    const avatarUrl =
-      typeof user.user_metadata?.avatar_url === "string"
-        ? user.user_metadata.avatar_url
-        : null;
-    const linkedInUrl =
-      normalizePublicLinkedInProfileUrl(data.talentLinkedInUrl) ||
-      linkedinUrlFromAuthUser(user);
-
-    const { data: existingUserProfile } = await supabase
-      .from("user_profiles")
-      .select("id")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (existingUserProfile) {
-      const { error: profileUpdateError } = await supabase
-        .from("user_profiles")
-        .update({
-          email: user.email ?? null,
-          full_name: fullName,
-          avatar_url: avatarUrl,
-          role: "talent",
-          ...(linkedInUrl ? { linkedin_url: linkedInUrl } : {}),
-        })
-        .eq("id", user.id);
-      if (profileUpdateError) {
-        console.error("[onboarding user_profiles]", profileUpdateError.message);
-        return NextResponse.json(
-          { error: "Unable to save user profile" },
-          { status: 500 }
-        );
-      }
-    } else {
-      const admin = createAdminClient();
-      if (!admin) {
-        return NextResponse.json(
-          {
-            error:
-              "User profile missing and service role is not configured. Re-sign in or set SUPABASE_SERVICE_ROLE_KEY.",
-          },
-          { status: 500 }
-        );
-      }
-      const { error: profileInsertError } = await admin
-        .from("user_profiles")
-        .insert({
-          id: user.id,
-          email: user.email ?? null,
-          full_name: fullName,
-          avatar_url: avatarUrl,
-          role: "talent",
-          linkedin_url: linkedInUrl,
-        });
-      if (profileInsertError) {
-        console.error("[onboarding user_profiles insert]", profileInsertError.message);
-        return NextResponse.json(
-          { error: "Unable to create user profile" },
-          { status: 500 }
-        );
-      }
+    const userResult = await ensureUserProfileForTalent({
+      supabase,
+      user,
+      talentLinkedInUrl: data.talentLinkedInUrl,
+    });
+    if (userResult.error) {
+      return NextResponse.json({ error: userResult.error }, { status: 500 });
     }
 
-    const orderedModes = (["remote", "hybrid", "onsite"] as const).filter(
-      (mode) => data.locationModes.includes(mode)
-    );
-    const needsLocal =
-      orderedModes.includes("hybrid") || orderedModes.includes("onsite");
-    const resolvedCity = resolveOnboardingCity(data);
-
-    const talentPayload = {
-      user_id: user.id,
-      headline:
-        toPostgresText(data.anonymousTitle?.trim() || "") ||
-        "MatchLever Talent",
-      sanitized_summary: toPostgresTextOrNull(data.sanitizedSummary),
-      raw_resume_text: toPostgresTextOrNull(data.rawResumeText)?.slice(0, 60_000) ?? null,
-      verified_skills: toPostgresStringArray(data.verifiedSkills),
-      suggested_taglines: toPostgresStringArray(data.suggestedTaglines),
-      selected_tagline: toPostgresText(data.selectedTagline.trim()),
-      global_city: toPostgresText(resolvedCity),
-      global_country: toPostgresText(data.globalCountry),
-      timezone: toPostgresText(data.timezone),
-      timezone_offset: timezoneOffsetMinutes(data.timezone),
-      work_hours_start: normalizeTime(data.workHoursStart),
-      work_hours_end: normalizeTime(data.workHoursEnd),
-      location_modes: orderedModes,
-      location_mode: orderedModes[0],
-      max_commute_miles: needsLocal ? data.maxCommuteMiles : null,
-      open_to_relocation: needsLocal ? data.openToRelocation : null,
-      min_salary: data.minSalary,
-      visa_status: toPostgresText(data.visaStatus),
-      years_experience: data.yearsExperience ?? null,
-      talent_tos_accepted_at: new Date().toISOString(),
-      // Hidden until all three references are verified.
-      status: "on_hold",
-    };
-
-    const { data: existingTalent } = await supabase
-      .from("talent_profiles")
-      .select("id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    let talentId = existingTalent?.id ?? null;
-
-    if (talentId) {
-      let { error: updateError } = await supabase
-        .from("talent_profiles")
-        .update(talentPayload)
-        .eq("id", talentId);
-      if (updateError?.message?.includes("timezone")) {
-        const { timezone: _timezone, ...withoutTimezone } = talentPayload;
-        ({ error: updateError } = await supabase
-          .from("talent_profiles")
-          .update(withoutTimezone)
-          .eq("id", talentId));
-      }
-      if (updateError) {
-        console.error(
-          "[onboarding talent update]",
-          updateError.message,
-          updateError.code,
-          updateError.details
-        );
-        return NextResponse.json(
-          { error: "Unable to update talent profile" },
-          { status: 500 }
-        );
-      }
-    } else {
-      let { data: inserted, error: insertError } = await supabase
-        .from("talent_profiles")
-        .insert(talentPayload)
-        .select("id")
-        .single();
-      if (insertError?.message?.includes("timezone")) {
-        const { timezone: _timezone, ...withoutTimezone } = talentPayload;
-        ({ data: inserted, error: insertError } = await supabase
-          .from("talent_profiles")
-          .insert(withoutTimezone)
-          .select("id")
-          .single());
-      }
-      if (insertError || !inserted) {
-        console.error(
-          "[onboarding talent insert]",
-          insertError?.message,
-          insertError?.code,
-          insertError?.details
-        );
-        return NextResponse.json(
-          { error: "Unable to create talent profile" },
-          { status: 500 }
-        );
-      }
-      talentId = inserted.id;
+    const talentResult = await upsertTalentProfileDraft({
+      supabase,
+      userId: user.id,
+      data: {
+        ...data,
+        talentTosAgreed: true,
+        anonymousTitle:
+          data.anonymousTitle?.trim() || "MatchLever Talent",
+      },
+    });
+    if (talentResult.error || !talentResult.talentId) {
+      return NextResponse.json(
+        { error: talentResult.error || "Unable to save talent profile" },
+        { status: 500 }
+      );
     }
+    const talentId = talentResult.talentId;
 
     // Replace reference invites on (re)completion.
     const { error: deleteRefsError } = await supabase
@@ -329,7 +180,7 @@ export async function POST(request: Request) {
 
     const talentTitle =
       data.anonymousTitle?.trim() || "a MatchLever talent";
-    const talentName = talentNameForInvite(user, fullName);
+    const talentName = talentNameForInvite(user);
 
     const emailResults: {
       email: string;

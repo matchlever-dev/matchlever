@@ -118,6 +118,17 @@ export function StepAuth() {
           Before you create an account or upload a resume, review and agree to
           the Talent Terms of Service.
         </p>
+        <div className="mt-4 rounded-xl border border-[#2B5B84]/15 bg-white p-4 text-sm leading-relaxed text-[#2A2D34]">
+          <p className="font-display text-[11px] font-semibold tracking-[0.18em] text-[#E87A5D] uppercase">
+            Before you finish
+          </p>
+          <p className="mt-2">
+            You&apos;ll need LinkedIn profile links for 3 references. You can
+            finish your resume and preferences first and add them when
+            you&apos;re ready — or gather the URLs now. Progress saves as you
+            go, and you can leave with Finish later anytime after you sign in.
+          </p>
+        </div>
       </div>
 
       <div className="rounded-xl border border-[#E87A5D]/30 bg-white p-5">

@@ -48,9 +48,8 @@ export async function resolvePostLoginPath(
       safe.startsWith("/onboarding") ||
       safe === "/")
   ) {
-    if (safe.startsWith("/onboarding") && ctx.hasTalentProfile) {
-      return "/dashboard/talent?edit=1";
-    }
+    // Incomplete drafts may still need /onboarding; the page redirects only
+    // after all three references have been invited.
     if (safe.startsWith("/dashboard/employer") && !ctx.hasEmployerProfile) {
       return "/employer/onboarding";
     }

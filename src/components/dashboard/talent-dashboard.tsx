@@ -47,7 +47,13 @@ export function TalentDashboard() {
   useEffect(() => {
     const warning = searchParams.get("warning");
     if (warning) setInviteWarning(warning);
-  }, [searchParams]);
+    if (searchParams.get("draft") === "saved") {
+      setInviteWarning(
+        "Progress saved. Add your three references when you're ready — employers won't see you until they verify."
+      );
+      router.replace("/dashboard/talent", { scroll: false });
+    }
+  }, [searchParams, router]);
 
   useEffect(() => {
     if (searchParams.get("edit") !== "1") return;

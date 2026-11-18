@@ -234,3 +234,71 @@ export async function sendIncompleteProfileReminderEmail(args: {
     `,
   });
 }
+
+/** Type 1: signed up but has not entered onboarding progress yet (or only started). */
+export async function sendNoProgressReminderEmail(args: {
+  to: string;
+  talentName: string | null;
+  onboardingUrl: string;
+}) {
+  const firstName = oneLine(args.talentName || "").split(/\s+/)[0] || "";
+  const greeting = firstName ? `Hi ${escapeHtml(firstName)},` : "Hi,";
+  const subject = firstName
+    ? `${firstName}, finish setting up your MatchLever profile`
+    : "Finish setting up your MatchLever profile";
+
+  return deliverAutomatedEmail({
+    to: args.to,
+    subject,
+    html: `
+        <p>${greeting}</p>
+        <p>You signed in to MatchLever, but your anonymous talent profile is
+        still empty. Resume onboarding when you&apos;re ready — progress saves
+        as you go, and you can add references later.</p>
+        <p>
+          <a href="${args.onboardingUrl}" style="background:#2B5B84;color:#fff;padding:10px 16px;text-decoration:none;border-radius:6px;display:inline-block">
+            Continue onboarding
+          </a>
+        </p>
+        <p style="font-size:12px;color:#5B616B">Or paste this URL:<br/>${args.onboardingUrl}</p>
+        <p style="font-size:12px;color:#5B616B">We&apos;ll remind you weekly until you save profile details.</p>
+    `,
+  });
+}
+
+/** Type 2: profile/resume done, still needs reference invites. */
+export async function sendMissingReferencesReminderEmail(args: {
+  to: string;
+  talentName: string | null;
+  invitedCount: number;
+  requiredCount: number;
+  dashboardUrl: string;
+}) {
+  const firstName = oneLine(args.talentName || "").split(/\s+/)[0] || "";
+  const greeting = firstName ? `Hi ${escapeHtml(firstName)},` : "Hi,";
+  const remaining = Math.max(args.requiredCount - args.invitedCount, 0);
+  const subject = firstName
+    ? `${firstName}, add your MatchLever references`
+    : "Add your MatchLever references";
+
+  return deliverAutomatedEmail({
+    to: args.to,
+    subject,
+    html: `
+        <p>${greeting}</p>
+        <p>Your resume and preferences are saved. You still need
+        <strong>${remaining}</strong> more reference${remaining === 1 ? "" : "s"}
+        (${args.invitedCount} of ${args.requiredCount} invited) before employers
+        can find you.</p>
+        <p>Have LinkedIn profile URLs ready, then invite them from your dashboard.
+        We email a short form — no phone calls.</p>
+        <p>
+          <a href="${args.dashboardUrl}" style="background:#2B5B84;color:#fff;padding:10px 16px;text-decoration:none;border-radius:6px;display:inline-block">
+            Add references
+          </a>
+        </p>
+        <p style="font-size:12px;color:#5B616B">Or paste this URL:<br/>${args.dashboardUrl}</p>
+        <p style="font-size:12px;color:#5B616B">We&apos;ll remind you weekly until all three are invited.</p>
+    `,
+  });
+}

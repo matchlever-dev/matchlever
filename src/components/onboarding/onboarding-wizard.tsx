@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FormProvider, useForm, type FieldPath } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AnimatePresence, motion } from "framer-motion";
@@ -36,14 +36,55 @@ export function OnboardingWizard() {
   const router = useRouter();
   const [step, setStep] = useState<OnboardingStepId>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingLater, setIsSavingLater] = useState(false);
   const [isCheckingLinkedIn, setIsCheckingLinkedIn] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [draftStatus, setDraftStatus] = useState<string | null>(null);
+  const [draftReady, setDraftReady] = useState(false);
 
   const form = useForm<OnboardingFormValues>({
     resolver: zodResolver(onboardingFormSchema),
     defaultValues: defaultOnboardingValues,
     mode: "onTouched",
   });
+
+  useEffect(() => {
+    let active = true;
+    async function hydrateDraft() {
+      try {
+        const res = await fetch("/api/onboarding/draft");
+        if (!res.ok) {
+          if (active) setDraftReady(true);
+          return;
+        }
+        const data = (await res.json()) as {
+          draft?: {
+            values: Partial<OnboardingFormValues>;
+            stepHint: OnboardingStepId;
+            referenceCount: number;
+          } | null;
+        };
+        if (!active) return;
+        if (data.draft?.values) {
+          form.reset({
+            ...defaultOnboardingValues,
+            ...data.draft.values,
+            references: defaultOnboardingValues.references,
+          });
+          setStep(data.draft.stepHint);
+          setDraftStatus("Progress restored from your last save.");
+        }
+      } catch {
+        // Demo / offline: continue with empty wizard.
+      } finally {
+        if (active) setDraftReady(true);
+      }
+    }
+    void hydrateDraft();
+    return () => {
+      active = false;
+    };
+  }, [form]);
 
   async function validateCurrentStep() {
     const schema = getStepSchema(step);
@@ -103,7 +144,7 @@ export function OnboardingWizard() {
           type: "manual",
           message:
             result.error ||
-            "This LinkedIn page could not be opened. Check the URL.",
+            "This LinkedIn profile could not be opened. Check the URL.",
         });
         return;
       }
@@ -118,7 +159,6 @@ export function OnboardingWizard() {
 
   async function ensureSignedInSession(): Promise<boolean> {
     try {
-      // Keep the rolling stay-signed-in window alive while the user finishes.
       setStaySignedInPreference(true);
       const supabase = createClient();
       const { data, error } = await supabase.auth.getUser();
@@ -135,6 +175,52 @@ export function OnboardingWizard() {
     setStep(1);
     setSubmitError(message);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function saveDraft(): Promise<boolean> {
+    const signedIn = await ensureSignedInSession();
+    if (!signedIn) {
+      promptReauthenticate();
+      return false;
+    }
+
+    const payload = form.getValues();
+    if (!payload.linkedInConnected) {
+      return false;
+    }
+
+    const res = await fetch("/api/onboarding/draft", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = (await res.json()) as { error?: string };
+    if (!res.ok) {
+      if (res.status === 401) {
+        promptReauthenticate(data.error || SESSION_EXPIRED_MESSAGE);
+        return false;
+      }
+      throw new Error(data.error || "Could not save progress");
+    }
+    setDraftStatus("Progress saved.");
+    return true;
+  }
+
+  async function handleFinishLater() {
+    setSubmitError(null);
+    setIsSavingLater(true);
+    try {
+      // Soft-save: keep what they have even if the current step is incomplete.
+      const saved = await saveDraft();
+      if (!saved) return;
+      router.push("/dashboard/talent?draft=saved");
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error ? err.message : "Could not save progress"
+      );
+    } finally {
+      setIsSavingLater(false);
+    }
   }
 
   async function handleNext() {
@@ -184,6 +270,19 @@ export function OnboardingWizard() {
     }
 
     if (step < ONBOARDING_STEPS.length) {
+      // Autosave after a validated step once LinkedIn is connected.
+      if (form.getValues("linkedInConnected")) {
+        try {
+          await saveDraft();
+        } catch (err) {
+          setSubmitError(
+            err instanceof Error
+              ? err.message
+              : "Could not save progress before continuing"
+          );
+          return;
+        }
+      }
       setStep((step + 1) as OnboardingStepId);
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
@@ -229,7 +328,6 @@ export function OnboardingWizard() {
         throw new Error(data.error || "Could not complete onboarding");
       }
       if (data.warning) {
-        // Keep a soft signal in the URL so the dashboard can surface it.
         router.push(
           `/dashboard/talent?onboarding=complete&warning=${encodeURIComponent(data.warning)}`
         );
@@ -252,11 +350,24 @@ export function OnboardingWizard() {
     }
   }
 
+  if (!draftReady) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F8F9FA] text-sm text-[#5B616B]">
+        Loading your progress…
+      </div>
+    );
+  }
+
   return (
     <FormProvider {...form}>
       <div className="min-h-screen bg-[#F8F9FA] text-[#2A2D34]">
         <StepProgress step={step} />
         <main className="mx-auto max-w-3xl px-6 pb-36 pt-10 sm:px-8">
+          {draftStatus ? (
+            <p className="mb-4 text-sm text-[#2B5B84]" role="status">
+              {draftStatus}
+            </p>
+          ) : null}
           <AnimatePresence mode="wait">
             <motion.div
               key={step}
@@ -275,9 +386,12 @@ export function OnboardingWizard() {
         <WizardFooter
           step={step}
           isSubmitting={isSubmitting || isCheckingLinkedIn}
+          isSavingLater={isSavingLater}
           error={submitError}
           onBack={handleBack}
           onNext={handleNext}
+          onFinishLater={() => void handleFinishLater()}
+          showFinishLater={step >= 2 && form.watch("linkedInConnected")}
           nextLabel={
             isCheckingLinkedIn
               ? "Checking LinkedIn pages…"

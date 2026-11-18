@@ -13,8 +13,8 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 /**
- * Returning talent who already have a profile should edit missing fields on
- * the dashboard — not restart full onboarding (which risks overwriting data).
+ * Talent who already invited all three references should manage the profile
+ * on the dashboard. Incomplete drafts stay in the wizard so progress can resume.
  */
 export default async function OnboardingPage() {
   if (isSupabaseConfigured()) {
@@ -32,7 +32,14 @@ export default async function OnboardingPage() {
           .maybeSingle();
 
         if (profile) {
-          redirect("/dashboard/talent?edit=1");
+          const { count } = await supabase
+            .from("talent_references")
+            .select("id", { count: "exact", head: true })
+            .eq("talent_profile_id", profile.id);
+
+          if ((count ?? 0) >= 3) {
+            redirect("/dashboard/talent?edit=1");
+          }
         }
       }
     } catch (error) {

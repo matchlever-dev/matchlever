@@ -27,8 +27,184 @@ const bodySchema = z
     message: "Provide an email, LinkedIn URL, and/or relationship to update",
   });
 
+const createSchema = z.object({
+  email: z.string().trim().email("Enter a valid email"),
+  linkedInUrl: linkedInUrlSchema,
+  relationship: referenceRelationshipSchema,
+});
+
 function newVerificationToken() {
   return randomBytes(24).toString("hex");
+}
+
+/** Invite a new reference when the talent has fewer than three. */
+export async function POST(request: Request) {
+  try {
+    const parsed = createSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0]?.message || "Invalid payload" },
+        { status: 400 }
+      );
+    }
+
+    const email = parsed.data.email.trim().toLowerCase();
+    const validation = await validateReferrerLinkedIn(parsed.data.linkedInUrl);
+    if (!validation.valid) {
+      return NextResponse.json(
+        { error: REFERRER_LINKEDIN_INVALID_MESSAGE },
+        { status: 400 }
+      );
+    }
+    const linkedInUrl = validation.normalizedUrl;
+    const linkedInFlags = [
+      "talent_provided_linkedin",
+      `validation_mode:${validation.mode}`,
+      ...validation.flags,
+    ];
+
+    if (!isSupabaseConfigured()) {
+      return NextResponse.json({
+        ok: true,
+        demo: true,
+        message: "Demo: reference invite logged (configure Supabase to persist).",
+      });
+    }
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const [{ data: profile }, { data: userProfile }] = await Promise.all([
+      supabase
+        .from("talent_profiles")
+        .select("id, headline")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("user_profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .maybeSingle(),
+    ]);
+
+    if (!profile) {
+      return NextResponse.json(
+        { error: "Talent profile not found" },
+        { status: 404 }
+      );
+    }
+
+    const { data: existingRefs, error: listError } = await supabase
+      .from("talent_references")
+      .select("id, reference_email, reference_linkedin_url")
+      .eq("talent_profile_id", profile.id);
+
+    if (listError) {
+      console.error("[references list]", listError.message);
+      return NextResponse.json(
+        { error: "Unable to load references" },
+        { status: 500 }
+      );
+    }
+
+    if ((existingRefs?.length ?? 0) >= 3) {
+      return NextResponse.json(
+        { error: "You already have three references" },
+        { status: 409 }
+      );
+    }
+
+    if (
+      (existingRefs ?? []).some(
+        (row) => row.reference_email.toLowerCase() === email
+      )
+    ) {
+      return NextResponse.json(
+        { error: "That email is already used for another reference" },
+        { status: 409 }
+      );
+    }
+
+    if (
+      (existingRefs ?? []).some((row) => {
+        const existing = row.reference_linkedin_url;
+        if (!existing) return false;
+        return linkedInUrlsMatch(existing, linkedInUrl);
+      })
+    ) {
+      return NextResponse.json(
+        { error: "That LinkedIn profile is already used for another reference" },
+        { status: 409 }
+      );
+    }
+
+    const token = newVerificationToken();
+    const { data: inserted, error: insertError } = await supabase
+      .from("talent_references")
+      .insert({
+        talent_profile_id: profile.id,
+        reference_email: email,
+        reference_linkedin_url: linkedInUrl,
+        relationship: parsed.data.relationship,
+        status: "pending",
+        verification_token: token,
+        authenticity_flags: linkedInFlags as Json,
+      })
+      .select("id, reference_email, verification_token")
+      .single();
+
+    if (insertError || !inserted) {
+      console.error("[references create]", insertError?.message);
+      return NextResponse.json(
+        { error: "Unable to create reference invite" },
+        { status: 500 }
+      );
+    }
+
+    let invite:
+      | { demo: boolean; inviteUrl: string; id?: string; skipped?: boolean }
+      | { error: string }
+      | null = null;
+    try {
+      const sent = await sendReferenceInviteEmail({
+        to: email,
+        talentName: talentNameForInvite(user, userProfile?.full_name),
+        talentTitle: profile.headline || "MatchLever talent",
+        token,
+      });
+      invite = sent;
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to send invite";
+      console.error("[references create email]", email, message);
+      invite = { error: message };
+    }
+
+    return NextResponse.json({
+      ok: true,
+      referenceId: inserted.id,
+      inviteSent: Boolean(
+        invite && !("error" in invite) && !invite.skipped
+      ),
+      invite,
+      warning:
+        invite && "error" in invite
+          ? `Saved, but invite failed to send: ${invite.error}`
+          : invite && "skipped" in invite && invite.skipped
+            ? UNSUBSCRIBED_EMAIL_MESSAGE
+            : undefined,
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unable to create reference";
+    console.error("[/api/dashboard/talent/references POST]", message);
+    return NextResponse.json({ error: message }, { status: 502 });
+  }
 }
 
 export async function PATCH(request: Request) {

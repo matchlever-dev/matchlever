@@ -91,6 +91,11 @@ export function StepReferences() {
             away. Each person will get an email with a link and just answer a
             few questions online.
           </p>
+          <p className="mt-3 text-[#5B616B]">
+            Not ready to invite them yet? Use Finish later — your profile stays
+            saved and you can add references from your dashboard after you&apos;ve
+            asked them.
+          </p>
         </div>
       </div>
 
