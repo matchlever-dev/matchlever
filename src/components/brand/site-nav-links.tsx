@@ -14,6 +14,7 @@ export const HEADER_NAV_LINKS = [
 export const FOOTER_NAV_LINKS = [
   { href: "/about", label: "About MatchLever" },
   { href: "/faq", label: "FAQ" },
+  { href: "/pricing", label: "Pricing" },
   { href: "/dashboard/employer/jobs/new", label: "Post a job opening" },
   { href: "/legal/talent", label: "Talent Terms" },
   { href: "/legal/employers", label: "Employer Terms" },
