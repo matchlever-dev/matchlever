@@ -65,8 +65,10 @@ export function StreamlineHiringSection({ showCta = true }: { showCta?: boolean 
             Why MatchLever?
           </h2>
           <p className="mt-4 text-base leading-relaxed text-[#2B5B84] sm:text-lg">
-            Talent gets precise matches without the black hole. Employers get
-            pre-validated candidates without the firehose.
+            Talent gets precise matches without the black hole.
+          </p>
+          <p className="mt-2 text-base leading-relaxed text-[#2B5B84] sm:text-lg">
+            Employers get pre-validated candidates without the firehose.
           </p>
         </div>
 
