@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requireAdminApi } from "@/lib/auth/api-guards";
+import { DEMO_ADMIN_JOB_MATCHES } from "@/lib/admin/demo";
 import { markMatchBilling } from "@/lib/matching/billing";
 import { createManualMatch } from "@/lib/matching/create-match";
-import { isMatchableTalentStatus } from "@/lib/matching/eligibility";
 import { createClient } from "@/lib/supabase/server";
 
 type RouteContext = {
@@ -28,10 +28,8 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   if (auth.actor.demo) {
-    if (!isMatchableTalentStatus("actively_looking")) {
-      return NextResponse.json({ error: "Invalid talent" }, { status: 400 });
-    }
-    const matchIndex = 2;
+    const existing = DEMO_ADMIN_JOB_MATCHES[jobPostingId] ?? [];
+    const matchIndex = existing.length + 1;
     const billing = markMatchBilling(matchIndex);
     return NextResponse.json({
       ok: true,
@@ -43,7 +41,7 @@ export async function POST(request: Request, context: RouteContext) {
         matchIndex: billing.matchIndex,
         billingStatus: billing.billingStatus,
         invoiceCycle: billing.invoiceCycle,
-        matchSource: "manual",
+        matchSource: "manual" as const,
         acceptToken: `demo-token-${Date.now()}`,
         acceptedAt: null,
         kanbanColumn: parsed.data.kanbanColumn || "sourced",

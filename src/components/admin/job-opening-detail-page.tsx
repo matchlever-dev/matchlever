@@ -144,12 +144,57 @@ function JobOpeningDetail({
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Match failed");
+      const created = json.match as {
+        id: string;
+        talentProfileId: string;
+        matchIndex: number;
+        billingStatus: "free" | "invoiced";
+        invoiceCycle: number;
+        matchSource: "manual" | "ai";
+        kanbanColumn: string;
+        notes: string | null;
+      };
+      const selected = talent.find((t) => t.id === talentId);
+      setMatches((prev) => [
+        ...prev,
+        {
+          id: created.id,
+          talent_profile_id: created.talentProfileId,
+          talent_headline: selected?.headline ?? null,
+          talent_name: selected?.full_name ?? null,
+          talent_status: selected?.status ?? "actively_looking",
+          match_source: created.matchSource || "manual",
+          match_index: created.matchIndex,
+          billing_status: created.billingStatus,
+          invoice_cycle: created.invoiceCycle,
+          accepted: false,
+          accepted_at: null,
+          employer_notified_at: new Date().toISOString(),
+          linkedin_sent_at: null,
+          kanban_column: created.kanbanColumn,
+          notes: created.notes,
+          created_at: new Date().toISOString(),
+        },
+      ]);
+      setTalent((prev) => prev.filter((t) => t.id !== talentId));
+      setTalentId("");
+      if (job) {
+        setJob({
+          ...job,
+          match_count: job.match_count + 1,
+          free_match_count:
+            job.free_match_count + (created.billingStatus === "free" ? 1 : 0),
+          invoiced_match_count:
+            job.invoiced_match_count +
+            (created.billingStatus === "invoiced" ? 1 : 0),
+        });
+      }
       setMessage(
         json.demo
-          ? `Demo match recorded as ${json.match.billingStatus} (#${json.match.matchIndex}).`
-          : `Matched. Billing: ${json.match.billingStatus} (#${json.match.matchIndex}). Employer email ${json.match.employerEmailSent ? "sent" : "not sent"}.`
+          ? `Demo match recorded as ${created.billingStatus} (#${created.matchIndex}).`
+          : `Matched. Billing: ${created.billingStatus} (#${created.matchIndex}). Employer email ${json.match.employerEmailSent ? "sent" : "not sent"}.`
       );
-      await load();
+      if (!json.demo) await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Match failed");
     } finally {
