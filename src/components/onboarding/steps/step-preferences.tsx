@@ -13,6 +13,7 @@ import {
   OTHER_CITY_VALUE,
   citiesForCountry,
 } from "@/lib/onboarding/locations";
+import { SUPERPOWER_TAGLINE_MAX_LENGTH } from "@/lib/taglines";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -72,10 +73,11 @@ export function StepPreferences() {
   function updateTagline(index: number, value: string) {
     const next = [...editorTaglines];
     const previous = next[index] ?? "";
-    next[index] = value;
+    const clipped = value.slice(0, SUPERPOWER_TAGLINE_MAX_LENGTH);
+    next[index] = clipped;
     setValue("suggestedTaglines", next, { shouldValidate: true });
     if (selectedTagline === previous || selectedTagline === "") {
-      setValue("selectedTagline", value, { shouldValidate: true });
+      setValue("selectedTagline", clipped, { shouldValidate: true });
     }
   }
 
@@ -465,9 +467,12 @@ export function StepPreferences() {
                         }}
                         onClick={(e) => e.stopPropagation()}
                         className="mt-2 bg-white"
-                        maxLength={160}
+                        maxLength={SUPERPOWER_TAGLINE_MAX_LENGTH}
                         placeholder="At least 8 characters"
                       />
+                      <span className="mt-1 block text-right text-xs text-[#2A2D34]/55">
+                        {tagline.length}/{SUPERPOWER_TAGLINE_MAX_LENGTH}
+                      </span>
                     </span>
                   </label>
                 ))}

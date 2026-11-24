@@ -3,6 +3,10 @@ import { z } from "zod";
 import { LOCATION_MODE_VALUES } from "@/lib/onboarding/form-schema";
 import { TIMEZONE_VALUES, VISA_OPTIONS } from "@/lib/onboarding/schema";
 import { SUPERPOWER_TAXONOMY } from "@/lib/reference/taxonomy";
+import {
+  SUPERPOWER_TAGLINE_MAX_LENGTH,
+  SUPERPOWER_TAGLINE_MIN_LENGTH,
+} from "@/lib/taglines";
 
 const locationModeSchema = z.enum(LOCATION_MODE_VALUES);
 const visaValues = VISA_OPTIONS.map((option) => option.value) as [
@@ -20,9 +24,21 @@ export const parsedJobDescriptionSchema = z.object({
   verified_skills: z.array(z.string().trim().min(1).max(60)).min(1).max(24),
   years_experience: z.number().int().min(0).max(40),
   suggested_taglines: z.tuple([
-    z.string().trim().min(8).max(60),
-    z.string().trim().min(8).max(60),
-    z.string().trim().min(8).max(60),
+    z
+      .string()
+      .trim()
+      .min(SUPERPOWER_TAGLINE_MIN_LENGTH)
+      .max(SUPERPOWER_TAGLINE_MAX_LENGTH),
+    z
+      .string()
+      .trim()
+      .min(SUPERPOWER_TAGLINE_MIN_LENGTH)
+      .max(SUPERPOWER_TAGLINE_MAX_LENGTH),
+    z
+      .string()
+      .trim()
+      .min(SUPERPOWER_TAGLINE_MIN_LENGTH)
+      .max(SUPERPOWER_TAGLINE_MAX_LENGTH),
   ]),
   endorsed_skills: z.array(z.enum(endorsedSkillIds)).max(7),
   location_modes: z.array(locationModeSchema).min(1),
@@ -77,7 +93,7 @@ Return ONLY valid JSON (no markdown fences) matching:
 - title: best job title (no company name fluff).
 - verified_skills: concrete skills/tools from the JD (canonical names). 4–16 items when possible.
 - years_experience: minimum years required (0 if entry-level / not stated).
-- suggested_taglines: exactly 3 punchy role-fit lines (max 60 chars each) employers can keep/edit.
+- suggested_taglines: exactly 3 punchy role-fit lines (max ${SUPERPOWER_TAGLINE_MAX_LENGTH} chars each; rewrite to fit — never mid-word truncate) employers can keep/edit.
 - endorsed_skills: choose UP TO 7 ids from this taxonomy ONLY (use ids, not labels):
 ${TAXONOMY_FOR_PROMPT}
 - location_modes: all modes clearly allowed. Default ["remote"] if unclear.

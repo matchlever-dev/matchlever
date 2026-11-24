@@ -1,13 +1,12 @@
 import { EyeOff } from "lucide-react";
 
 import type { FeaturedTalent } from "@/lib/onboarding/featured-talent";
-
-const TAGLINE_MAX_LENGTH = 60;
+import { SUPERPOWER_TAGLINE_MAX_LENGTH } from "@/lib/taglines";
 
 function truncateTagline(tagline: string): string {
   const trimmed = tagline.trim();
-  if (trimmed.length <= TAGLINE_MAX_LENGTH) return trimmed;
-  return `${trimmed.slice(0, TAGLINE_MAX_LENGTH).trimEnd()}...`;
+  if (trimmed.length <= SUPERPOWER_TAGLINE_MAX_LENGTH) return trimmed;
+  return `${trimmed.slice(0, SUPERPOWER_TAGLINE_MAX_LENGTH).trimEnd()}...`;
 }
 
 export function FeaturedTalentSection({

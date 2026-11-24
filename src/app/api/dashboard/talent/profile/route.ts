@@ -17,19 +17,29 @@ import {
   toPostgresText,
   toPostgresTextOrNull,
 } from "@/lib/postgres-text";
+import {
+  SUPERPOWER_TAGLINE_MAX_LENGTH,
+  SUPERPOWER_TAGLINE_MIN_LENGTH,
+} from "@/lib/taglines";
 import type { Database } from "@/types/database";
 
 type TalentProfileUpdate =
   Database["public"]["Tables"]["talent_profiles"]["Update"];
 
+const taglineField = z
+  .string()
+  .trim()
+  .min(SUPERPOWER_TAGLINE_MIN_LENGTH)
+  .max(SUPERPOWER_TAGLINE_MAX_LENGTH);
+
 const editSchema = z.object({
   headline: z.string().trim().min(2).max(120),
-  selectedTagline: z.string().trim().min(8).max(200),
+  selectedTagline: taglineField,
   globalCity: z.string().trim().min(1).max(80),
   globalCountry: z.string().trim().min(1).max(80),
   timezone: z.enum(TIMEZONE_VALUES).nullable(),
   verifiedSkills: z.array(z.string().trim().min(1)).max(20),
-  suggestedTaglines: z.array(z.string().trim().min(8).max(200)).max(5).optional(),
+  suggestedTaglines: z.array(taglineField).max(5).optional(),
   sanitizedSummary: z.string().trim().max(4000).nullable().optional(),
   rawResumeText: z.string().trim().max(60_000).nullable().optional(),
   yearsExperience: z.number().int().min(0).max(60).nullable().optional(),

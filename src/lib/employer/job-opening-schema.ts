@@ -4,6 +4,10 @@ import { LOCATION_MODE_VALUES } from "@/lib/onboarding/form-schema";
 import { OTHER_CITY_VALUE } from "@/lib/onboarding/locations";
 import { TIMEZONE_VALUES, VISA_OPTIONS } from "@/lib/onboarding/schema";
 import { SUPERPOWER_TAXONOMY } from "@/lib/reference/taxonomy";
+import {
+  SUPERPOWER_TAGLINE_MAX_LENGTH,
+  SUPERPOWER_TAGLINE_MIN_LENGTH,
+} from "@/lib/taglines";
 
 const locationModeSchema = z.enum(LOCATION_MODE_VALUES);
 const visaValues = VISA_OPTIONS.map((option) => option.value) as [
@@ -29,9 +33,30 @@ export const jobOpeningFormObjectSchema = z.object({
   yearsExperience: z.number().int().min(0).max(40),
   suggestedTaglines: z
     .tuple([
-      z.string().trim().min(8, "Tagline needs at least 8 characters").max(60),
-      z.string().trim().min(8, "Tagline needs at least 8 characters").max(60),
-      z.string().trim().min(8, "Tagline needs at least 8 characters").max(60),
+      z
+        .string()
+        .trim()
+        .min(
+          SUPERPOWER_TAGLINE_MIN_LENGTH,
+          "Tagline needs at least 8 characters"
+        )
+        .max(SUPERPOWER_TAGLINE_MAX_LENGTH),
+      z
+        .string()
+        .trim()
+        .min(
+          SUPERPOWER_TAGLINE_MIN_LENGTH,
+          "Tagline needs at least 8 characters"
+        )
+        .max(SUPERPOWER_TAGLINE_MAX_LENGTH),
+      z
+        .string()
+        .trim()
+        .min(
+          SUPERPOWER_TAGLINE_MIN_LENGTH,
+          "Tagline needs at least 8 characters"
+        )
+        .max(SUPERPOWER_TAGLINE_MAX_LENGTH),
     ]),
   endorsedSkills: z
     .array(z.enum(endorsedSkillIds))

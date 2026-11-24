@@ -16,6 +16,10 @@ import {
   TIMEZONE_VALUES,
   timezoneOffsetMinutes,
 } from "@/lib/onboarding/schema";
+import {
+  SUPERPOWER_TAGLINE_MAX_LENGTH,
+  SUPERPOWER_TAGLINE_MIN_LENGTH,
+} from "@/lib/taglines";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -38,7 +42,11 @@ import { Textarea } from "@/components/ui/textarea";
 
 const editSchema = z.object({
   headline: z.string().trim().min(2).max(120),
-  selectedTagline: z.string().trim().min(8).max(200),
+  selectedTagline: z
+    .string()
+    .trim()
+    .min(SUPERPOWER_TAGLINE_MIN_LENGTH)
+    .max(SUPERPOWER_TAGLINE_MAX_LENGTH),
   globalCity: z.string().trim().min(1).max(80),
   globalCountry: z.string().trim().min(1).max(80),
   timezone: z.enum(TIMEZONE_VALUES, { error: "Select a timezone" }),
@@ -277,8 +285,12 @@ export function EditProfileModal({
             <Textarea
               id="selectedTagline"
               rows={3}
+              maxLength={SUPERPOWER_TAGLINE_MAX_LENGTH}
               {...register("selectedTagline")}
             />
+            <p className="text-right text-xs text-[#2A2D34]/55">
+              {(selectedTagline ?? "").length}/{SUPERPOWER_TAGLINE_MAX_LENGTH}
+            </p>
           </Field>
           {suggestedTaglines.length > 0 && (
             <div className="grid gap-2">
