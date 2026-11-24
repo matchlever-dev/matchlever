@@ -49,10 +49,12 @@ export function AdminListControls<TSort extends string = AdminSortMode>({
   onKeywordChange: (value: string) => void;
   keywordPlaceholder?: string;
 }) {
-  const options =
-    sortOptions ??
-    (DEFAULT_SORT_OPTIONS as ReadonlyArray<AdminListSortOption<TSort>>);
-  const allowed = new Set(options.map((opt) => opt.value));
+  const options: ReadonlyArray<AdminListSortOption<TSort>> = sortOptions
+    ? sortOptions
+    : (DEFAULT_SORT_OPTIONS as unknown as ReadonlyArray<
+        AdminListSortOption<TSort>
+      >);
+  const allowed = new Set<string>(options.map((opt) => opt.value));
   const sortLabel =
     options.find((opt) => opt.value === sort)?.label ?? options[0]?.label ?? "Sort";
   const statusLabel =
