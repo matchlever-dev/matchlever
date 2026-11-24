@@ -17,14 +17,20 @@ export type AdminListStatusOption = {
   label: string;
 };
 
-const SORT_OPTIONS: Array<{ value: AdminSortMode; label: string }> = [
+export type AdminListSortOption<T extends string = string> = {
+  value: T;
+  label: string;
+};
+
+const DEFAULT_SORT_OPTIONS: Array<AdminListSortOption<AdminSortMode>> = [
   { value: "recent", label: "Recent" },
   { value: "score", label: "Score" },
 ];
 
-export function AdminListControls({
+export function AdminListControls<TSort extends string = AdminSortMode>({
   sort,
   onSortChange,
+  sortOptions,
   status,
   onStatusChange,
   statusOptions,
@@ -32,8 +38,10 @@ export function AdminListControls({
   onKeywordChange,
   keywordPlaceholder = "Search by keyword…",
 }: {
-  sort: AdminSortMode;
-  onSortChange: (value: AdminSortMode) => void;
+  sort: TSort;
+  onSortChange: (value: TSort) => void;
+  /** Override default Recent/Score options (e.g. Job Openings). */
+  sortOptions?: ReadonlyArray<AdminListSortOption<TSort>>;
   status: string;
   onStatusChange: (value: string) => void;
   statusOptions: AdminListStatusOption[];
@@ -41,8 +49,12 @@ export function AdminListControls({
   onKeywordChange: (value: string) => void;
   keywordPlaceholder?: string;
 }) {
+  const options =
+    sortOptions ??
+    (DEFAULT_SORT_OPTIONS as ReadonlyArray<AdminListSortOption<TSort>>);
+  const allowed = new Set(options.map((opt) => opt.value));
   const sortLabel =
-    SORT_OPTIONS.find((opt) => opt.value === sort)?.label ?? "Recent";
+    options.find((opt) => opt.value === sort)?.label ?? options[0]?.label ?? "Sort";
   const statusLabel =
     statusOptions.find((opt) => opt.value === status)?.label ?? status;
 
@@ -55,14 +67,16 @@ export function AdminListControls({
         <Select
           value={sort}
           onValueChange={(value) => {
-            if (value === "recent" || value === "score") onSortChange(value);
+            if (value && allowed.has(value as TSort)) {
+              onSortChange(value as TSort);
+            }
           }}
         >
           <SelectTrigger className="h-10 w-full bg-white">
             <SelectValue placeholder="Sort">{sortLabel}</SelectValue>
           </SelectTrigger>
           <SelectContent>
-            {SORT_OPTIONS.map((opt) => (
+            {options.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
                 {opt.label}
               </SelectItem>

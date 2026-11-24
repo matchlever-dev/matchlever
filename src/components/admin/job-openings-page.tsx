@@ -11,7 +11,7 @@ import {
 import {
   AdminListControls,
   matchesKeyword,
-  type AdminSortMode,
+  type AdminListSortOption,
 } from "@/components/admin/admin-list-controls";
 import { AdminPortalShell } from "@/components/admin/admin-portal-shell";
 import { PortalShell } from "@/components/admin/portal-shell";
@@ -24,6 +24,14 @@ const STATUS_OPTIONS = [
   { value: "draft", label: "Draft" },
   { value: "hired", label: "Hired" },
   { value: "closed", label: "Closed" },
+];
+
+type JobOpeningsSortMode = "most_recent" | "job_title" | "employer";
+
+const SORT_OPTIONS: ReadonlyArray<AdminListSortOption<JobOpeningsSortMode>> = [
+  { value: "most_recent", label: "Most Recent" },
+  { value: "job_title", label: "Job Title" },
+  { value: "employer", label: "Employer" },
 ];
 
 export function AdminJobOpeningsPage() {
@@ -62,7 +70,7 @@ function JobOpeningsListPage({
   const [demo, setDemo] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sort, setSort] = useState<AdminSortMode>("recent");
+  const [sort, setSort] = useState<JobOpeningsSortMode>("most_recent");
   const [statusFilter, setStatusFilter] = useState("all");
   const [keyword, setKeyword] = useState("");
 
@@ -98,12 +106,25 @@ function JobOpeningsListPage({
       ]);
     });
     return [...list].sort((a, b) => {
-      if (sort === "score") {
-        // Higher match volume first when "Score" is selected.
-        const delta = b.match_count - a.match_count;
-        if (delta !== 0) return delta;
-        return a.title.localeCompare(b.title);
+      if (sort === "job_title") {
+        return a.title.localeCompare(b.title, undefined, {
+          sensitivity: "base",
+        });
       }
+      if (sort === "employer") {
+        const employerA =
+          a.company_name || a.employer_name || a.employer_email || "";
+        const employerB =
+          b.company_name || b.employer_name || b.employer_email || "";
+        const byEmployer = employerA.localeCompare(employerB, undefined, {
+          sensitivity: "base",
+        });
+        if (byEmployer !== 0) return byEmployer;
+        return a.title.localeCompare(b.title, undefined, {
+          sensitivity: "base",
+        });
+      }
+      // Most Recent
       return b.updated_at.localeCompare(a.updated_at);
     });
   }, [jobs, keyword, sort, statusFilter]);
@@ -137,6 +158,7 @@ function JobOpeningsListPage({
       <AdminListControls
         sort={sort}
         onSortChange={setSort}
+        sortOptions={SORT_OPTIONS}
         status={statusFilter}
         onStatusChange={setStatusFilter}
         statusOptions={STATUS_OPTIONS}
