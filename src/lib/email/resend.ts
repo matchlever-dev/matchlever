@@ -216,6 +216,12 @@ export function getMatchPassUrl(token: string) {
   return getMatchRespondUrl(token, "pass");
 }
 
+/** In-app (and email-equivalent) view of the incognito profile. */
+export function getMatchViewUrl(token: string) {
+  const params = new URLSearchParams({ token });
+  return `${getAppBaseUrl()}/matches/view?${params.toString()}`;
+}
+
 export async function sendMatchIncognitoEmail(args: {
   to: string;
   employerName: string | null;
