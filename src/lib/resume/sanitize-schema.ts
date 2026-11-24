@@ -1,11 +1,26 @@
 import { z } from "zod";
 
+import {
+  SUPERPOWER_TAGLINE_MAX_LENGTH,
+  SUPERPOWER_TAGLINE_MIN_LENGTH,
+} from "@/lib/taglines";
+
+const superpowerTaglineSchema = z
+  .string()
+  .trim()
+  .min(SUPERPOWER_TAGLINE_MIN_LENGTH)
+  .max(SUPERPOWER_TAGLINE_MAX_LENGTH);
+
 export const sanitizedResumeSchema = z.object({
   anonymous_title: z.string().min(1),
   sanitized_summary: z.string().min(1),
   verified_skills: z.array(z.string().min(1)).min(1),
   years_experience: z.number().int().nonnegative(),
-  suggested_taglines: z.tuple([z.string(), z.string(), z.string()]),
+  suggested_taglines: z.tuple([
+    superpowerTaglineSchema,
+    superpowerTaglineSchema,
+    superpowerTaglineSchema,
+  ]),
 });
 
 export type SanitizedResume = z.infer<typeof sanitizedResumeSchema>;
@@ -33,11 +48,12 @@ Allowed location signal (only if present): coarse region such as "US West Coast"
 ## SUPERPOWER TAGLINES (exactly 3)
 Analyze talent metrics AND technical stack to generate exactly 3 high-impact, metrics-driven "Superpower Tagline" options.
 Each tagline MUST:
-- Be a single punchy line (max ~120 characters)
+- Be a single punchy, complete line of at most ${SUPERPOWER_TAGLINE_MAX_LENGTH} characters (never truncate mid-word — rewrite to fit)
+- Prefer 50–${SUPERPOWER_TAGLINE_MAX_LENGTH} characters when the resume supports a concrete claim; shorter is fine when evidence is thin
 - Include at least one concrete metric when the resume provides one (%, latency, $ impact, users, uptime, team size, etc.)
 - Spotlight a distinct superpower / technical strength
 - Contain ZERO PII (no names, companies, schools, street addresses)
-If metrics are sparse, use the strongest evidence available and keep claims conservative (e.g. "owned", "led", "shipped") without fabricating numbers.
+If metrics are sparse, use the strongest evidence available and keep claims conservative (e.g. "owned", "led", "shipped") without fabricating numbers. Make all three taglines meaningfully different and employer-ready.
 
 ## OUTPUT FORMAT
 Return ONLY valid JSON (no markdown fences, no commentary) matching this schema exactly:

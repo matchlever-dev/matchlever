@@ -22,6 +22,7 @@ import {
   VISA_OPTIONS,
 } from "@/lib/onboarding/schema";
 import { groupSuperpowersByCategory } from "@/lib/reference/taxonomy";
+import { SUPERPOWER_TAGLINE_MAX_LENGTH } from "@/lib/taglines";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -423,7 +424,7 @@ export function JobOpeningForm({
               {[0, 1, 2].map((index) => (
                 <div key={index} className="grid gap-1.5">
                   <Input
-                    maxLength={60}
+                    maxLength={SUPERPOWER_TAGLINE_MAX_LENGTH}
                     placeholder={`Tagline ${index + 1}`}
                     className="h-11"
                     value={taglines[index] ?? ""}
@@ -433,7 +434,10 @@ export function JobOpeningForm({
                         string,
                         string,
                       ];
-                      next[index] = event.target.value.slice(0, 60);
+                      next[index] = event.target.value.slice(
+                        0,
+                        SUPERPOWER_TAGLINE_MAX_LENGTH
+                      );
                       setValue("suggestedTaglines", next, {
                         shouldValidate: true,
                       });
@@ -445,7 +449,10 @@ export function JobOpeningForm({
                         ? errors.suggestedTaglines[index]?.message
                         : errors.suggestedTaglines?.message || "\u00a0"}
                     </span>
-                    <span>{(taglines[index] ?? "").length}/60</span>
+                    <span>
+                      {(taglines[index] ?? "").length}/
+                      {SUPERPOWER_TAGLINE_MAX_LENGTH}
+                    </span>
                   </div>
                 </div>
               ))}

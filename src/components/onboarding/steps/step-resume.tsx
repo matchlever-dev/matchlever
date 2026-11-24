@@ -5,6 +5,7 @@ import { useFormContext } from "react-hook-form";
 import { FileUp, Loader2 } from "lucide-react";
 
 import type { OnboardingFormValues } from "@/lib/onboarding/form-schema";
+import { SUPERPOWER_TAGLINE_MAX_LENGTH } from "@/lib/taglines";
 import { Input } from "@/components/ui/input";
 
 type SanitizeResponse = {
@@ -39,10 +40,11 @@ export function StepResume() {
   function updateTagline(index: number, value: string) {
     const next = [taglines[0] ?? "", taglines[1] ?? "", taglines[2] ?? ""];
     const previous = next[index] ?? "";
-    next[index] = value;
+    const clipped = value.slice(0, SUPERPOWER_TAGLINE_MAX_LENGTH);
+    next[index] = clipped;
     setValue("suggestedTaglines", next, { shouldValidate: true });
     if (selectedTagline === previous || selectedTagline === "") {
-      setValue("selectedTagline", value, { shouldValidate: true });
+      setValue("selectedTagline", clipped, { shouldValidate: true });
     }
   }
 
@@ -203,14 +205,19 @@ export function StepResume() {
               Superpower Taglines
             </p>
             {[0, 1, 2].map((index) => (
-              <Input
-                key={index}
-                value={taglines[index] ?? ""}
-                onChange={(e) => updateTagline(index, e.target.value)}
-                placeholder={`Option ${index + 1}`}
-                maxLength={160}
-                aria-label={`Superpower Tagline option ${index + 1}`}
-              />
+              <div key={index} className="grid gap-1">
+                <Input
+                  value={taglines[index] ?? ""}
+                  onChange={(e) => updateTagline(index, e.target.value)}
+                  placeholder={`Option ${index + 1}`}
+                  maxLength={SUPERPOWER_TAGLINE_MAX_LENGTH}
+                  aria-label={`Superpower Tagline option ${index + 1}`}
+                />
+                <p className="text-right text-xs text-[#2A2D34]/55">
+                  {(taglines[index] ?? "").length}/
+                  {SUPERPOWER_TAGLINE_MAX_LENGTH}
+                </p>
+              </div>
             ))}
           </div>
         </div>

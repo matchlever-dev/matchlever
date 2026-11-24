@@ -6,6 +6,10 @@ import {
   UNSELECTED_RELATIONSHIP,
 } from "@/lib/reference/relationship";
 import { linkedInUrlSchema } from "@/lib/reference/schema";
+import {
+  SUPERPOWER_TAGLINE_MAX_LENGTH,
+  SUPERPOWER_TAGLINE_MIN_LENGTH,
+} from "@/lib/taglines";
 import { tryParseHttpUrl } from "@/lib/url";
 
 export const ONBOARDING_STEPS = [
@@ -131,10 +135,21 @@ function refinePreferences(
   }
 
   const trimmedTaglines = data.suggestedTaglines.map((t) => t.trim());
-  if (trimmedTaglines.length !== 3 || trimmedTaglines.some((t) => t.length < 8)) {
+  if (
+    trimmedTaglines.length !== 3 ||
+    trimmedTaglines.some((t) => t.length < SUPERPOWER_TAGLINE_MIN_LENGTH)
+  ) {
     ctx.addIssue({
       code: "custom",
       message: "Each Superpower Tagline needs at least 8 characters",
+      path: ["suggestedTaglines"],
+    });
+  } else if (
+    trimmedTaglines.some((t) => t.length > SUPERPOWER_TAGLINE_MAX_LENGTH)
+  ) {
+    ctx.addIssue({
+      code: "custom",
+      message: `Each Superpower Tagline must be at most ${SUPERPOWER_TAGLINE_MAX_LENGTH} characters`,
       path: ["suggestedTaglines"],
     });
   }
@@ -274,11 +289,23 @@ export function getStepSchema(step: OnboardingStepId) {
           const trimmedTaglines = data.suggestedTaglines.map((t) => t.trim());
           if (
             trimmedTaglines.length !== 3 ||
-            trimmedTaglines.some((t) => t.length < 8)
+            trimmedTaglines.some(
+              (t) => t.length < SUPERPOWER_TAGLINE_MIN_LENGTH
+            )
           ) {
             ctx.addIssue({
               code: "custom",
               message: "Each Superpower Tagline needs at least 8 characters",
+              path: ["suggestedTaglines"],
+            });
+          } else if (
+            trimmedTaglines.some(
+              (t) => t.length > SUPERPOWER_TAGLINE_MAX_LENGTH
+            )
+          ) {
+            ctx.addIssue({
+              code: "custom",
+              message: `Each Superpower Tagline must be at most ${SUPERPOWER_TAGLINE_MAX_LENGTH} characters`,
               path: ["suggestedTaglines"],
             });
           }

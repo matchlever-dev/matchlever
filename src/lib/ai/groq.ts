@@ -7,6 +7,7 @@ import {
   type SanitizedResume,
 } from "@/lib/resume/sanitize-schema";
 import { toPostgresStringArray, toPostgresText } from "@/lib/postgres-text";
+import { clampSuperpowerTagline } from "@/lib/taglines";
 
 /** Groq retired llama-3.3-70b-versatile on 2026-08-16. */
 const DEFAULT_MODEL = "openai/gpt-oss-120b";
@@ -158,7 +159,9 @@ function normalizePayload(value: unknown): unknown {
       ? toPostgresStringArray(skills.map(String))
       : skills,
     suggested_taglines: Array.isArray(taglines)
-      ? toPostgresStringArray(taglines.map(String)).slice(0, 3)
+      ? toPostgresStringArray(
+          taglines.map((item) => clampSuperpowerTagline(String(item)))
+        ).slice(0, 3)
       : taglines,
   };
 }

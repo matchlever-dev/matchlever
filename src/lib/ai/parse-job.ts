@@ -8,6 +8,7 @@ import {
 } from "@/lib/employer/parse-job-schema";
 import { getGroqClient, resolveGroqModel } from "@/lib/ai/groq";
 import { SUPERPOWER_TAXONOMY } from "@/lib/reference/taxonomy";
+import { clampSuperpowerTagline } from "@/lib/taglines";
 import { TIMEZONE_VALUES, VISA_OPTIONS } from "@/lib/onboarding/schema";
 import { LOCATION_MODE_VALUES } from "@/lib/onboarding/form-schema";
 import { toPostgresStringArray, toPostgresText } from "@/lib/postgres-text";
@@ -119,7 +120,7 @@ function normalizePayload(value: unknown): unknown {
 
   const taglinesRaw = Array.isArray(obj.suggested_taglines)
     ? obj.suggested_taglines.map((item) =>
-        toPostgresText(String(item)).trim().slice(0, 60)
+        clampSuperpowerTagline(toPostgresText(String(item)))
       )
     : [];
   while (taglinesRaw.length < 3) {
