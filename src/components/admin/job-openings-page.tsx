@@ -150,7 +150,24 @@ function JobOpeningsListPage({
       {loading ? (
         <p className="text-sm text-[#5B616B]">Loading job openings…</p>
       ) : filtered.length === 0 ? (
-        <p className="text-sm text-[#5B616B]">No job openings found.</p>
+        <div className="max-w-xl border border-dashed border-[#2B5B84]/25 bg-white px-5 py-6">
+          <p className="font-display text-base font-semibold text-[#2B5B84]">
+            {jobs.length === 0
+              ? "No job openings yet"
+              : "No openings match these filters"}
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-[#5B616B]">
+            {jobs.length === 0
+              ? "This admin/superuser view lists openings employers have posted. There is no create button here — an employer creates one from the Employer Portal (Post a job opening /dashboard/employer/jobs/new). Once posted, it appears here for matching."
+              : "Try clearing the status or keyword filters above."}
+          </p>
+          {jobs.length === 0 && (
+            <p className="mt-3 text-xs text-[#8A9099]">
+              Tip: without Supabase configured, this page uses demo openings.
+              Connected environments only show real `job_postings` rows.
+            </p>
+          )}
+        </div>
       ) : (
         <div className="grid gap-3">
           {filtered.map((job) => (
