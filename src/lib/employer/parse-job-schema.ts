@@ -101,8 +101,8 @@ Return ONLY valid JSON (no markdown fences) matching:
 - endorsed_skills: choose UP TO 7 ids from this taxonomy ONLY (use ids, not labels):
 ${TAXONOMY_FOR_PROMPT}
 - location_modes: all modes clearly allowed. Default ["remote"] if unclear.
-- If hybrid/onsite appear: set max_commute_miles (default 30 if unspecified), open_to_relocation (true if relocation offered/required, else false). Otherwise set commute/relocation to null.
-- global_city + global_country: always capture the role's base location when mentioned (even for remote). Prefer HQ / team base city. If unspecified, use null (employer will fill in).
+- If hybrid/onsite appear: set max_commute_miles (default 30 if unspecified), open_to_relocation (true if relocation offered/required, else false), and global_city + global_country when mentioned (employer must supply base location). Otherwise set commute/relocation to null.
+- global_city + global_country: capture when mentioned (prefer HQ / team base). Required for hybrid/onsite openings; optional for remote-only — if unspecified for remote, use null.
 - timezone: must be one of: ${TIMEZONE_FOR_PROMPT}. Prefer America/New_York if unspecified US; UTC if fully global remote and unspecified.
 - work hours: 24h HH:MM local. Default 09:00–17:00 if unspecified.
 - pay_type: "hourly" when the JD states an hourly rate (e.g. "$75/hr"); otherwise "annual".

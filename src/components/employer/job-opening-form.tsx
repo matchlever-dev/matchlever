@@ -587,10 +587,16 @@ export function JobOpeningForm({
             <div>
               <p className="text-sm font-medium text-[#2A2D34]">
                 Position base location
+                {needsLocal ? null : (
+                  <span className="ml-1 font-normal text-[#5B616B]">
+                    (optional)
+                  </span>
+                )}
               </p>
               <p className="mt-1 text-xs text-[#5B616B]">
-                Required so pay has geographic context (HQ, team base, or
-                primary market).
+                {needsLocal
+                  ? "Required for hybrid/onsite roles so pay has geographic context (HQ, team base, or primary market)."
+                  : "Optional for remote-only roles — add HQ, team base, or primary market if useful for pay context."}
               </p>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
