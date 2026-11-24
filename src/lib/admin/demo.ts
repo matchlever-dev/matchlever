@@ -188,6 +188,7 @@ export type AdminJobOpeningRow = {
   invoiced_match_count: number;
   location_modes: string[];
   global_city: string | null;
+  pay_type?: string | null;
   min_salary: number | null;
   updated_at: string;
 };
@@ -534,6 +535,7 @@ export const DEMO_ADMIN_JOB_OPENINGS: AdminJobOpeningRow[] = [
     invoiced_match_count: 0,
     location_modes: ["remote", "hybrid"],
     global_city: "Austin",
+    pay_type: "annual",
     min_salary: 180000,
     updated_at: "2026-07-18T12:00:00.000Z",
   },
@@ -550,7 +552,8 @@ export const DEMO_ADMIN_JOB_OPENINGS: AdminJobOpeningRow[] = [
     free_match_count: 0,
     invoiced_match_count: 0,
     location_modes: ["remote"],
-    global_city: null,
+    global_city: "Austin",
+    pay_type: "annual",
     min_salary: 160000,
     updated_at: "2026-07-12T09:30:00.000Z",
   },

@@ -340,7 +340,7 @@ function JobOpeningRow({ job }: { job: EmployerJobSummary }) {
               {formatJobLocationLine(job)}
             </p>
             <p className="mt-1 text-sm font-medium text-[#2B5B84]">
-              {formatSalary(job.minSalary)}
+              {formatSalary(job.minSalary, job.payType)}
             </p>
           </div>
           <Badge variant={statusVariant}>

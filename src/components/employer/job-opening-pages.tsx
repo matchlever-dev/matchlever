@@ -77,6 +77,7 @@ export function JobOpeningDetailPage({ jobId }: { jobId: string }) {
     status: string;
     locationModes: string[];
     globalCity: string | null;
+    payType?: "annual" | "hourly";
     minSalary: number | null;
   } | null>(null);
   const [founderEligible, setFounderEligible] = useState(false);
@@ -205,8 +206,10 @@ export function JobOpeningDetailPage({ jobId }: { jobId: string }) {
             </p>
             <p className="mt-2 text-lg font-semibold text-[#2B5B84]">
               {job.minSalary != null
-                ? `$${job.minSalary.toLocaleString()}+`
-                : "Salary TBD"}
+                ? `$${job.minSalary.toLocaleString()}${
+                    job.payType === "hourly" ? "/hr" : "/yr"
+                  }`
+                : "Pay TBD"}
             </p>
           </div>
           <Badge

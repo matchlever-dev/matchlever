@@ -16,6 +16,7 @@ export type EmployerJobSummary = {
   status: string;
   locationModes: string[];
   globalCity: string | null;
+  payType?: "annual" | "hourly";
   minSalary: number | null;
   acceptedMatchCount: number;
   matchBundlePurchasedAt: string | null;
@@ -61,6 +62,7 @@ export const DEMO_EMPLOYER_JOBS: EmployerJobSummary[] = [
     status: "active",
     locationModes: ["hybrid"],
     globalCity: "San Francisco",
+    payType: "annual",
     minSalary: 180000,
     acceptedMatchCount: 0,
     matchBundlePurchasedAt: null,
@@ -71,7 +73,8 @@ export const DEMO_EMPLOYER_JOBS: EmployerJobSummary[] = [
     title: "Data Platform Lead",
     status: "draft",
     locationModes: ["remote"],
-    globalCity: null,
+    globalCity: "Austin",
+    payType: "annual",
     minSalary: 160000,
     acceptedMatchCount: 0,
     matchBundlePurchasedAt: null,
@@ -169,9 +172,13 @@ export function employerWorkArrangementLabel(
   );
 }
 
-export function formatSalary(value: number | null | undefined): string {
-  if (value == null) return "Salary TBD";
-  return `$${value.toLocaleString()}+`;
+export function formatSalary(
+  value: number | null | undefined,
+  payType: "annual" | "hourly" | null | undefined = "annual"
+): string {
+  if (value == null) return "Pay TBD";
+  const formatted = `$${value.toLocaleString()}`;
+  return payType === "hourly" ? `${formatted}/hr` : `${formatted}/yr`;
 }
 
 export {

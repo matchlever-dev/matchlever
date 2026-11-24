@@ -15,7 +15,7 @@ export const TALENT_TOS_SECTIONS = [
   {
     heading: "3. Account Eligibility & Registration",
     bullets: [
-      "Accuracy of Information: During onboarding, you must provide accurate global preferences, including your location mode (Remote, Hybrid, Onsite), global city and country, timezone, work hours start and end times, minimum salary, and work authorization status.",
+      "Accuracy of Information: During onboarding, you must provide accurate global preferences, including your location mode (Remote, Hybrid, Onsite), global city and country, timezone, work hours start and end times, pay (annual salary or hourly rate), and work authorization status.",
       "LinkedIn Authentication: Account creation requires a secure LinkedIn OAuth sign-in.",
       "Platform Integrity: Fraudulent or duplicate accounts will be subject to immediate deletion by platform Admins.",
     ],
@@ -43,7 +43,7 @@ export const TALENT_TOS_SECTIONS = [
   {
     heading: "6. Matching & Profile Unlocking",
     bullets: [
-      "Two-Tier Match Engine: Your profile is evaluated against job postings based on hard dealbreakers (like minimum salary and work authorization) and a Tier 2 Semantic match that calculates daily working hours overlap and superpower alignment.",
+      "Two-Tier Match Engine: Your profile is evaluated against job postings based on hard dealbreakers (like pay expectations and work authorization) and a Tier 2 Semantic match that calculates daily working hours overlap and superpower alignment.",
       'Concierge Manual Matches: MatchLever Superusers have access to a global directory and hold the authority to perform "Manual Matches," pushing your profile directly to an employer\'s Kanban board.',
       'Profile Unlocking: Your true identity remains completely anonymous on your talent card. Your contact email, real full name, original resume URL, and LinkedIn URL are only revealed (status changed to "UNLOCKED") after an employer accepts your match and pays a non-refundable $199 fee to proceed to the interview stage.',
     ],

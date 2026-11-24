@@ -14,6 +14,11 @@ import {
   citiesForCountry,
 } from "@/lib/onboarding/locations";
 import { SUPERPOWER_TAGLINE_MAX_LENGTH } from "@/lib/taglines";
+import {
+  coercePayAmountForType,
+  payAmountLabel,
+  type PayType,
+} from "@/lib/pay";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -24,7 +29,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 
 export function StepPreferences() {
   const {
@@ -36,11 +40,19 @@ export function StepPreferences() {
   } = useFormContext<OnboardingFormValues>();
 
   const minSalary = watch("minSalary");
+  const payType = watch("payType");
   const taglines = watch("suggestedTaglines");
   const locationModes = watch("locationModes");
   const selectedTagline = watch("selectedTagline");
   const globalCountry = watch("globalCountry");
   const globalCity = watch("globalCity");
+
+  function setPayType(next: PayType) {
+    setValue("payType", next, { shouldValidate: true });
+    setValue("minSalary", coercePayAmountForType(minSalary, next), {
+      shouldValidate: true,
+    });
+  }
 
   const needsLocalFields =
     locationModes.includes("hybrid") || locationModes.includes("onsite");
@@ -312,6 +324,64 @@ export function StepPreferences() {
         </>
       )}
 
+      <div className="grid gap-4 rounded-xl border border-[#2B5B84]/15 bg-[#F8F9FA] p-4 sm:grid-cols-2">
+        <div className="grid gap-2">
+          <Label>Pay type</Label>
+          <div className="grid grid-cols-2 gap-2">
+            {(
+              [
+                { value: "annual", label: "Annual salary" },
+                { value: "hourly", label: "Hourly rate" },
+              ] as const
+            ).map((option) => {
+              const selected = payType === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => setPayType(option.value)}
+                  className={`rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
+                    selected
+                      ? "border-[#2B5B84] bg-[#2B5B84] text-white"
+                      : "border-[#2B5B84]/20 bg-white text-[#2A2D34] hover:border-[#2B5B84]/50"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="grid gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <Label htmlFor="minSalary">{payAmountLabel(payType)}</Label>
+            <span className="text-sm font-semibold text-[#E87A5D]">
+              ${Number(minSalary || 0).toLocaleString("en-US")}
+              {payType === "hourly" ? "/hr" : "/yr"}
+            </span>
+          </div>
+          <div className="relative">
+            <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm text-[#5B616B]">
+              $
+            </span>
+            <Input
+              id="minSalary"
+              type="number"
+              min={1}
+              step={payType === "hourly" ? 1 : 1000}
+              className="pl-7"
+              {...register("minSalary", { valueAsNumber: true })}
+            />
+          </div>
+          {errors.minSalary && (
+            <p className="text-xs text-destructive">
+              {errors.minSalary.message}
+            </p>
+          )}
+        </div>
+      </div>
+
       <div className="grid gap-2">
         <Label>Timezone</Label>
         <Controller
@@ -363,31 +433,6 @@ export function StepPreferences() {
             </p>
           )}
         </div>
-      </div>
-
-      <div className="grid gap-3">
-        <div className="flex items-center justify-between">
-          <Label>Minimum salary (USD)</Label>
-          <span className="text-sm font-semibold text-[#E87A5D]">
-            ${minSalary.toLocaleString()}
-          </span>
-        </div>
-        <Controller
-          control={control}
-          name="minSalary"
-          render={({ field }) => (
-            <Slider
-              min={40000}
-              max={400000}
-              step={5000}
-              value={[field.value]}
-              onValueChange={(value) => {
-                const next = Array.isArray(value) ? value[0] : value;
-                if (typeof next === "number") field.onChange(next);
-              }}
-            />
-          )}
-        />
       </div>
 
       <div className="grid gap-2">

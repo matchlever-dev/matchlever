@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { LOCATION_MODE_VALUES } from "@/lib/onboarding/form-schema";
 import { TIMEZONE_VALUES, VISA_OPTIONS } from "@/lib/onboarding/schema";
+import { PAY_TYPE_VALUES } from "@/lib/pay";
 import { SUPERPOWER_TAXONOMY } from "@/lib/reference/taxonomy";
 import {
   SUPERPOWER_TAGLINE_MAX_LENGTH,
@@ -9,6 +10,7 @@ import {
 } from "@/lib/taglines";
 
 const locationModeSchema = z.enum(LOCATION_MODE_VALUES);
+const payTypeSchema = z.enum(PAY_TYPE_VALUES);
 const visaValues = VISA_OPTIONS.map((option) => option.value) as [
   string,
   ...string[],
@@ -49,7 +51,8 @@ export const parsedJobDescriptionSchema = z.object({
   timezone: z.enum(TIMEZONE_VALUES),
   work_hours_start: z.string().regex(/^\d{2}:\d{2}$/),
   work_hours_end: z.string().regex(/^\d{2}:\d{2}$/),
-  min_salary: z.number().min(40_000).max(400_000),
+  pay_type: payTypeSchema,
+  min_salary: z.number().int().positive(),
   visa_statuses: z.array(z.enum(visaValues)).min(1),
 });
 
@@ -85,6 +88,7 @@ Return ONLY valid JSON (no markdown fences) matching:
   "timezone": string,
   "work_hours_start": "HH:MM",
   "work_hours_end": "HH:MM",
+  "pay_type": "annual"|"hourly",
   "min_salary": integer,
   "visa_statuses": string[]
 }
@@ -97,10 +101,12 @@ Return ONLY valid JSON (no markdown fences) matching:
 - endorsed_skills: choose UP TO 7 ids from this taxonomy ONLY (use ids, not labels):
 ${TAXONOMY_FOR_PROMPT}
 - location_modes: all modes clearly allowed. Default ["remote"] if unclear.
-- If hybrid/onsite appear: set max_commute_miles (default 30 if unspecified), open_to_relocation (true if relocation offered/required, else false), global_city + global_country when mentioned. Otherwise set commute/relocation/city/country to null.
+- If hybrid/onsite appear: set max_commute_miles (default 30 if unspecified), open_to_relocation (true if relocation offered/required, else false). Otherwise set commute/relocation to null.
+- global_city + global_country: always capture the role's base location when mentioned (even for remote). Prefer HQ / team base city. If unspecified, use null (employer will fill in).
 - timezone: must be one of: ${TIMEZONE_FOR_PROMPT}. Prefer America/New_York if unspecified US; UTC if fully global remote and unspecified.
 - work hours: 24h HH:MM local. Default 09:00–17:00 if unspecified.
-- min_salary: USD integer between 40000 and 400000. Use stated minimum / bottom of range. If only max given, use 70% of max bounded to range. If none, use 140000.
+- pay_type: "hourly" when the JD states an hourly rate (e.g. "$75/hr"); otherwise "annual".
+- min_salary: positive USD integer with no min/max clamp. For annual: stated salary or bottom of range; if only max given use ~70% of max; if none use 140000. For hourly: stated hourly rate; if none use 70.
 - visa_statuses: one or more of:
 ${VISA_FOR_PROMPT}
   Use ["none"] if sponsorship is not offered / not mentioned. Include sponsorship options when the JD says it sponsors or requires specific status.

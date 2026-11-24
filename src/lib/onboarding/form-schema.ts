@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { OTHER_CITY_VALUE } from "@/lib/onboarding/locations";
+import { DEFAULT_ANNUAL_PAY, PAY_TYPE_VALUES } from "@/lib/pay";
 import {
   referenceRelationshipSchema,
   UNSELECTED_RELATIONSHIP,
@@ -53,7 +54,11 @@ export const onboardingFormObjectSchema = z.object({
   timezone: z.string().min(1, "Timezone is required"),
   workHoursStart: z.string().min(1, "Start time is required"),
   workHoursEnd: z.string().min(1, "End time is required"),
-  minSalary: z.number().min(40_000).max(400_000),
+  payType: z.enum(PAY_TYPE_VALUES),
+  minSalary: z
+    .number({ error: "Enter a pay amount" })
+    .int("Use a whole-dollar amount")
+    .positive("Pay must be greater than zero"),
   visaStatus: z.string().min(1, "Select a visa option"),
   selectedTagline: z.string().min(1, "Select a Superpower Tagline"),
   references: z
@@ -210,7 +215,8 @@ export const defaultOnboardingValues: OnboardingFormValues = {
   timezone: "America/New_York",
   workHoursStart: "09:00",
   workHoursEnd: "17:00",
-  minSalary: 140000,
+  payType: "annual",
+  minSalary: DEFAULT_ANNUAL_PAY,
   visaStatus: "none",
   selectedTagline: "",
   references: [
@@ -322,6 +328,7 @@ export function getStepSchema(step: OnboardingStepId) {
           timezone: true,
           workHoursStart: true,
           workHoursEnd: true,
+          payType: true,
           minSalary: true,
           visaStatus: true,
           suggestedTaglines: true,

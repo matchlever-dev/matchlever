@@ -58,7 +58,7 @@ export async function createManualMatch(args: {
     args.supabase
       .from("talent_profiles")
       .select(
-        "id, user_id, status, headline, selected_tagline, sanitized_summary, verified_skills, years_experience, global_city, global_country, timezone, timezone_offset, location_modes, min_salary, visa_status, work_hours_start, work_hours_end"
+        "id, user_id, status, headline, selected_tagline, sanitized_summary, verified_skills, years_experience, global_city, global_country, timezone, timezone_offset, location_modes, pay_type, min_salary, visa_status, work_hours_start, work_hours_end"
       )
       .eq("id", args.talentProfileId)
       .maybeSingle(),
@@ -179,6 +179,7 @@ export async function createManualMatch(args: {
     timezone: talent.timezone,
     timezoneOffset: talent.timezone_offset,
     locationModes: talent.location_modes,
+    payType: talent.pay_type,
     minSalary: talent.min_salary,
     visaStatus: talent.visa_status,
     workHoursStart: talent.work_hours_start,

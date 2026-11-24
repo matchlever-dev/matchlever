@@ -38,6 +38,7 @@ type JobDetail = {
   suggested_taglines: string[];
   location_modes: string[];
   global_city: string | null;
+  pay_type?: string | null;
   min_salary: number | null;
   timezone: string | null;
   work_hours_start: string | null;
@@ -260,10 +261,12 @@ function JobOpeningDetail({
                 })}
               />
               <Detail
-                label="Min salary"
+                label="Pay"
                 value={
                   job.min_salary
-                    ? `$${job.min_salary.toLocaleString("en-US")}`
+                    ? `$${job.min_salary.toLocaleString("en-US")}${
+                        job.pay_type === "hourly" ? "/hr" : "/yr"
+                      }`
                     : "—"
                 }
               />

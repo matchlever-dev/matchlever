@@ -26,10 +26,11 @@ export function jobOpeningPayloadToRow(
     max_commute_miles: needsLocal ? data.maxCommuteMiles : null,
     open_to_relocation: needsLocal ? data.openToRelocation : null,
     global_city: resolveJobOpeningCity(data),
-    global_country: needsLocal ? data.globalCountry || null : null,
+    global_country: data.globalCountry?.trim() || null,
     timezone: data.timezone,
     work_hours_start: normalizeTime(data.workHoursStart),
     work_hours_end: normalizeTime(data.workHoursEnd),
+    pay_type: data.payType,
     min_salary: data.minSalary,
     visa_statuses: data.visaStatuses,
   };
@@ -50,6 +51,7 @@ export function jobRowToFormValues(row: {
   timezone: string | null;
   work_hours_start: string | null;
   work_hours_end: string | null;
+  pay_type?: string | null;
   min_salary: number | null;
   visa_statuses: string[] | null;
 }): Partial<JobOpeningFormValues> {
@@ -84,6 +86,10 @@ export function jobRowToFormValues(row: {
       "America/New_York") as JobOpeningFormValues["timezone"],
     workHoursStart: trimTime(row.work_hours_start) || "09:00",
     workHoursEnd: trimTime(row.work_hours_end) || "17:00",
+    payType:
+      row.pay_type === "hourly"
+        ? "hourly"
+        : ("annual" as JobOpeningFormValues["payType"]),
     minSalary: row.min_salary ?? 140000,
     visaStatuses: (row.visa_statuses?.length
       ? row.visa_statuses
@@ -107,6 +113,7 @@ export function summarizeJobRow(row: {
   status: string;
   location_modes: string[] | null;
   global_city: string | null;
+  pay_type?: string | null;
   min_salary: number | null;
   accepted_match_count: number | null;
   match_bundle_purchased_at: string | null;
@@ -118,6 +125,7 @@ export function summarizeJobRow(row: {
     status: row.status,
     locationModes: row.location_modes ?? ["remote"],
     globalCity: row.global_city,
+    payType: row.pay_type === "hourly" ? ("hourly" as const) : ("annual" as const),
     minSalary: row.min_salary,
     acceptedMatchCount: row.accepted_match_count ?? 0,
     matchBundlePurchasedAt: row.match_bundle_purchased_at,
