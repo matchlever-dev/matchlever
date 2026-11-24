@@ -103,33 +103,32 @@ function refineJobOpening(
         path: ["openToRelocation"],
       });
     }
-  }
-
-  // Base location is always required so pay has geographic context.
-  if (!data.globalCountry?.trim()) {
-    ctx.addIssue({
-      code: "custom",
-      message: "Country is required",
-      path: ["globalCountry"],
-    });
-  }
-  if (
-    data.globalCountry === "Other" ||
-    data.globalCity === OTHER_CITY_VALUE
-  ) {
-    if (!data.customCity?.trim()) {
+    // Country/city required for hybrid/onsite; optional for remote-only.
+    if (!data.globalCountry?.trim()) {
       ctx.addIssue({
         code: "custom",
-        message: "Enter the closest city",
-        path: ["customCity"],
+        message: "Country is required for hybrid/onsite roles",
+        path: ["globalCountry"],
       });
     }
-  } else if (!data.globalCity?.trim()) {
-    ctx.addIssue({
-      code: "custom",
-      message: "Closest city is required",
-      path: ["globalCity"],
-    });
+    if (
+      data.globalCountry === "Other" ||
+      data.globalCity === OTHER_CITY_VALUE
+    ) {
+      if (!data.customCity?.trim()) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Enter the closest city",
+          path: ["customCity"],
+        });
+      }
+    } else if (!data.globalCity?.trim()) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Closest city is required for hybrid/onsite roles",
+        path: ["globalCity"],
+      });
+    }
   }
 }
 
