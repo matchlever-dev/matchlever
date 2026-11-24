@@ -72,6 +72,7 @@ export const DEMO_EMPLOYER_MATCH_VIEWS: Record<string, EmployerMatchView> = {
       locationModes: ["hybrid", "remote"],
       payType: "annual",
       minSalary: 185000,
+      payRequirementLabel: "$185,000/yr+",
       visaStatus: "none",
       workHours: "09:00 – 17:00",
     },

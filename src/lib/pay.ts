@@ -160,9 +160,9 @@ export function talentPayRequirementFromRow(row: {
   min_salary?: number | null;
 }): TalentPayRequirement {
   let payAnnualMin = positiveIntOrNull(row.pay_annual_min);
-  let payAnnualMax = positiveIntOrNull(row.pay_annual_max);
+  const payAnnualMax = positiveIntOrNull(row.pay_annual_max);
   let payHourlyMin = positiveIntOrNull(row.pay_hourly_min);
-  let payHourlyMax = positiveIntOrNull(row.pay_hourly_max);
+  const payHourlyMax = positiveIntOrNull(row.pay_hourly_max);
 
   const hasRange =
     payAnnualMin != null ||
