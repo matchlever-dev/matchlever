@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import type { JobOpeningFormValues } from "@/lib/employer/job-opening-schema";
 import {
@@ -10,6 +10,7 @@ import {
   jobOpeningStatusLabel,
 } from "@/lib/employer/job-opening-schema";
 import { isFounderPromoEligible } from "@/lib/employer/billing";
+import { formatPayAmount } from "@/lib/pay";
 import { BrandMark } from "@/components/brand/brand-mark";
 import { JobOpeningForm } from "@/components/employer/job-opening-form";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +56,9 @@ export function JobOpeningCreatePage() {
         founderEligible={founderEligible}
         employerCreatedAt={createdAt}
         freeMatchesUsed={freeMatchesUsed}
-        onSaved={({ id }) => router.push(`/dashboard/employer/jobs/${id}`)}
+        onSaved={({ id }) =>
+          router.push(`/dashboard/employer/jobs/${id}?submitted=1`)
+        }
       />
     </Shell>
   );
@@ -63,6 +66,8 @@ export function JobOpeningCreatePage() {
 
 export function JobOpeningDetailPage({ jobId }: { jobId: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const justSubmitted = searchParams.get("submitted") === "1";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -195,21 +200,33 @@ export function JobOpeningDetailPage({ jobId }: { jobId: string }) {
   const isHired = job.status === "hired";
   const isClosed = job.status === "closed";
   const matchingStopped = isHired || isClosed;
+  const locationLine = formatJobLocationLine(job);
+  const payLine = formatPayAmount(job.minSalary, job.payType);
+  const payKindLabel =
+    job.payType === "hourly" ? "Hourly rate" : "Annual salary";
 
   return (
     <Shell title={job.title}>
+      {justSubmitted ? (
+        <div className="mb-4 rounded-lg border border-[#2B5B84]/20 bg-[#2B5B84]/5 px-4 py-3 text-sm text-[#2A2D34]">
+          <p className="font-medium text-[#2B5B84]">Job opening submitted</p>
+          <p className="mt-1 text-[#5B616B]">
+            Confirm the role, location, and pay below. You can edit anytime.
+          </p>
+        </div>
+      ) : null}
+
       <section className="border border-[#2B5B84]/15 bg-white p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-sm text-[#5B616B]">
-              {formatJobLocationLine(job)}
+          <div className="min-w-0">
+            <p className="font-display text-[11px] font-semibold tracking-[0.22em] text-[#E87A5D] uppercase">
+              {justSubmitted ? "Submitted opening" : "Job opening"}
             </p>
-            <p className="mt-2 text-lg font-semibold text-[#2B5B84]">
-              {job.minSalary != null
-                ? `$${job.minSalary.toLocaleString()}${
-                    job.payType === "hourly" ? "/hr" : "/yr"
-                  }`
-                : "Pay TBD"}
+            <h1 className="mt-2 font-display text-2xl font-semibold text-[#2A2D34]">
+              {job.title}
+            </h1>
+            <p className="mt-1 text-xs font-medium tracking-wide text-[#5B616B] uppercase">
+              Role
             </p>
           </div>
           <Badge
@@ -221,6 +238,25 @@ export function JobOpeningDetailPage({ jobId }: { jobId: string }) {
             {jobOpeningStatusLabel(job.status)}
           </Badge>
         </div>
+
+        <dl className="mt-6 grid gap-4 border-t border-[#2B5B84]/10 pt-5 sm:grid-cols-2">
+          <div className="min-w-0">
+            <dt className="text-xs font-medium tracking-wide text-[#5B616B] uppercase">
+              Location
+            </dt>
+            <dd className="mt-1 text-lg font-semibold text-[#2A2D34]">
+              {locationLine}
+            </dd>
+          </div>
+          <div className="min-w-0">
+            <dt className="text-xs font-medium tracking-wide text-[#5B616B] uppercase">
+              {payKindLabel}
+            </dt>
+            <dd className="mt-1 text-lg font-semibold text-[#2B5B84]">
+              {payLine}
+            </dd>
+          </div>
+        </dl>
 
         <div className="mt-6 flex flex-wrap gap-3">
           <Button
@@ -286,7 +322,11 @@ export function JobOpeningDetailPage({ jobId }: { jobId: string }) {
         {statusMessage && (
           <p className="mt-4 text-sm text-[#2B5B84]">{statusMessage}</p>
         )}
-        {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
+        {error && (
+          <p className="mt-4 text-sm text-red-700" role="alert">
+            {error}
+          </p>
+        )}
 
         <p className="mt-6 text-sm text-[#5B616B]">
           {matchingStopped

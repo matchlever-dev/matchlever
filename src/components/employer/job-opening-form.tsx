@@ -61,6 +61,7 @@ export function JobOpeningForm({
 }: JobOpeningFormProps) {
   const [skillDraft, setSkillDraft] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [validationIssues, setValidationIssues] = useState<string[]>([]);
   const [busyAction, setBusyAction] = useState<"draft" | "publish" | null>(
     null
   );
@@ -213,11 +214,17 @@ export function JobOpeningForm({
 
   async function submit(status: "draft" | "active") {
     setSubmitError(null);
+    setValidationIssues([]);
     setBusyAction(status === "draft" ? "draft" : "publish");
     try {
       const values = form.getValues();
       const parsed = jobOpeningFormSchema.safeParse(values);
       if (!parsed.success) {
+        const messages = Array.from(
+          new Set(
+            parsed.error.issues.map((issue) => issue.message).filter(Boolean)
+          )
+        );
         for (const issue of parsed.error.issues) {
           const path = issue.path.join(".") || "root";
           form.setError(path as keyof JobOpeningFormValues, {
@@ -225,7 +232,8 @@ export function JobOpeningForm({
             message: issue.message,
           });
         }
-        throw new Error(parsed.error.issues[0]?.message || "Fix form errors");
+        setValidationIssues(messages);
+        throw new Error(messages[0] || "Fix form errors");
       }
 
       const endpoint = jobId
@@ -240,8 +248,15 @@ export function JobOpeningForm({
         error?: string;
         id?: string;
         status?: string;
+        issues?: Array<{ message?: string }>;
       };
-      if (!res.ok) throw new Error(json.error || "Unable to save job opening");
+      if (!res.ok) {
+        const apiIssues = (json.issues ?? [])
+          .map((issue) => issue.message)
+          .filter((message): message is string => Boolean(message));
+        if (apiIssues.length > 0) setValidationIssues(apiIssues);
+        throw new Error(json.error || "Unable to save job opening");
+      }
       onSaved?.({
         id: json.id || jobId || "",
         status: json.status || status,
@@ -272,7 +287,7 @@ export function JobOpeningForm({
           <p className="mt-2 text-sm text-[#5B616B]">
             Upload a PDF, DOCX, or HTML job description. We extract text and
             populate title, skills, taglines, endorsed traits, location, pay,
-            and visa fields. Review everything before publishing.
+            and visa fields. Review everything before submitting.
           </p>
 
           <label
@@ -870,10 +885,26 @@ export function JobOpeningForm({
           ) : null}
         </div>
 
-        {submitError ? (
-          <p className="text-sm text-destructive" role="alert">
-            {submitError}
-          </p>
+        {validationIssues.length > 0 || submitError ? (
+          <div
+            className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700"
+            role="alert"
+          >
+            <p className="font-medium">
+              {validationIssues.length > 0
+                ? "Fix these issues before submitting:"
+                : "Unable to submit job opening"}
+            </p>
+            {validationIssues.length > 0 ? (
+              <ul className="mt-2 list-disc space-y-1 pl-5">
+                {validationIssues.map((issue) => (
+                  <li key={issue}>{issue}</li>
+                ))}
+              </ul>
+            ) : submitError ? (
+              <p className="mt-1">{submitError}</p>
+            ) : null}
+          </div>
         ) : null}
       </div>
 
@@ -893,7 +924,7 @@ export function JobOpeningForm({
             className="h-11 bg-[#2B5B84] text-white hover:bg-[#244d70]"
             disabled={busyAction !== null || parseBusy}
           >
-            {busyAction === "publish" ? "Publishing…" : "Publish Job Opening"}
+            {busyAction === "publish" ? "Submitting…" : "Submit Job Opening"}
           </Button>
         </div>
       </div>
