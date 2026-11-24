@@ -14,6 +14,7 @@ import {
   type EmployerJobSummary,
 } from "@/lib/dashboard/employer";
 import { isFounderPromoEligible } from "@/lib/employer/billing";
+import { resolvedCompanyName } from "@/lib/employer/company-name";
 import { RoleSwitcher } from "@/components/auth/role-switcher";
 import { BrandMark } from "@/components/brand/brand-mark";
 import { EmployerBillingPanel } from "@/components/employer/employer-billing-panel";
@@ -357,11 +358,9 @@ function employerProfileSubtitle(profile: {
   companyName: string;
 }): string {
   const title = profile.title?.trim() || "";
-  const company = profile.companyName?.trim() || "";
-  const companyPending =
-    !company || /^pending intake$/i.test(company);
+  const company = resolvedCompanyName(profile.companyName);
 
-  if (!title || companyPending) {
+  if (!title || !company) {
     return "Edit Profile to enter company name and title";
   }
 
