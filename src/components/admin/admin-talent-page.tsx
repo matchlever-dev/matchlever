@@ -5,6 +5,7 @@ import { AlertTriangle, Send } from "lucide-react";
 
 import { ADMIN_LINKS } from "@/lib/admin/admin-nav";
 import type { AdminTalentRow, AdminReferenceRow } from "@/lib/admin/demo";
+import { SUPERUSER_LINKS } from "@/lib/admin/superuser-nav";
 import {
   REQUIRED_VERIFIED_REFERENCES,
   formatTimezoneDisplay,
@@ -22,11 +23,6 @@ import { ReferrerLinkedInLink } from "@/components/reference/referrer-linkedin-l
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-const SUPERUSER_LINKS = [
-  { href: "/superuser/talent", label: "Talent" },
-  { href: "/superuser/manual-match", label: "Manual Match" },
-];
 
 const TALENT_STATUS_OPTIONS = [
   { value: "all", label: "All statuses" },

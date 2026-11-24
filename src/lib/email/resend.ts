@@ -197,6 +197,132 @@ export async function sendReferenceInviteEmail(args: {
   return { ...delivered, inviteUrl };
 }
 
+export function getMatchAcceptUrl(token: string) {
+  return `${getAppBaseUrl()}/matches/accept?token=${encodeURIComponent(token)}`;
+}
+
+export async function sendMatchIncognitoEmail(args: {
+  to: string;
+  employerName: string | null;
+  jobTitle: string;
+  companyName: string | null;
+  profile: {
+    initials: string;
+    headline: string;
+    tagline: string;
+    summary: string;
+    verifiedSkills: string[];
+    yearsExperience: number | null;
+    locationLine: string;
+    timezoneLabel: string;
+    locationModes: string[];
+    minSalary: number | null;
+    visaStatus: string | null;
+    workHours: string | null;
+  };
+  acceptToken: string;
+  billingStatus: "free" | "invoiced";
+  matchIndex: number;
+}) {
+  const firstName =
+    oneLine(args.employerName || "").split(/\s+/)[0] || "";
+  const greeting = firstName ? `Hi ${escapeHtml(firstName)},` : "Hi,";
+  const jobTitle = escapeHtml(oneLine(args.jobTitle));
+  const company = oneLine(args.companyName || "");
+  const acceptUrl = getMatchAcceptUrl(args.acceptToken);
+  const p = args.profile;
+  const skillsHtml = p.verifiedSkills.length
+    ? p.verifiedSkills
+        .map(
+          (skill) =>
+            `<span style="display:inline-block;margin:0 6px 6px 0;padding:4px 8px;border:1px solid #D6DDE6;background:#F7F6F3;font-size:12px;color:#2B5B84">${escapeHtml(skill)}</span>`
+        )
+        .join("")
+    : `<span style="font-size:13px;color:#5B616B">Skills shared after accept</span>`;
+  const modes = p.locationModes
+    .map((m) => m.charAt(0).toUpperCase() + m.slice(1))
+    .join(" / ");
+  const billingNote =
+    args.billingStatus === "free"
+      ? `Match #${args.matchIndex} on this opening is marked free.`
+      : `Match #${args.matchIndex} on this opening is marked invoiced (manual invoice).`;
+
+  return deliverAutomatedEmail({
+    to: args.to,
+    subject: `New MatchLever match for ${oneLine(args.jobTitle)}`,
+    html: `
+        <p>${greeting}</p>
+        <p>MatchLever matched an anonymous candidate to
+          <strong>${jobTitle}</strong>${company ? ` at ${escapeHtml(company)}` : ""}.
+          Review the incognito profile below. Identity stays hidden until you Accept.</p>
+
+        <div style="border:1px solid #D6DDE6;border-radius:8px;padding:20px;margin:20px 0;background:#fff">
+          <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#5B616B;font-weight:700">Incognito profile</p>
+          <div style="display:flex;align-items:center;gap:12px;margin:12px 0 8px">
+            <div style="width:48px;height:48px;border-radius:999px;background:#2B5B84;color:#fff;font-weight:700;font-size:16px;line-height:48px;text-align:center">${escapeHtml(p.initials)}</div>
+            <div>
+              <p style="margin:0;font-size:18px;font-weight:700;color:#2A2D34">${escapeHtml(p.headline)}</p>
+              <p style="margin:4px 0 0;font-size:14px;color:#2B5B84">${escapeHtml(p.tagline)}</p>
+            </div>
+          </div>
+          <p style="margin:12px 0;font-size:14px;line-height:1.55;color:#2A2D34;white-space:pre-wrap">${escapeHtml(p.summary)}</p>
+          <p style="margin:16px 0 6px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5B616B;font-weight:700">Verified skills</p>
+          <div>${skillsHtml}</div>
+          <table style="width:100%;margin-top:16px;border-collapse:collapse;font-size:13px;color:#2A2D34">
+            <tr><td style="padding:6px 0;color:#5B616B">Location</td><td style="padding:6px 0;text-align:right">${escapeHtml(p.locationLine)}</td></tr>
+            <tr><td style="padding:6px 0;color:#5B616B">Timezone</td><td style="padding:6px 0;text-align:right">${escapeHtml(p.timezoneLabel)}</td></tr>
+            ${modes ? `<tr><td style="padding:6px 0;color:#5B616B">Work modes</td><td style="padding:6px 0;text-align:right">${escapeHtml(modes)}</td></tr>` : ""}
+            ${p.yearsExperience != null ? `<tr><td style="padding:6px 0;color:#5B616B">Experience</td><td style="padding:6px 0;text-align:right">${p.yearsExperience} years</td></tr>` : ""}
+            ${p.minSalary != null ? `<tr><td style="padding:6px 0;color:#5B616B">Min salary</td><td style="padding:6px 0;text-align:right">$${p.minSalary.toLocaleString("en-US")}</td></tr>` : ""}
+            ${p.workHours ? `<tr><td style="padding:6px 0;color:#5B616B">Work hours</td><td style="padding:6px 0;text-align:right">${escapeHtml(p.workHours)}</td></tr>` : ""}
+            ${p.visaStatus ? `<tr><td style="padding:6px 0;color:#5B616B">Work auth</td><td style="padding:6px 0;text-align:right">${escapeHtml(p.visaStatus)}</td></tr>` : ""}
+          </table>
+        </div>
+
+        <p>
+          <a href="${acceptUrl}" style="background:#E87A5D;color:#fff;padding:12px 18px;text-decoration:none;border-radius:6px;display:inline-block;font-weight:600">
+            Accept match
+          </a>
+        </p>
+        <p style="font-size:12px;color:#5B616B">Accepting sends this candidate’s LinkedIn profile to you so you can start the conversation.</p>
+        <p style="font-size:12px;color:#5B616B">Or paste this URL:<br/>${acceptUrl}</p>
+        <p style="font-size:11px;color:#8A9099">${escapeHtml(billingNote)}</p>
+    `,
+  });
+}
+
+export async function sendMatchLinkedInEmail(args: {
+  to: string;
+  employerName: string | null;
+  jobTitle: string;
+  companyName: string | null;
+  talentHeadline: string;
+  linkedinUrl: string;
+}) {
+  const firstName =
+    oneLine(args.employerName || "").split(/\s+/)[0] || "";
+  const greeting = firstName ? `Hi ${escapeHtml(firstName)},` : "Hi,";
+  const jobTitle = escapeHtml(oneLine(args.jobTitle));
+  const headline = escapeHtml(oneLine(args.talentHeadline));
+  const linkedinUrl = args.linkedinUrl;
+
+  return deliverAutomatedEmail({
+    to: args.to,
+    subject: `LinkedIn unlocked · ${oneLine(args.talentHeadline)}`,
+    html: `
+        <p>${greeting}</p>
+        <p>You accepted the MatchLever match for <strong>${jobTitle}</strong>.</p>
+        <p>Here is the candidate’s LinkedIn profile for <strong>${headline}</strong>:</p>
+        <p>
+          <a href="${escapeHtml(linkedinUrl)}" style="background:#2B5B84;color:#fff;padding:12px 18px;text-decoration:none;border-radius:6px;display:inline-block;font-weight:600">
+            Open LinkedIn profile
+          </a>
+        </p>
+        <p style="font-size:12px;color:#5B616B">Or paste this URL:<br/>${escapeHtml(linkedinUrl)}</p>
+    `,
+  });
+}
+
 export async function sendIncompleteProfileReminderEmail(args: {
   to: string;
   talentName: string | null;

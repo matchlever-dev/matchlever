@@ -8,6 +8,7 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
+    "test:unit": "npx --yes tsx --test src/lib/matching/*.test.ts",
     "db:query": "node scripts/run-sql.mjs",
     "db:delete-talent": "node scripts/delete-talent-by-name.mjs"
   },

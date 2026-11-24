@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Briefcase,
   Building2,
   ChevronLeft,
   ChevronRight,
@@ -23,6 +24,7 @@ const ICONS = {
   "/admin/users": Users,
   "/admin/talent": UserSquare2,
   "/admin/employers": Building2,
+  "/admin/job-openings": Briefcase,
   "/admin/contact": MessageSquare,
   "/admin/site-copy": Type,
   "/admin/faq": CircleHelp,
