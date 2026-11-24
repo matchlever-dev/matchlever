@@ -247,8 +247,7 @@ export function EmployerDashboard() {
                   className="mt-4 h-11 bg-[#2B5B84] text-white hover:bg-[#244d70]"
                   onClick={() => router.push("/dashboard/employer/jobs/new")}
                 >
-                  <Plus className="size-4" data-icon="inline-start" />
-                  Post a job opening
+                  Post First Job Opening
                 </Button>
               </div>
             ) : (
