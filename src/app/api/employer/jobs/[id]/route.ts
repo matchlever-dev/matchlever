@@ -3,6 +3,10 @@ import { z } from "zod";
 
 import { DEMO_EMPLOYER_JOBS } from "@/lib/dashboard/employer";
 import {
+  DEMO_EMPLOYER_JOB_MATCHES,
+  listEmployerJobMatches,
+} from "@/lib/employer/job-matches";
+import {
   JOB_OPENING_STATUSES,
   jobOpeningFormSchema,
 } from "@/lib/employer/job-opening-schema";
@@ -77,6 +81,7 @@ export async function GET(
     return NextResponse.json({
       demo: true,
       job: demo,
+      matches: DEMO_EMPLOYER_JOB_MATCHES[demo.id] ?? [],
       formValues: {
         title: demo.title,
         verifiedSkills: ["TypeScript", "System Design"],
@@ -107,10 +112,13 @@ export async function GET(
   const auth = await requireOwnedJob(supabase, id);
   if ("error" in auth && auth.error) return auth.error;
 
+  const matches = await listEmployerJobMatches(supabase, id);
+
   return NextResponse.json({
     demo: false,
     job: summarizeJobRow(auth.job!),
     formValues: jobRowToFormValues(auth.job!),
+    matches,
   });
 }
 

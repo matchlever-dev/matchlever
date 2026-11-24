@@ -9,7 +9,12 @@ import {
   formatJobLocationLine,
   jobOpeningStatusLabel,
 } from "@/lib/employer/job-opening-schema";
+import {
+  getMatchViewPath,
+  type EmployerJobMatchListItem,
+} from "@/lib/employer/job-matches";
 import { isFounderPromoEligible } from "@/lib/employer/billing";
+import { employerResponseLabel } from "@/lib/matching/employer-response";
 import { formatPayAmount } from "@/lib/pay";
 import { BrandMark } from "@/components/brand/brand-mark";
 import { JobOpeningForm } from "@/components/employer/job-opening-form";
@@ -85,6 +90,7 @@ export function JobOpeningDetailPage({ jobId }: { jobId: string }) {
     payType?: "annual" | "hourly";
     minSalary: number | null;
   } | null>(null);
+  const [matches, setMatches] = useState<EmployerJobMatchListItem[]>([]);
   const [founderEligible, setFounderEligible] = useState(false);
 
   const load = useCallback(async () => {
@@ -99,6 +105,11 @@ export function JobOpeningDetailPage({ jobId }: { jobId: string }) {
       if (!jobRes.ok) throw new Error(jobJson.error || "Unable to load job");
       setJob(jobJson.job);
       setFormValues(jobJson.formValues);
+      setMatches(
+        Array.isArray(jobJson.matches)
+          ? (jobJson.matches as EmployerJobMatchListItem[])
+          : []
+      );
       if (dashRes.ok) {
         const dash = await dashRes.json();
         setFounderEligible(
@@ -333,8 +344,85 @@ export function JobOpeningDetailPage({ jobId }: { jobId: string }) {
             ? isHired
               ? "This opening is marked Hired. MatchLever will not assign new candidates here."
               : "This opening is closed. Matching is stopped."
-            : "Edit the role details anytime. When you fill the seat, mark the opening Hired to stop matching. Employers Accept or Pass each match from email; charge and hire-completion tracking come later."}
+            : "Edit the role details anytime. When you fill the seat, mark the opening Hired to stop matching. Open each match below (or from email) to Accept or Pass; charge and hire-completion tracking come later."}
         </p>
+      </section>
+
+      <section className="mt-6 border border-[#2B5B84]/15 bg-white p-5 sm:p-6">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="font-display text-xl font-semibold text-[#2B5B84]">
+              Matches
+            </h2>
+            <p className="mt-1 text-sm text-[#5B616B]">
+              Incognito profiles matched to this opening. Click one to review
+              and Accept or Pass.
+            </p>
+          </div>
+          {matches.length > 0 ? (
+            <p className="text-xs font-medium tracking-wide text-[#5B616B] uppercase">
+              {matches.length} {matches.length === 1 ? "match" : "matches"}
+            </p>
+          ) : null}
+        </div>
+
+        {matches.length === 0 ? (
+          <p className="mt-5 text-sm text-[#5B616B]">No match yet</p>
+        ) : (
+          <ul className="mt-5 grid gap-3">
+            {matches.map((m) => {
+              const canOpen = m.acceptToken.length >= 16;
+              const rowClass =
+                "flex flex-wrap items-center justify-between gap-3 border border-[#2B5B84]/15 bg-[#F7F6F3]/60 px-4 py-3";
+              const body = (
+                <>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#2B5B84] text-xs font-bold text-white"
+                      aria-hidden
+                    >
+                      {m.initials}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate font-display text-base font-semibold text-[#2A2D34]">
+                        #{m.matchIndex} {m.headline}
+                      </p>
+                      <p className="truncate text-sm text-[#5B616B]">
+                        {m.tagline}
+                      </p>
+                    </div>
+                  </div>
+                  <Badge
+                    variant="secondary"
+                    className={
+                      m.employerResponse === "accepted"
+                        ? "bg-[#2B5B84]/15 text-[#2B5B84]"
+                        : m.employerResponse === "passed"
+                          ? "bg-[#E87A5D]/15 text-[#E87A5D]"
+                          : "bg-[#5B616B]/10 text-[#5B616B]"
+                    }
+                  >
+                    {employerResponseLabel(m.employerResponse)}
+                  </Badge>
+                </>
+              );
+              return (
+                <li key={m.id}>
+                  {canOpen ? (
+                    <Link
+                      href={getMatchViewPath(m.acceptToken)}
+                      className={`${rowClass} transition hover:border-[#2B5B84]/35 hover:bg-white`}
+                    >
+                      {body}
+                    </Link>
+                  ) : (
+                    <div className={rowClass}>{body}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </section>
     </Shell>
   );
