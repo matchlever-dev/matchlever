@@ -77,6 +77,10 @@ export type Database = {
           open_to_relocation: boolean | null;
           pay_type: string;
           min_salary: number | null;
+          pay_annual_min: number | null;
+          pay_annual_max: number | null;
+          pay_hourly_min: number | null;
+          pay_hourly_max: number | null;
           visa_status: string | null;
           years_experience: number | null;
           talent_tos_accepted_at: string | null;
@@ -107,6 +111,10 @@ export type Database = {
           open_to_relocation?: boolean | null;
           pay_type?: string;
           min_salary?: number | null;
+          pay_annual_min?: number | null;
+          pay_annual_max?: number | null;
+          pay_hourly_min?: number | null;
+          pay_hourly_max?: number | null;
           visa_status?: string | null;
           years_experience?: number | null;
           talent_tos_accepted_at?: string | null;
@@ -137,6 +145,10 @@ export type Database = {
           open_to_relocation?: boolean | null;
           pay_type?: string;
           min_salary?: number | null;
+          pay_annual_min?: number | null;
+          pay_annual_max?: number | null;
+          pay_hourly_min?: number | null;
+          pay_hourly_max?: number | null;
           visa_status?: string | null;
           years_experience?: number | null;
           talent_tos_accepted_at?: string | null;

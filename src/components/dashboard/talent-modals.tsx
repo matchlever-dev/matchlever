@@ -17,6 +17,13 @@ import {
   timezoneOffsetMinutes,
 } from "@/lib/onboarding/schema";
 import {
+  coerceOptionalPayAmount,
+  DEFAULT_ANNUAL_PAY,
+  DEFAULT_HOURLY_PAY,
+  refineTalentPayRequirement,
+  talentPayRequirementFieldsSchema,
+} from "@/lib/pay";
+import {
   SUPERPOWER_TAGLINE_MAX_LENGTH,
   SUPERPOWER_TAGLINE_MIN_LENGTH,
 } from "@/lib/taglines";
@@ -40,18 +47,21 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
-const editSchema = z.object({
-  headline: z.string().trim().min(2).max(120),
-  selectedTagline: z
-    .string()
-    .trim()
-    .min(SUPERPOWER_TAGLINE_MIN_LENGTH)
-    .max(SUPERPOWER_TAGLINE_MAX_LENGTH),
-  globalCity: z.string().trim().min(1).max(80),
-  globalCountry: z.string().trim().min(1).max(80),
-  timezone: z.enum(TIMEZONE_VALUES, { error: "Select a timezone" }),
-  verifiedSkills: z.string(),
-});
+const editSchema = z
+  .object({
+    headline: z.string().trim().min(2).max(120),
+    selectedTagline: z
+      .string()
+      .trim()
+      .min(SUPERPOWER_TAGLINE_MIN_LENGTH)
+      .max(SUPERPOWER_TAGLINE_MAX_LENGTH),
+    globalCity: z.string().trim().min(1).max(80),
+    globalCountry: z.string().trim().min(1).max(80),
+    timezone: z.enum(TIMEZONE_VALUES, { error: "Select a timezone" }),
+    verifiedSkills: z.string(),
+    ...talentPayRequirementFieldsSchema.shape,
+  })
+  .superRefine((data, ctx) => refineTalentPayRequirement(data, ctx));
 
 type EditValues = z.infer<typeof editSchema>;
 
@@ -99,6 +109,32 @@ export function EditProfileModal({
   });
 
   const selectedTagline = watch("selectedTagline");
+  const wantAnnual = watch("wantAnnual");
+  const wantHourly = watch("wantHourly");
+  const payAnnualMin = watch("payAnnualMin");
+  const payHourlyMin = watch("payHourlyMin");
+
+  function toggleWantAnnual(next: boolean) {
+    setValue("wantAnnual", next, { shouldValidate: true });
+    if (next && (payAnnualMin == null || !Number.isFinite(payAnnualMin))) {
+      setValue("payAnnualMin", DEFAULT_ANNUAL_PAY, { shouldValidate: true });
+    }
+    if (!next) {
+      setValue("payAnnualMin", null, { shouldValidate: true });
+      setValue("payAnnualMax", null, { shouldValidate: true });
+    }
+  }
+
+  function toggleWantHourly(next: boolean) {
+    setValue("wantHourly", next, { shouldValidate: true });
+    if (next && (payHourlyMin == null || !Number.isFinite(payHourlyMin))) {
+      setValue("payHourlyMin", DEFAULT_HOURLY_PAY, { shouldValidate: true });
+    }
+    if (!next) {
+      setValue("payHourlyMin", null, { shouldValidate: true });
+      setValue("payHourlyMax", null, { shouldValidate: true });
+    }
+  }
 
   useEffect(() => {
     if (open) {
@@ -195,6 +231,12 @@ export function EditProfileModal({
         globalCountry: values.globalCountry,
         timezone,
         verifiedSkills,
+        wantAnnual: values.wantAnnual,
+        wantHourly: values.wantHourly,
+        payAnnualMin: values.wantAnnual ? values.payAnnualMin : null,
+        payAnnualMax: values.wantAnnual ? values.payAnnualMax : null,
+        payHourlyMin: values.wantHourly ? values.payHourlyMin : null,
+        payHourlyMax: values.wantHourly ? values.payHourlyMax : null,
         ...(suggestedTaglines.length > 0
           ? { suggestedTaglines }
           : {}),
@@ -218,6 +260,10 @@ export function EditProfileModal({
       timezoneOffset: offset,
       timezoneLabel: formatTimezoneDisplay(timezone, offset),
       verifiedSkills,
+      payAnnualMin: values.wantAnnual ? values.payAnnualMin ?? null : null,
+      payAnnualMax: values.wantAnnual ? values.payAnnualMax ?? null : null,
+      payHourlyMin: values.wantHourly ? values.payHourlyMin ?? null : null,
+      payHourlyMax: values.wantHourly ? values.payHourlyMax ?? null : null,
     });
   }
 
@@ -367,6 +413,118 @@ export function EditProfileModal({
             />
           </Field>
 
+          <div className="grid gap-3 rounded-lg border border-[#2B5B84]/15 bg-[#F8F9FA] p-3">
+            <div className="grid gap-1">
+              <Label>Pay requirement</Label>
+              <p className="text-xs text-[#5B616B]">
+                Annual and/or hourly range — used as hard-fit against job pay.
+              </p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                aria-pressed={wantAnnual}
+                onClick={() => toggleWantAnnual(!wantAnnual)}
+                className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                  wantAnnual
+                    ? "border-[#2B5B84] bg-[#2B5B84] text-white"
+                    : "border-[#2B5B84]/20 bg-white text-[#2A2D34] hover:border-[#2B5B84]/50"
+                }`}
+              >
+                Annual salary
+              </button>
+              <button
+                type="button"
+                aria-pressed={wantHourly}
+                onClick={() => toggleWantHourly(!wantHourly)}
+                className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                  wantHourly
+                    ? "border-[#2B5B84] bg-[#2B5B84] text-white"
+                    : "border-[#2B5B84]/20 bg-white text-[#2A2D34] hover:border-[#2B5B84]/50"
+                }`}
+              >
+                Hourly rate
+              </button>
+            </div>
+            {errors.wantAnnual && (
+              <p className="text-xs text-destructive">
+                {errors.wantAnnual.message}
+              </p>
+            )}
+            {wantAnnual ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Annual min (USD)" id="payAnnualMin">
+                  <Input
+                    id="payAnnualMin"
+                    type="number"
+                    min={1}
+                    step={1000}
+                    {...register("payAnnualMin", {
+                      setValueAs: coerceOptionalPayAmount,
+                    })}
+                  />
+                  {errors.payAnnualMin && (
+                    <p className="text-xs text-destructive">
+                      {errors.payAnnualMin.message}
+                    </p>
+                  )}
+                </Field>
+                <Field label="Annual max (optional)" id="payAnnualMax">
+                  <Input
+                    id="payAnnualMax"
+                    type="number"
+                    min={1}
+                    step={1000}
+                    {...register("payAnnualMax", {
+                      setValueAs: coerceOptionalPayAmount,
+                    })}
+                  />
+                  {errors.payAnnualMax && (
+                    <p className="text-xs text-destructive">
+                      {errors.payAnnualMax.message}
+                    </p>
+                  )}
+                </Field>
+              </div>
+            ) : null}
+            {wantHourly ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Hourly min (USD)" id="payHourlyMin">
+                  <Input
+                    id="payHourlyMin"
+                    type="number"
+                    min={1}
+                    step={1}
+                    {...register("payHourlyMin", {
+                      setValueAs: coerceOptionalPayAmount,
+                    })}
+                  />
+                  {errors.payHourlyMin && (
+                    <p className="text-xs text-destructive">
+                      {errors.payHourlyMin.message}
+                    </p>
+                  )}
+                </Field>
+                <Field label="Hourly max (optional)" id="payHourlyMax">
+                  <Input
+                    id="payHourlyMax"
+                    type="number"
+                    min={1}
+                    step={1}
+                    {...register("payHourlyMax", {
+                      setValueAs: coerceOptionalPayAmount,
+                    })}
+                  />
+                  {errors.payHourlyMax && (
+                    <p className="text-xs text-destructive">
+                      {errors.payHourlyMax.message}
+                    </p>
+                  )}
+                </Field>
+              </div>
+            ) : null}
+          </div>
+
           {error && <p className="text-xs text-destructive">{error}</p>}
 
           <DialogFooter className="mx-0 mb-0 border-0 bg-transparent p-0">
@@ -476,6 +634,8 @@ function Field({
 }
 
 function toFormValues(data: TalentDashboardData): EditValues {
+  const wantAnnual = data.payAnnualMin != null || data.payAnnualMax != null;
+  const wantHourly = data.payHourlyMin != null || data.payHourlyMax != null;
   return {
     headline: data.headline,
     selectedTagline: data.selectedTagline,
@@ -485,5 +645,13 @@ function toFormValues(data: TalentDashboardData): EditValues {
       (resolveTimezoneId(data.timezone, data.timezoneOffset) as EditValues["timezone"]) ??
       "America/New_York",
     verifiedSkills: data.verifiedSkills.join(", "),
+    wantAnnual: wantAnnual || (!wantAnnual && !wantHourly),
+    wantHourly,
+    payAnnualMin:
+      data.payAnnualMin ??
+      (wantAnnual || (!wantAnnual && !wantHourly) ? DEFAULT_ANNUAL_PAY : null),
+    payAnnualMax: data.payAnnualMax,
+    payHourlyMin: data.payHourlyMin,
+    payHourlyMax: data.payHourlyMax,
   };
 }

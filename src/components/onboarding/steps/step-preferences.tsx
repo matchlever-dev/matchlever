@@ -15,9 +15,9 @@ import {
 } from "@/lib/onboarding/locations";
 import { SUPERPOWER_TAGLINE_MAX_LENGTH } from "@/lib/taglines";
 import {
-  coercePayAmountForType,
-  payAmountLabel,
-  type PayType,
+  coerceOptionalPayAmount,
+  DEFAULT_ANNUAL_PAY,
+  DEFAULT_HOURLY_PAY,
 } from "@/lib/pay";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,19 +39,38 @@ export function StepPreferences() {
     formState: { errors },
   } = useFormContext<OnboardingFormValues>();
 
-  const minSalary = watch("minSalary");
-  const payType = watch("payType");
+  const wantAnnual = watch("wantAnnual");
+  const wantHourly = watch("wantHourly");
+  const payAnnualMin = watch("payAnnualMin");
+  const payAnnualMax = watch("payAnnualMax");
+  const payHourlyMin = watch("payHourlyMin");
+  const payHourlyMax = watch("payHourlyMax");
   const taglines = watch("suggestedTaglines");
   const locationModes = watch("locationModes");
   const selectedTagline = watch("selectedTagline");
   const globalCountry = watch("globalCountry");
   const globalCity = watch("globalCity");
 
-  function setPayType(next: PayType) {
-    setValue("payType", next, { shouldValidate: true });
-    setValue("minSalary", coercePayAmountForType(minSalary, next), {
-      shouldValidate: true,
-    });
+  function toggleWantAnnual(next: boolean) {
+    setValue("wantAnnual", next, { shouldValidate: true });
+    if (next && (payAnnualMin == null || !Number.isFinite(payAnnualMin))) {
+      setValue("payAnnualMin", DEFAULT_ANNUAL_PAY, { shouldValidate: true });
+    }
+    if (!next) {
+      setValue("payAnnualMin", null, { shouldValidate: true });
+      setValue("payAnnualMax", null, { shouldValidate: true });
+    }
+  }
+
+  function toggleWantHourly(next: boolean) {
+    setValue("wantHourly", next, { shouldValidate: true });
+    if (next && (payHourlyMin == null || !Number.isFinite(payHourlyMin))) {
+      setValue("payHourlyMin", DEFAULT_HOURLY_PAY, { shouldValidate: true });
+    }
+    if (!next) {
+      setValue("payHourlyMin", null, { shouldValidate: true });
+      setValue("payHourlyMax", null, { shouldValidate: true });
+    }
   }
 
   const needsLocalFields =
@@ -324,62 +343,170 @@ export function StepPreferences() {
         </>
       )}
 
-      <div className="grid gap-4 rounded-xl border border-[#2B5B84]/15 bg-[#F8F9FA] p-4 sm:grid-cols-2">
-        <div className="grid gap-2">
-          <Label>Pay type</Label>
-          <div className="grid grid-cols-2 gap-2">
-            {(
-              [
-                { value: "annual", label: "Annual salary" },
-                { value: "hourly", label: "Hourly rate" },
-              ] as const
-            ).map((option) => {
-              const selected = payType === option.value;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  aria-pressed={selected}
-                  onClick={() => setPayType(option.value)}
-                  className={`rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
-                    selected
-                      ? "border-[#2B5B84] bg-[#2B5B84] text-white"
-                      : "border-[#2B5B84]/20 bg-white text-[#2A2D34] hover:border-[#2B5B84]/50"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
+      <div className="grid gap-4 rounded-xl border border-[#2B5B84]/15 bg-[#F8F9FA] p-4">
+        <div className="grid gap-1">
+          <Label>Pay requirement</Label>
+          <p className="text-xs text-[#5B616B]">
+            Annual and/or hourly — min required, max optional. Matched against
+            each job&apos;s pay type and amount.
+          </p>
         </div>
-        <div className="grid gap-2">
-          <div className="flex items-center justify-between gap-2">
-            <Label htmlFor="minSalary">{payAmountLabel(payType)}</Label>
-            <span className="text-sm font-semibold text-[#E87A5D]">
-              ${Number(minSalary || 0).toLocaleString("en-US")}
-              {payType === "hourly" ? "/hr" : "/yr"}
-            </span>
-          </div>
-          <div className="relative">
-            <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm text-[#5B616B]">
-              $
-            </span>
-            <Input
-              id="minSalary"
-              type="number"
-              min={1}
-              step={payType === "hourly" ? 1 : 1000}
-              className="pl-7"
-              {...register("minSalary", { valueAsNumber: true })}
-            />
-          </div>
-          {errors.minSalary && (
-            <p className="text-xs text-destructive">
-              {errors.minSalary.message}
-            </p>
-          )}
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            aria-pressed={wantAnnual}
+            onClick={() => toggleWantAnnual(!wantAnnual)}
+            className={`rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
+              wantAnnual
+                ? "border-[#2B5B84] bg-[#2B5B84] text-white"
+                : "border-[#2B5B84]/20 bg-white text-[#2A2D34] hover:border-[#2B5B84]/50"
+            }`}
+          >
+            Annual salary
+          </button>
+          <button
+            type="button"
+            aria-pressed={wantHourly}
+            onClick={() => toggleWantHourly(!wantHourly)}
+            className={`rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
+              wantHourly
+                ? "border-[#2B5B84] bg-[#2B5B84] text-white"
+                : "border-[#2B5B84]/20 bg-white text-[#2A2D34] hover:border-[#2B5B84]/50"
+            }`}
+          >
+            Hourly rate
+          </button>
         </div>
+        {errors.wantAnnual && (
+          <p className="text-xs text-destructive">{errors.wantAnnual.message}</p>
+        )}
+
+        {wantAnnual ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="payAnnualMin">Annual min (USD)</Label>
+                <span className="text-sm font-semibold text-[#E87A5D]">
+                  ${Number(payAnnualMin || 0).toLocaleString("en-US")}/yr
+                </span>
+              </div>
+              <div className="relative">
+                <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm text-[#5B616B]">
+                  $
+                </span>
+                <Input
+                  id="payAnnualMin"
+                  type="number"
+                  min={1}
+                  step={1000}
+                  className="pl-7"
+                  {...register("payAnnualMin", {
+                    setValueAs: coerceOptionalPayAmount,
+                  })}
+                />
+              </div>
+              {errors.payAnnualMin && (
+                <p className="text-xs text-destructive">
+                  {errors.payAnnualMin.message}
+                </p>
+              )}
+            </div>
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="payAnnualMax">Annual max (optional)</Label>
+                <span className="text-sm font-semibold text-[#5B616B]">
+                  {payAnnualMax
+                    ? `$${Number(payAnnualMax).toLocaleString("en-US")}/yr`
+                    : "Open"}
+                </span>
+              </div>
+              <div className="relative">
+                <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm text-[#5B616B]">
+                  $
+                </span>
+                <Input
+                  id="payAnnualMax"
+                  type="number"
+                  min={1}
+                  step={1000}
+                  className="pl-7"
+                  {...register("payAnnualMax", {
+                    setValueAs: coerceOptionalPayAmount,
+                  })}
+                />
+              </div>
+              {errors.payAnnualMax && (
+                <p className="text-xs text-destructive">
+                  {errors.payAnnualMax.message}
+                </p>
+              )}
+            </div>
+          </div>
+        ) : null}
+
+        {wantHourly ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="payHourlyMin">Hourly min (USD)</Label>
+                <span className="text-sm font-semibold text-[#E87A5D]">
+                  ${Number(payHourlyMin || 0).toLocaleString("en-US")}/hr
+                </span>
+              </div>
+              <div className="relative">
+                <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm text-[#5B616B]">
+                  $
+                </span>
+                <Input
+                  id="payHourlyMin"
+                  type="number"
+                  min={1}
+                  step={1}
+                  className="pl-7"
+                  {...register("payHourlyMin", {
+                    setValueAs: coerceOptionalPayAmount,
+                  })}
+                />
+              </div>
+              {errors.payHourlyMin && (
+                <p className="text-xs text-destructive">
+                  {errors.payHourlyMin.message}
+                </p>
+              )}
+            </div>
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="payHourlyMax">Hourly max (optional)</Label>
+                <span className="text-sm font-semibold text-[#5B616B]">
+                  {payHourlyMax
+                    ? `$${Number(payHourlyMax).toLocaleString("en-US")}/hr`
+                    : "Open"}
+                </span>
+              </div>
+              <div className="relative">
+                <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm text-[#5B616B]">
+                  $
+                </span>
+                <Input
+                  id="payHourlyMax"
+                  type="number"
+                  min={1}
+                  step={1}
+                  className="pl-7"
+                  {...register("payHourlyMax", {
+                    setValueAs: coerceOptionalPayAmount,
+                  })}
+                />
+              </div>
+              {errors.payHourlyMax && (
+                <p className="text-xs text-destructive">
+                  {errors.payHourlyMax.message}
+                </p>
+              )}
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <div className="grid gap-2">

@@ -2,7 +2,11 @@ import {
   formatTimezoneDisplay,
   initialsFromName,
 } from "@/lib/dashboard/talent";
-import type { PayType } from "@/lib/pay";
+import {
+  formatTalentPayRequirement,
+  talentPayRequirementFromRow,
+  type PayType,
+} from "@/lib/pay";
 import type { Json } from "@/types/database";
 
 export type IncognitoProfileInput = {
@@ -18,6 +22,10 @@ export type IncognitoProfileInput = {
   locationModes: string[] | null;
   payType?: PayType | string | null;
   minSalary: number | null;
+  payAnnualMin?: number | null;
+  payAnnualMax?: number | null;
+  payHourlyMin?: number | null;
+  payHourlyMax?: number | null;
   visaStatus: string | null;
   workHoursStart: string | null;
   workHoursEnd: string | null;
@@ -37,6 +45,8 @@ export type IncognitoProfile = {
   locationModes: string[];
   payType: PayType;
   minSalary: number | null;
+  /** Formatted annual and/or hourly requirement range for display. */
+  payRequirementLabel: string | null;
   visaStatus: string | null;
   workHours: string | null;
 };
@@ -68,6 +78,28 @@ export function buildIncognitoProfile(
   const end = trimTime(input.workHoursEnd);
   const workHours = start && end ? `${start} – ${end}` : null;
 
+  const payReq = talentPayRequirementFromRow({
+    pay_annual_min: input.payAnnualMin,
+    pay_annual_max: input.payAnnualMax,
+    pay_hourly_min: input.payHourlyMin,
+    pay_hourly_max: input.payHourlyMax,
+    pay_type: input.payType,
+    min_salary: input.minSalary,
+  });
+  const payRequirementLabel = formatTalentPayRequirement(payReq);
+  const payType: PayType =
+    payReq.payAnnualMin != null
+      ? "annual"
+      : payReq.payHourlyMin != null
+        ? "hourly"
+        : input.payType === "hourly"
+          ? "hourly"
+          : "annual";
+  const minSalary =
+    payType === "hourly"
+      ? payReq.payHourlyMin
+      : payReq.payAnnualMin ?? input.minSalary;
+
   return {
     initials: initialsFromName(input.fullName || input.headline || "ML"),
     headline: input.headline?.trim() || "MatchLever talent",
@@ -85,8 +117,9 @@ export function buildIncognitoProfile(
       input.timezoneOffset
     ),
     locationModes: modes,
-    payType: input.payType === "hourly" ? "hourly" : "annual",
-    minSalary: input.minSalary,
+    payType,
+    minSalary,
+    payRequirementLabel,
     visaStatus: input.visaStatus,
     workHours,
   };

@@ -41,6 +41,10 @@ export type TalentDashboardData = {
   timezoneOffset: number | null;
   /** Display label with zone name and UTC offset, e.g. "US Eastern (UTC−5)". */
   timezoneLabel: string;
+  payAnnualMin: number | null;
+  payAnnualMax: number | null;
+  payHourlyMin: number | null;
+  payHourlyMax: number | null;
   status: TalentAvailability;
   linkedinUrl: string | null;
   references: TalentReferenceRow[];
@@ -96,6 +100,10 @@ export const DEMO_TALENT_DASHBOARD: TalentDashboardData = {
   timezone: "America/Chicago",
   timezoneOffset: -360,
   timezoneLabel: "US Central (UTC−6)",
+  payAnnualMin: 160000,
+  payAnnualMax: 200000,
+  payHourlyMin: null,
+  payHourlyMax: null,
   status: "on_hold",
   linkedinUrl: "https://www.linkedin.com/in/sam-patel",
   references: [

@@ -18,6 +18,12 @@ import {
   toPostgresTextOrNull,
 } from "@/lib/postgres-text";
 import {
+  normalizeTalentPayRequirement,
+  refineTalentPayRequirement,
+  talentPayRequirementFieldsSchema,
+  talentPayRequirementToDb,
+} from "@/lib/pay";
+import {
   SUPERPOWER_TAGLINE_MAX_LENGTH,
   SUPERPOWER_TAGLINE_MIN_LENGTH,
 } from "@/lib/taglines";
@@ -32,18 +38,21 @@ const taglineField = z
   .min(SUPERPOWER_TAGLINE_MIN_LENGTH)
   .max(SUPERPOWER_TAGLINE_MAX_LENGTH);
 
-const editSchema = z.object({
-  headline: z.string().trim().min(2).max(120),
-  selectedTagline: taglineField,
-  globalCity: z.string().trim().min(1).max(80),
-  globalCountry: z.string().trim().min(1).max(80),
-  timezone: z.enum(TIMEZONE_VALUES).nullable(),
-  verifiedSkills: z.array(z.string().trim().min(1)).max(20),
-  suggestedTaglines: z.array(taglineField).max(5).optional(),
-  sanitizedSummary: z.string().trim().max(4000).nullable().optional(),
-  rawResumeText: z.string().trim().max(60_000).nullable().optional(),
-  yearsExperience: z.number().int().min(0).max(60).nullable().optional(),
-});
+const editSchema = z
+  .object({
+    headline: z.string().trim().min(2).max(120),
+    selectedTagline: taglineField,
+    globalCity: z.string().trim().min(1).max(80),
+    globalCountry: z.string().trim().min(1).max(80),
+    timezone: z.enum(TIMEZONE_VALUES).nullable(),
+    verifiedSkills: z.array(z.string().trim().min(1)).max(20),
+    suggestedTaglines: z.array(taglineField).max(5).optional(),
+    sanitizedSummary: z.string().trim().max(4000).nullable().optional(),
+    rawResumeText: z.string().trim().max(60_000).nullable().optional(),
+    yearsExperience: z.number().int().min(0).max(60).nullable().optional(),
+    ...talentPayRequirementFieldsSchema.shape,
+  })
+  .superRefine((data, ctx) => refineTalentPayRequirement(data, ctx));
 
 export async function PATCH(request: Request) {
   try {
@@ -77,6 +86,16 @@ export async function PATCH(request: Request) {
     }
 
     const timezone = resolveTimezoneId(parsed.data.timezone);
+    const payDb = talentPayRequirementToDb(
+      normalizeTalentPayRequirement({
+        wantAnnual: parsed.data.wantAnnual,
+        wantHourly: parsed.data.wantHourly,
+        payAnnualMin: parsed.data.payAnnualMin,
+        payAnnualMax: parsed.data.payAnnualMax,
+        payHourlyMin: parsed.data.payHourlyMin,
+        payHourlyMax: parsed.data.payHourlyMax,
+      })
+    );
     const update: TalentProfileUpdate = {
       headline: toPostgresText(parsed.data.headline),
       selected_tagline: toPostgresText(parsed.data.selectedTagline),
@@ -85,6 +104,7 @@ export async function PATCH(request: Request) {
       timezone: timezone ? toPostgresText(timezone) : null,
       timezone_offset: timezoneOffsetMinutes(timezone),
       verified_skills: toPostgresStringArray(parsed.data.verifiedSkills),
+      ...payDb,
       ...(parsed.data.suggestedTaglines
         ? { suggested_taglines: toPostgresStringArray(parsed.data.suggestedTaglines) }
         : {}),

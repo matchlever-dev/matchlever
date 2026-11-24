@@ -1,7 +1,11 @@
 import { z } from "zod";
 
 import { OTHER_CITY_VALUE } from "@/lib/onboarding/locations";
-import { DEFAULT_ANNUAL_PAY, PAY_TYPE_VALUES } from "@/lib/pay";
+import {
+  DEFAULT_ANNUAL_PAY,
+  refineTalentPayRequirement,
+  talentPayRequirementFieldsSchema,
+} from "@/lib/pay";
 import {
   referenceRelationshipSchema,
   UNSELECTED_RELATIONSHIP,
@@ -54,11 +58,7 @@ export const onboardingFormObjectSchema = z.object({
   timezone: z.string().min(1, "Timezone is required"),
   workHoursStart: z.string().min(1, "Start time is required"),
   workHoursEnd: z.string().min(1, "End time is required"),
-  payType: z.enum(PAY_TYPE_VALUES),
-  minSalary: z
-    .number({ error: "Enter a pay amount" })
-    .int("Use a whole-dollar amount")
-    .positive("Pay must be greater than zero"),
+  ...talentPayRequirementFieldsSchema.shape,
   visaStatus: z.string().min(1, "Select a visa option"),
   selectedTagline: z.string().min(1, "Select a Superpower Tagline"),
   references: z
@@ -109,9 +109,17 @@ function refinePreferences(
     customCity?: string;
     suggestedTaglines: string[];
     selectedTagline: string;
+    wantAnnual: boolean;
+    wantHourly: boolean;
+    payAnnualMin?: number | null;
+    payAnnualMax?: number | null;
+    payHourlyMin?: number | null;
+    payHourlyMax?: number | null;
   },
   ctx: z.RefinementCtx
 ) {
+  refineTalentPayRequirement(data, ctx);
+
   if (needsCommuteFields(data.locationModes)) {
     if (data.maxCommuteMiles == null) {
       ctx.addIssue({
@@ -215,8 +223,12 @@ export const defaultOnboardingValues: OnboardingFormValues = {
   timezone: "America/New_York",
   workHoursStart: "09:00",
   workHoursEnd: "17:00",
-  payType: "annual",
-  minSalary: DEFAULT_ANNUAL_PAY,
+  wantAnnual: true,
+  wantHourly: false,
+  payAnnualMin: DEFAULT_ANNUAL_PAY,
+  payAnnualMax: null,
+  payHourlyMin: null,
+  payHourlyMax: null,
   visaStatus: "none",
   selectedTagline: "",
   references: [
@@ -328,8 +340,12 @@ export function getStepSchema(step: OnboardingStepId) {
           timezone: true,
           workHoursStart: true,
           workHoursEnd: true,
-          payType: true,
-          minSalary: true,
+          wantAnnual: true,
+          wantHourly: true,
+          payAnnualMin: true,
+          payAnnualMax: true,
+          payHourlyMin: true,
+          payHourlyMax: true,
           visaStatus: true,
           suggestedTaglines: true,
           selectedTagline: true,
