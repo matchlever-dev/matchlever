@@ -172,6 +172,12 @@ export type ActiveTalentOption = {
   email: string | null;
   full_name: string | null;
   status: string;
+  /** 1-based AI rank when scored on Job Opening detail load. */
+  matchRank?: number;
+  /** 0–100 composite display score. */
+  matchScore?: number;
+  /** Brief why signals for the assign pulldown. */
+  matchReasons?: string[];
 };
 
 export type AdminJobOpeningRow = {
