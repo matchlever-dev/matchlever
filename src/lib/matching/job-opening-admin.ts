@@ -395,6 +395,10 @@ export async function getJobOpeningDetailForAdmin(
     global_country: string | null;
     pay_type: string | null;
     min_salary: number | null;
+    pay_annual_min: number | null;
+    pay_annual_max: number | null;
+    pay_hourly_min: number | null;
+    pay_hourly_max: number | null;
     timezone: string | null;
     timezone_offset: number | null;
     work_hours_start: string | null;
@@ -411,7 +415,7 @@ export async function getJobOpeningDetailForAdmin(
   const { data: matchable } = await supabase
     .from("talent_profiles")
     .select(
-      "id, user_id, headline, status, location_modes, global_city, global_country, pay_type, min_salary, timezone, timezone_offset, work_hours_start, work_hours_end, visa_status, verified_skills, verified_superpowers, selected_tagline, raw_resume_text, sanitized_summary, updated_at"
+      "id, user_id, headline, status, location_modes, global_city, global_country, pay_type, min_salary, pay_annual_min, pay_annual_max, pay_hourly_min, pay_hourly_max, timezone, timezone_offset, work_hours_start, work_hours_end, visa_status, verified_skills, verified_superpowers, selected_tagline, raw_resume_text, sanitized_summary, updated_at"
     )
     .in("status", ["actively_looking", "on_hold"])
     .order("updated_at", { ascending: false });
@@ -491,6 +495,10 @@ export async function getJobOpeningDetailForAdmin(
       globalCountry: t.global_country,
       payType: t.pay_type ?? "annual",
       minSalary: t.min_salary,
+      payAnnualMin: t.pay_annual_min,
+      payAnnualMax: t.pay_annual_max,
+      payHourlyMin: t.pay_hourly_min,
+      payHourlyMax: t.pay_hourly_max,
       timezone: t.timezone,
       timezoneOffset: t.timezone_offset,
       workHoursStart: t.work_hours_start,

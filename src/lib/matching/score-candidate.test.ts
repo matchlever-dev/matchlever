@@ -176,14 +176,50 @@ test("computeProfileQualityScore rewards completeness and authenticity", () => {
   assert.equal(full, 100);
 });
 
-test("pay fit fails when talent ask is far above job budget", () => {
+test("pay fit fails when job is far under talent requirement", () => {
   const scored = scoreTalentAgainstJob(
     baseJob,
-    talent({ id: "pricey", minSalary: 300000 })
+    talent({ id: "pricey", minSalary: 300000, payAnnualMin: 300000 })
   );
   const pay = scored.critical.find((d) => d.key === "pay");
   assert.ok(pay);
   assert.equal(pay.score, 0);
+});
+
+test("pay fit uses talent range against job pay type/amount", () => {
+  const inRange = scoreTalentAgainstJob(
+    baseJob,
+    talent({
+      id: "in-range",
+      payAnnualMin: 150000,
+      payAnnualMax: 200000,
+      minSalary: 150000,
+    })
+  );
+  const under = scoreTalentAgainstJob(
+    baseJob,
+    talent({
+      id: "under",
+      payAnnualMin: 250000,
+      payAnnualMax: 300000,
+      minSalary: 250000,
+    })
+  );
+  const hourlyJob = scoreTalentAgainstJob(
+    { ...baseJob, payType: "hourly", minSalary: 90 },
+    talent({
+      id: "hourly",
+      payType: "hourly",
+      minSalary: 80,
+      payAnnualMin: null,
+      payHourlyMin: 80,
+      payHourlyMax: 100,
+    })
+  );
+
+  assert.equal(inRange.critical.find((d) => d.key === "pay")?.score, 1);
+  assert.equal(under.critical.find((d) => d.key === "pay")?.score, 0);
+  assert.equal(hourlyJob.critical.find((d) => d.key === "pay")?.score, 1);
 });
 
 test("visa match accepts talent status listed on the job", () => {

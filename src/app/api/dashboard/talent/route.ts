@@ -12,6 +12,7 @@ import {
   type TalentDashboardData,
   type TalentReferenceRow,
 } from "@/lib/dashboard/talent";
+import { talentPayRequirementFromRow } from "@/lib/pay";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
@@ -39,24 +40,58 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    let { data: profile, error } = await supabase
+    type TalentDashRow = {
+      id: string;
+      headline: string | null;
+      selected_tagline: string | null;
+      suggested_taglines: Json;
+      verified_skills: Json;
+      global_city: string | null;
+      global_country: string | null;
+      timezone: string | null;
+      timezone_offset: number | null;
+      status: string;
+      raw_resume_text: string | null;
+      pay_type?: string | null;
+      min_salary?: number | null;
+      pay_annual_min?: number | null;
+      pay_annual_max?: number | null;
+      pay_hourly_min?: number | null;
+      pay_hourly_max?: number | null;
+    };
+
+    let profile: TalentDashRow | null = null;
+    let { data: profileData, error } = await supabase
       .from("talent_profiles")
       .select(
-        "id, headline, selected_tagline, suggested_taglines, verified_skills, global_city, global_country, timezone, timezone_offset, status, raw_resume_text"
+        "id, headline, selected_tagline, suggested_taglines, verified_skills, global_city, global_country, timezone, timezone_offset, status, raw_resume_text, pay_type, min_salary, pay_annual_min, pay_annual_max, pay_hourly_min, pay_hourly_max"
       )
       .eq("user_id", user.id)
       .maybeSingle();
+    profile = (profileData as TalentDashRow | null) ?? null;
+
+    if (error?.message?.includes("pay_annual")) {
+      const fallback = await supabase
+        .from("talent_profiles")
+        .select(
+          "id, headline, selected_tagline, suggested_taglines, verified_skills, global_city, global_country, timezone, timezone_offset, status, raw_resume_text, pay_type, min_salary"
+        )
+        .eq("user_id", user.id)
+        .maybeSingle();
+      profile = (fallback.data as TalentDashRow | null) ?? null;
+      error = fallback.error;
+    }
 
     if (error?.message?.includes("timezone")) {
       const fallback = await supabase
         .from("talent_profiles")
         .select(
-          "id, headline, selected_tagline, suggested_taglines, verified_skills, global_city, global_country, timezone_offset, status, raw_resume_text"
+          "id, headline, selected_tagline, suggested_taglines, verified_skills, global_city, global_country, timezone_offset, status, raw_resume_text, pay_type, min_salary"
         )
         .eq("user_id", user.id)
         .maybeSingle();
       profile = fallback.data
-        ? { ...fallback.data, timezone: null as string | null }
+        ? ({ ...fallback.data, timezone: null } as TalentDashRow)
         : null;
       error = fallback.error;
     }
@@ -156,6 +191,15 @@ export async function GET() {
         .eq("id", profile.id);
     }
 
+    const payReq = talentPayRequirementFromRow({
+      pay_annual_min: profile.pay_annual_min ?? null,
+      pay_annual_max: profile.pay_annual_max ?? null,
+      pay_hourly_min: profile.pay_hourly_min ?? null,
+      pay_hourly_max: profile.pay_hourly_max ?? null,
+      pay_type: profile.pay_type ?? null,
+      min_salary: profile.min_salary ?? null,
+    });
+
     const payload: TalentDashboardData = {
       demo: false,
       profileId: profile.id,
@@ -174,6 +218,10 @@ export async function GET() {
         profile.timezone,
         profile.timezone_offset
       ),
+      payAnnualMin: payReq.payAnnualMin,
+      payAnnualMax: payReq.payAnnualMax,
+      payHourlyMin: payReq.payHourlyMin,
+      payHourlyMax: payReq.payHourlyMax,
       status,
       linkedinUrl,
       references: refs,

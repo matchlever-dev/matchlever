@@ -12,6 +12,10 @@ import {
 import { sendReferenceInviteEmail } from "@/lib/email/resend";
 import { onboardingFormSchema, resolveOnboardingCity } from "@/lib/onboarding/form-schema";
 import {
+  normalizeTalentPayRequirement,
+  talentPayRequirementToDb,
+} from "@/lib/pay";
+import {
   toPostgresStringArray,
   toPostgresText,
   toPostgresTextOrNull,
@@ -221,8 +225,16 @@ export async function POST(request: Request) {
       location_mode: orderedModes[0],
       max_commute_miles: needsLocal ? data.maxCommuteMiles : null,
       open_to_relocation: needsLocal ? data.openToRelocation : null,
-      pay_type: data.payType,
-      min_salary: data.minSalary,
+      ...talentPayRequirementToDb(
+        normalizeTalentPayRequirement({
+          wantAnnual: data.wantAnnual,
+          wantHourly: data.wantHourly,
+          payAnnualMin: data.payAnnualMin,
+          payAnnualMax: data.payAnnualMax,
+          payHourlyMin: data.payHourlyMin,
+          payHourlyMax: data.payHourlyMax,
+        })
+      ),
       visa_status: toPostgresText(data.visaStatus),
       years_experience: data.yearsExperience ?? null,
       talent_tos_accepted_at: new Date().toISOString(),

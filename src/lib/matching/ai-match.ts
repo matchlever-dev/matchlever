@@ -74,7 +74,7 @@ function buildFingerprint(request: AiMatchRequest): string {
   const talentPart = talent
     .map(
       (t) =>
-        `${t.id}:${t.minSalary ?? ""}:${(t.verifiedSkills ?? []).length}:${
+        `${t.id}:${t.minSalary ?? ""}:${t.payAnnualMin ?? ""}-${t.payAnnualMax ?? ""}:${t.payHourlyMin ?? ""}-${t.payHourlyMax ?? ""}:${(t.verifiedSkills ?? []).length}:${
           t.avgAuthenticityScore ?? ""
         }:${t.verifiedReferenceCount}`
     )

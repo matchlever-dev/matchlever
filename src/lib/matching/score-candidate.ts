@@ -10,6 +10,10 @@
 
 import { REQUIRED_VERIFIED_REFERENCES } from "@/lib/dashboard/talent";
 import { timezoneOffsetMinutes } from "@/lib/onboarding/schema";
+import {
+  talentPayRangeForJobType,
+  type TalentPayRequirement,
+} from "@/lib/pay";
 import { SUPERPOWER_TAXONOMY } from "@/lib/reference/taxonomy";
 
 export type ScoreJobInput = {
@@ -31,8 +35,13 @@ export type ScoreTalentInput = {
   locationModes: string[];
   globalCity: string | null;
   globalCountry: string | null;
+  /** Legacy single-amount fields — used when range columns are absent. */
   payType?: string | null;
   minSalary: number | null;
+  payAnnualMin?: number | null;
+  payAnnualMax?: number | null;
+  payHourlyMin?: number | null;
+  payHourlyMax?: number | null;
   timezone: string | null;
   timezoneOffset: number | null;
   workHoursStart: string | null;
@@ -142,13 +151,47 @@ function windowOverlapMinutes(
   return overlap;
 }
 
-function annualizePay(
-  amount: number | null | undefined,
-  payType: string | null | undefined
-): number | null {
-  if (amount == null || !Number.isFinite(amount) || amount <= 0) return null;
-  if (payType === "hourly") return Math.round(amount * 2080);
-  return Math.round(amount);
+function talentRequirementFromScoreInput(
+  talent: ScoreTalentInput
+): TalentPayRequirement {
+  const hasRange =
+    talent.payAnnualMin != null ||
+    talent.payAnnualMax != null ||
+    talent.payHourlyMin != null ||
+    talent.payHourlyMax != null;
+
+  if (hasRange) {
+    return {
+      payAnnualMin: talent.payAnnualMin ?? null,
+      payAnnualMax: talent.payAnnualMax ?? null,
+      payHourlyMin: talent.payHourlyMin ?? null,
+      payHourlyMax: talent.payHourlyMax ?? null,
+    };
+  }
+
+  if (talent.minSalary != null && talent.minSalary > 0) {
+    if (talent.payType === "hourly") {
+      return {
+        payAnnualMin: null,
+        payAnnualMax: null,
+        payHourlyMin: talent.minSalary,
+        payHourlyMax: null,
+      };
+    }
+    return {
+      payAnnualMin: talent.minSalary,
+      payAnnualMax: null,
+      payHourlyMin: null,
+      payHourlyMax: null,
+    };
+  }
+
+  return {
+    payAnnualMin: null,
+    payAnnualMax: null,
+    payHourlyMin: null,
+    payHourlyMax: null,
+  };
 }
 
 function scoreLocation(
@@ -223,10 +266,15 @@ function scorePay(
   job: ScoreJobInput,
   talent: ScoreTalentInput
 ): DimensionScore {
-  const jobAnnual = annualizePay(job.minSalary, job.payType);
-  const talentAnnual = annualizePay(talent.minSalary, talent.payType);
+  const jobAmount =
+    job.minSalary != null && Number.isFinite(job.minSalary) && job.minSalary > 0
+      ? Math.round(job.minSalary)
+      : null;
+  const req = talentRequirementFromScoreInput(talent);
+  const range = talentPayRangeForJobType(req, job.payType);
+  const convertedNote = range.source === "converted" ? " (converted)" : "";
 
-  if (jobAnnual == null && talentAnnual == null) {
+  if (jobAmount == null && range.min == null) {
     return {
       key: "pay",
       label: "Pay",
@@ -234,7 +282,7 @@ function scorePay(
       detail: "Pay not set",
     };
   }
-  if (jobAnnual == null) {
+  if (jobAmount == null) {
     return {
       key: "pay",
       label: "Pay",
@@ -242,7 +290,7 @@ function scorePay(
       detail: "Job pay unknown",
     };
   }
-  if (talentAnnual == null) {
+  if (range.min == null) {
     return {
       key: "pay",
       label: "Pay",
@@ -251,29 +299,43 @@ function scorePay(
     };
   }
 
-  // Employer budget covers talent ask → full fit. Soft degrade up to 25% over budget.
-  if (talentAnnual <= jobAnnual) {
+  // Hard fit: job amount must meet talent floor for the job's pay type.
+  if (jobAmount >= range.min) {
+    if (range.max == null || jobAmount <= range.max) {
+      return {
+        key: "pay",
+        label: "Pay",
+        score: 1,
+        detail:
+          range.max == null
+            ? `Meets requirement${convertedNote}`
+            : `Within range${convertedNote}`,
+      };
+    }
+    // Job pays above talent's stated ceiling — still a fit (more pay is OK).
     return {
       key: "pay",
       label: "Pay",
-      score: 1,
-      detail: "Within budget",
+      score: 0.9,
+      detail: `Above target range${convertedNote}`,
     };
   }
-  const over = (talentAnnual - jobAnnual) / jobAnnual;
-  if (over <= 0.25) {
+
+  // Soft degrade when job is within 25% under the talent floor.
+  const under = (range.min - jobAmount) / range.min;
+  if (under <= 0.25) {
     return {
       key: "pay",
       label: "Pay",
-      score: clamp01(1 - over / 0.25),
-      detail: "Slightly above budget",
+      score: clamp01(1 - under / 0.25),
+      detail: `Slightly under requirement${convertedNote}`,
     };
   }
   return {
     key: "pay",
     label: "Pay",
     score: 0,
-    detail: "Above budget",
+    detail: `Under requirement${convertedNote}`,
   };
 }
 
