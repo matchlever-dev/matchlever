@@ -15,7 +15,7 @@ import { relationshipLabel } from "@/lib/reference/relationship";
 import {
   AdminListControls,
   matchesKeyword,
-  type AdminSortMode,
+  type AdminListSortOption,
 } from "@/components/admin/admin-list-controls";
 import { AdminPortalShell } from "@/components/admin/admin-portal-shell";
 import { PortalShell } from "@/components/admin/portal-shell";
@@ -29,6 +29,14 @@ const TALENT_STATUS_OPTIONS = [
   { value: "actively_looking", label: "Active" },
   { value: "on_hold", label: "On Hold" },
   { value: "incomplete", label: "Incomplete" },
+];
+
+type TalentSortMode = "most_recent" | "name" | "title";
+
+const SORT_OPTIONS: ReadonlyArray<AdminListSortOption<TalentSortMode>> = [
+  { value: "most_recent", label: "Most Recent" },
+  { value: "name", label: "Name" },
+  { value: "title", label: "Title" },
 ];
 
 function missingLabels(missing: AdminTalentRow["missing"]): string[] {
@@ -96,7 +104,7 @@ function TalentProfilesPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [sort, setSort] = useState<AdminSortMode>("recent");
+  const [sort, setSort] = useState<TalentSortMode>("most_recent");
   const [statusFilter, setStatusFilter] = useState("all");
   const [keyword, setKeyword] = useState("");
 
@@ -143,14 +151,32 @@ function TalentProfilesPage({
     });
 
     return [...list].sort((a, b) => {
-      if (sort === "score") {
-        const sa = a.avg_authenticity_score ?? -1;
-        const sb = b.avg_authenticity_score ?? -1;
-        if (sb !== sa) return sb - sa;
+      if (sort === "name") {
+        const nameA = a.full_name || a.email || "";
+        const nameB = b.full_name || b.email || "";
+        const byName = nameA.localeCompare(nameB, undefined, {
+          sensitivity: "base",
+        });
+        if (byName !== 0) return byName;
+        return (a.headline || "").localeCompare(b.headline || "", undefined, {
+          sensitivity: "base",
+        });
       }
-      return (
-        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-      );
+      if (sort === "title") {
+        const titleA = a.headline || "";
+        const titleB = b.headline || "";
+        const byTitle = titleA.localeCompare(titleB, undefined, {
+          sensitivity: "base",
+        });
+        if (byTitle !== 0) return byTitle;
+        return (a.full_name || a.email || "").localeCompare(
+          b.full_name || b.email || "",
+          undefined,
+          { sensitivity: "base" }
+        );
+      }
+      // Most Recent
+      return b.updated_at.localeCompare(a.updated_at);
     });
   }, [talent, keyword, sort, statusFilter]);
 
@@ -266,6 +292,7 @@ function TalentProfilesPage({
       <AdminListControls
         sort={sort}
         onSortChange={setSort}
+        sortOptions={SORT_OPTIONS}
         status={statusFilter}
         onStatusChange={setStatusFilter}
         statusOptions={TALENT_STATUS_OPTIONS}
