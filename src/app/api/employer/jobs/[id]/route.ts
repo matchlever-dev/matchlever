@@ -20,7 +20,7 @@ const statusOnlySchema = z.object({
 });
 
 const JOB_SELECT =
-  "id, title, status, company_name, description, verified_skills, years_experience, suggested_taglines, endorsed_skills, location_modes, max_commute_miles, open_to_relocation, global_city, global_country, timezone, work_hours_start, work_hours_end, min_salary, visa_statuses, accepted_match_count, match_bundle_purchased_at, updated_at, employer_profile_id";
+  "id, title, status, company_name, description, verified_skills, years_experience, suggested_taglines, endorsed_skills, location_modes, max_commute_miles, open_to_relocation, global_city, global_country, timezone, work_hours_start, work_hours_end, pay_type, min_salary, visa_statuses, accepted_match_count, match_bundle_purchased_at, updated_at, employer_profile_id";
 
 async function requireOwnedJob(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -96,6 +96,7 @@ export async function GET(
         timezone: "America/Los_Angeles",
         workHoursStart: "09:00",
         workHoursEnd: "17:00",
+        payType: demo.payType ?? "annual",
         minSalary: demo.minSalary ?? 140000,
         visaStatuses: ["none"],
       },

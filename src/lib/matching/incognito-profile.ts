@@ -2,6 +2,7 @@ import {
   formatTimezoneDisplay,
   initialsFromName,
 } from "@/lib/dashboard/talent";
+import type { PayType } from "@/lib/pay";
 import type { Json } from "@/types/database";
 
 export type IncognitoProfileInput = {
@@ -15,6 +16,7 @@ export type IncognitoProfileInput = {
   timezone: string | null;
   timezoneOffset: number | null;
   locationModes: string[] | null;
+  payType?: PayType | string | null;
   minSalary: number | null;
   visaStatus: string | null;
   workHoursStart: string | null;
@@ -33,6 +35,7 @@ export type IncognitoProfile = {
   locationLine: string;
   timezoneLabel: string;
   locationModes: string[];
+  payType: PayType;
   minSalary: number | null;
   visaStatus: string | null;
   workHours: string | null;
@@ -82,6 +85,7 @@ export function buildIncognitoProfile(
       input.timezoneOffset
     ),
     locationModes: modes,
+    payType: input.payType === "hourly" ? "hourly" : "annual",
     minSalary: input.minSalary,
     visaStatus: input.visaStatus,
     workHours,

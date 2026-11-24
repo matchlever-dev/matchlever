@@ -213,7 +213,9 @@ function JobOpeningsListPage({
                       globalCity: job.global_city,
                     })}
                     {job.min_salary
-                      ? ` · $${job.min_salary.toLocaleString("en-US")}+`
+                      ? ` · $${job.min_salary.toLocaleString("en-US")}${
+                          job.pay_type === "hourly" ? "/hr" : "/yr"
+                        }`
                       : ""}
                   </p>
                 </div>

@@ -10,6 +10,11 @@ import { getGroqClient, resolveGroqModel } from "@/lib/ai/groq";
 import { SUPERPOWER_TAXONOMY } from "@/lib/reference/taxonomy";
 import { TIMEZONE_VALUES, VISA_OPTIONS } from "@/lib/onboarding/schema";
 import { LOCATION_MODE_VALUES } from "@/lib/onboarding/form-schema";
+import {
+  DEFAULT_ANNUAL_PAY,
+  DEFAULT_HOURLY_PAY,
+  isPayType,
+} from "@/lib/pay";
 import { toPostgresStringArray, toPostgresText } from "@/lib/postgres-text";
 
 const FALLBACK_MODEL = "qwen/qwen3.6-27b";
@@ -146,14 +151,23 @@ function normalizePayload(value: unknown): unknown {
     years = Number.parseInt(years, 10);
   }
 
+  const payType = isPayType(obj.pay_type) ? obj.pay_type : "annual";
+
   let salaryRaw: unknown = obj.min_salary;
   if (typeof salaryRaw === "string" && salaryRaw.trim() !== "") {
     salaryRaw = Number.parseInt(salaryRaw.replace(/[$,\s]/g, ""), 10);
   }
-  let salary = 140_000;
+  let salary =
+    payType === "hourly" ? DEFAULT_HOURLY_PAY : DEFAULT_ANNUAL_PAY;
   if (typeof salaryRaw === "number" && Number.isFinite(salaryRaw)) {
-    const normalized = salaryRaw < 1000 ? salaryRaw * 1000 : salaryRaw;
-    salary = Math.min(400_000, Math.max(40_000, Math.round(normalized)));
+    let normalized = Math.round(salaryRaw);
+    // Common LLM shorthand: annual figures as 140 meaning $140k.
+    if (payType === "annual" && normalized > 0 && normalized < 1000) {
+      normalized *= 1000;
+    }
+    if (normalized > 0) {
+      salary = normalized;
+    }
   }
 
   const visas = Array.isArray(obj.visa_statuses)
@@ -168,6 +182,14 @@ function normalizePayload(value: unknown): unknown {
       : "America/New_York";
 
   const needsLocal = modes.includes("hybrid") || modes.includes("onsite");
+  const city =
+    typeof obj.global_city === "string" && obj.global_city.trim()
+      ? toPostgresText(obj.global_city).trim()
+      : null;
+  const country =
+    typeof obj.global_country === "string" && obj.global_country.trim()
+      ? toPostgresText(obj.global_country).trim()
+      : null;
 
   return {
     title:
@@ -194,19 +216,12 @@ function normalizePayload(value: unknown): unknown {
         ? obj.open_to_relocation
         : false
       : null,
-    global_city: needsLocal
-      ? typeof obj.global_city === "string" && obj.global_city.trim()
-        ? toPostgresText(obj.global_city).trim()
-        : null
-      : null,
-    global_country: needsLocal
-      ? typeof obj.global_country === "string" && obj.global_country.trim()
-        ? toPostgresText(obj.global_country).trim()
-        : null
-      : null,
+    global_city: city,
+    global_country: country,
     timezone,
     work_hours_start: normalizeClock(obj.work_hours_start) || "09:00",
     work_hours_end: normalizeClock(obj.work_hours_end) || "17:00",
+    pay_type: payType,
     min_salary: salary,
     visa_statuses: visas.length > 0 ? visas : ["none"],
   };

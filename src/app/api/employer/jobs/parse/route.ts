@@ -154,13 +154,13 @@ function toFormValues(
     locationModes: parsed.location_modes,
     maxCommuteMiles: needsLocal ? parsed.max_commute_miles : null,
     openToRelocation: needsLocal ? parsed.open_to_relocation : null,
-    globalCountry: needsLocal ? country : "",
-    globalCity: needsLocal ? city : "",
-    customCity:
-      needsLocal && (country === "Other" || !city) ? city : "",
+    globalCountry: country,
+    globalCity: city,
+    customCity: country === "Other" || (!city && country) ? city : "",
     timezone: parsed.timezone,
     workHoursStart: parsed.work_hours_start,
     workHoursEnd: parsed.work_hours_end,
+    payType: parsed.pay_type,
     minSalary: parsed.min_salary,
     visaStatuses: parsed.visa_statuses,
   };

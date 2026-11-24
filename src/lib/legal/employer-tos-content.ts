@@ -32,7 +32,7 @@ export const EMPLOYER_TOS_SECTIONS = [
     heading: "4. Account Eligibility, Authority & Accurate Information",
     bullets: [
       "Authority to Bind: You represent that you are at least 18 years old and have legal authority to bind the company or organization named in your employer profile to these Terms.",
-      "Accurate Role & Company Data: You must provide accurate company identity, job requirements, location/work-mode constraints, compensation floors, visa/work-authorization constraints, and other dealbreaker fields. Misleading postings may result in suspension or removal.",
+      "Accurate Role & Company Data: You must provide accurate company identity, job requirements, location/work-mode constraints, pay (annual salary or hourly rate), visa/work-authorization constraints, and other dealbreaker fields. Misleading postings may result in suspension or removal.",
       "LinkedIn Authentication: Employer access may require LinkedIn OAuth sign-in for identity verification. You are responsible for securing your account credentials and OAuth sessions.",
       "Compliance With Employment Law: You are solely responsible for complying with all applicable employment, labor, equal-opportunity, privacy, immigration, wage, and anti-discrimination laws in every jurisdiction where you recruit or hire.",
     ],

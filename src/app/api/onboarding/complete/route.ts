@@ -221,6 +221,7 @@ export async function POST(request: Request) {
       location_mode: orderedModes[0],
       max_commute_miles: needsLocal ? data.maxCommuteMiles : null,
       open_to_relocation: needsLocal ? data.openToRelocation : null,
+      pay_type: data.payType,
       min_salary: data.minSalary,
       visa_status: toPostgresText(data.visaStatus),
       years_experience: data.yearsExperience ?? null,

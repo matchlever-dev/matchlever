@@ -21,6 +21,11 @@ import {
   TIMEZONE_OPTIONS,
   VISA_OPTIONS,
 } from "@/lib/onboarding/schema";
+import {
+  coercePayAmountForType,
+  payAmountLabel,
+  type PayType,
+} from "@/lib/pay";
 import { groupSuperpowersByCategory } from "@/lib/reference/taxonomy";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -88,6 +93,7 @@ export function JobOpeningForm({
   const globalCountry = watch("globalCountry") ?? "";
   const globalCity = watch("globalCity") ?? "";
   const minSalary = watch("minSalary");
+  const payType = watch("payType");
   const description = watch("description") ?? "";
 
   const needsLocal =
@@ -98,6 +104,13 @@ export function JobOpeningForm({
     globalCity === OTHER_CITY_VALUE ||
     (globalCountry !== "" && cityOptions.length === 0);
   const groups = useMemo(() => groupSuperpowersByCategory(), []);
+
+  function setPayType(next: PayType) {
+    setValue("payType", next, { shouldValidate: true });
+    setValue("minSalary", coercePayAmountForType(minSalary, next), {
+      shouldValidate: true,
+    });
+  }
 
   const promoCopy =
     typeof founderEligible === "boolean"
@@ -257,7 +270,7 @@ export function JobOpeningForm({
           </h2>
           <p className="mt-2 text-sm text-[#5B616B]">
             Upload a PDF, DOCX, or HTML job description. We extract text and
-            populate title, skills, taglines, endorsed traits, location, salary,
+            populate title, skills, taglines, endorsed traits, location, pay,
             and visa fields. Review everything before publishing.
           </p>
 
@@ -548,6 +561,152 @@ export function JobOpeningForm({
             </div>
           </fieldset>
 
+          <div className="mt-6 space-y-5 rounded-lg border border-[#2B5B84]/12 bg-[#F7F6F3] p-4">
+            <div>
+              <p className="text-sm font-medium text-[#2A2D34]">
+                Position base location
+              </p>
+              <p className="mt-1 text-xs text-[#5B616B]">
+                Required so pay has geographic context (HQ, team base, or
+                primary market).
+              </p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label>Country</Label>
+                <Select
+                  value={globalCountry || undefined}
+                  onValueChange={(value) => {
+                    setValue("globalCountry", value ?? "", {
+                      shouldValidate: true,
+                    });
+                    setValue("globalCity", "", { shouldValidate: true });
+                    setValue("customCity", "", { shouldValidate: true });
+                  }}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Select country" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COUNTRY_OPTIONS.map((country) => (
+                      <SelectItem key={country.value} value={country.value}>
+                        {country.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.globalCountry ? (
+                  <p className="text-xs text-destructive">
+                    {errors.globalCountry.message as string}
+                  </p>
+                ) : null}
+              </div>
+              <div className="grid gap-2">
+                <Label>Closest city</Label>
+                {needsCustomCity ? (
+                  <Input
+                    placeholder="City or metro area"
+                    className="h-11"
+                    {...register("customCity")}
+                  />
+                ) : (
+                  <Select
+                    value={globalCity || undefined}
+                    onValueChange={(value) =>
+                      setValue("globalCity", value ?? "", {
+                        shouldValidate: true,
+                      })
+                    }
+                  >
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select closest city" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cityOptions.map((city) => (
+                        <SelectItem key={city} value={city}>
+                          {city}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value={OTHER_CITY_VALUE}>Other…</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+                {errors.globalCity && !needsCustomCity ? (
+                  <p className="text-xs text-destructive">
+                    {errors.globalCity.message as string}
+                  </p>
+                ) : null}
+                {errors.customCity ? (
+                  <p className="text-xs text-destructive">
+                    {errors.customCity.message as string}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="grid gap-4 border-t border-[#2B5B84]/10 pt-5 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label>Pay type</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(
+                    [
+                      { value: "annual", label: "Annual salary" },
+                      { value: "hourly", label: "Hourly rate" },
+                    ] as const
+                  ).map((option) => {
+                    const selected = payType === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => setPayType(option.value)}
+                        className={`rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
+                          selected
+                            ? "border-[#2B5B84] bg-[#2B5B84] text-white"
+                            : "border-[#2B5B84]/20 bg-white text-[#2A2D34] hover:border-[#2B5B84]/50"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="minSalary">{payAmountLabel(payType)}</Label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm text-[#5B616B]">
+                    $
+                  </span>
+                  <Input
+                    id="minSalary"
+                    type="number"
+                    min={1}
+                    step={payType === "hourly" ? 1 : 1000}
+                    className="h-11 pl-7"
+                    {...register("minSalary", { valueAsNumber: true })}
+                  />
+                </div>
+                <p className="text-xs text-[#5B616B]">
+                  {payType === "hourly" ? "Per hour" : "Per year"} · $
+                  {Number(minSalary || 0).toLocaleString("en-US")}
+                  {payType === "hourly" ? "/hr" : "/yr"}
+                </p>
+                {errors.minSalary ? (
+                  <p className="text-xs text-destructive">
+                    {errors.minSalary.message}
+                  </p>
+                ) : null}
+                {errors.payType ? (
+                  <p className="text-xs text-destructive">
+                    {errors.payType.message as string}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
           {needsLocal ? (
             <div className="mt-6 space-y-5 rounded-lg border border-[#2B5B84]/12 bg-[#F7F6F3] p-4">
               <div className="grid gap-2">
@@ -615,63 +774,6 @@ export function JobOpeningForm({
                   )}
                 />
               </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="grid gap-2">
-                  <Label>Country</Label>
-                  <Select
-                    value={globalCountry || undefined}
-                    onValueChange={(value) => {
-                      setValue("globalCountry", value ?? "", {
-                        shouldValidate: true,
-                      });
-                      setValue("globalCity", "", { shouldValidate: true });
-                    }}
-                  >
-                    <SelectTrigger className="h-11">
-                      <SelectValue placeholder="Select country" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COUNTRY_OPTIONS.map((country) => (
-                        <SelectItem key={country.value} value={country.value}>
-                          {country.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label>Closest city</Label>
-                  {needsCustomCity ? (
-                    <Input
-                      placeholder="City or metro area"
-                      className="h-11"
-                      {...register("customCity")}
-                    />
-                  ) : (
-                    <Select
-                      value={globalCity || undefined}
-                      onValueChange={(value) =>
-                        setValue("globalCity", value ?? "", {
-                          shouldValidate: true,
-                        })
-                      }
-                    >
-                      <SelectTrigger className="h-11">
-                        <SelectValue placeholder="Select closest city" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {cityOptions.map((city) => (
-                          <SelectItem key={city} value={city}>
-                            {city}
-                          </SelectItem>
-                        ))}
-                        <SelectItem value={OTHER_CITY_VALUE}>Other…</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-              </div>
             </div>
           ) : null}
 
@@ -717,32 +819,6 @@ export function JobOpeningForm({
                 className="h-11"
                 {...register("workHoursEnd")}
               />
-            </div>
-            <div className="grid gap-2 sm:col-span-2">
-              <Label htmlFor="minSalary">Minimum salary (USD)</Label>
-              <div className="relative max-w-xs">
-                <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm text-[#5B616B]">
-                  $
-                </span>
-                <Input
-                  id="minSalary"
-                  type="number"
-                  min={40000}
-                  max={400000}
-                  step={1000}
-                  className="h-11 pl-7"
-                  {...register("minSalary", { valueAsNumber: true })}
-                />
-              </div>
-              <p className="text-xs text-[#5B616B]">
-                Current: ${Number(minSalary || 0).toLocaleString()} · Allowed
-                $40,000–$400,000
-              </p>
-              {errors.minSalary ? (
-                <p className="text-xs text-destructive">
-                  {errors.minSalary.message}
-                </p>
-              ) : null}
             </div>
           </div>
 

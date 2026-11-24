@@ -3,9 +3,11 @@ import { z } from "zod";
 import { LOCATION_MODE_VALUES } from "@/lib/onboarding/form-schema";
 import { OTHER_CITY_VALUE } from "@/lib/onboarding/locations";
 import { TIMEZONE_VALUES, VISA_OPTIONS } from "@/lib/onboarding/schema";
+import { DEFAULT_ANNUAL_PAY, PAY_TYPE_VALUES } from "@/lib/pay";
 import { SUPERPOWER_TAXONOMY } from "@/lib/reference/taxonomy";
 
 const locationModeSchema = z.enum(LOCATION_MODE_VALUES);
+const payTypeSchema = z.enum(PAY_TYPE_VALUES);
 const visaValues = VISA_OPTIONS.map((option) => option.value) as [
   string,
   ...string[],
@@ -47,10 +49,11 @@ export const jobOpeningFormObjectSchema = z.object({
   timezone: z.enum(TIMEZONE_VALUES, { error: "Timezone is required" }),
   workHoursStart: z.string().min(1, "Start time is required"),
   workHoursEnd: z.string().min(1, "End time is required"),
+  payType: payTypeSchema,
   minSalary: z
-    .number()
-    .min(40_000, "Minimum salary must be at least $40,000")
-    .max(400_000, "Minimum salary cannot exceed $400,000"),
+    .number({ error: "Enter a pay amount" })
+    .int("Use a whole-dollar amount")
+    .positive("Pay must be greater than zero"),
   visaStatuses: z
     .array(z.enum(visaValues))
     .min(1, "Select at least one visa / work authorization option"),
@@ -75,31 +78,33 @@ function refineJobOpening(
         path: ["openToRelocation"],
       });
     }
-    if (!data.globalCountry?.trim()) {
+  }
+
+  // Base location is always required so pay has geographic context.
+  if (!data.globalCountry?.trim()) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Country is required",
+      path: ["globalCountry"],
+    });
+  }
+  if (
+    data.globalCountry === "Other" ||
+    data.globalCity === OTHER_CITY_VALUE
+  ) {
+    if (!data.customCity?.trim()) {
       ctx.addIssue({
         code: "custom",
-        message: "Country is required for hybrid/onsite roles",
-        path: ["globalCountry"],
+        message: "Enter the closest city",
+        path: ["customCity"],
       });
     }
-    if (
-      data.globalCountry === "Other" ||
-      data.globalCity === OTHER_CITY_VALUE
-    ) {
-      if (!data.customCity?.trim()) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Enter the closest city",
-          path: ["customCity"],
-        });
-      }
-    } else if (!data.globalCity?.trim()) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Closest city is required for hybrid/onsite roles",
-        path: ["globalCity"],
-      });
-    }
+  } else if (!data.globalCity?.trim()) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Closest city is required",
+      path: ["globalCity"],
+    });
   }
 }
 
@@ -124,12 +129,12 @@ export const defaultJobOpeningValues: JobOpeningFormValues = {
   timezone: "America/New_York",
   workHoursStart: "09:00",
   workHoursEnd: "17:00",
-  minSalary: 140000,
+  payType: "annual",
+  minSalary: DEFAULT_ANNUAL_PAY,
   visaStatuses: ["none"],
 };
 
 export function resolveJobOpeningCity(data: JobOpeningFormValues): string | null {
-  if (!needsCommuteFields(data.locationModes)) return null;
   if (
     data.globalCountry === "Other" ||
     data.globalCity === OTHER_CITY_VALUE

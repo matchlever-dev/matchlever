@@ -19,7 +19,7 @@ export async function listJobOpeningsForAdmin(
   const { data: jobs, error } = await supabase
     .from("job_postings")
     .select(
-      "id, title, status, company_name, location_modes, global_city, min_salary, employer_profile_id, updated_at"
+      "id, title, status, company_name, location_modes, global_city, pay_type, min_salary, employer_profile_id, updated_at"
     )
     .order("updated_at", { ascending: false });
 
@@ -172,6 +172,7 @@ export async function listJobOpeningsForAdmin(
       invoiced_match_count: s.invoiced_match_count,
       location_modes: job.location_modes ?? [],
       global_city: job.global_city,
+      pay_type: job.pay_type ?? "annual",
       min_salary: job.min_salary,
       updated_at: job.updated_at,
     };
@@ -206,7 +207,7 @@ export async function getJobOpeningDetailForAdmin(
   const { data: job } = await supabase
     .from("job_postings")
     .select(
-      "id, title, status, company_name, description, verified_skills, years_experience, suggested_taglines, endorsed_skills, location_modes, global_city, min_salary, timezone, work_hours_start, work_hours_end, visa_statuses, kanban_columns, employer_profile_id, updated_at"
+      "id, title, status, company_name, description, verified_skills, years_experience, suggested_taglines, endorsed_skills, location_modes, global_city, pay_type, min_salary, timezone, work_hours_start, work_hours_end, visa_statuses, kanban_columns, employer_profile_id, updated_at"
     )
     .eq("id", jobId)
     .maybeSingle();
@@ -411,6 +412,7 @@ export async function getJobOpeningDetailForAdmin(
       invoiced_match_count: invoiced,
       location_modes: job.location_modes ?? [],
       global_city: job.global_city,
+      pay_type: job.pay_type ?? "annual",
       min_salary: job.min_salary,
       updated_at: job.updated_at,
       description: job.description,

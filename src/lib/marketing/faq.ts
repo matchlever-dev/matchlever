@@ -37,7 +37,7 @@ export const DEFAULT_FAQ_ITEMS: FaqItem[] = [
 
 Superpower Taglines: Instead of vague cover letters, our AI evaluates your verified tech stack to generate three metrics-driven "Superpower Taglines" for you to choose from.
 
-Smart Matching: Our Two-Tier Match Engine filters by hard dealbreakers (minimum salary, work authorization) and semantic alignment (daily working hours overlap) to ensure we only surface relevant roles.`,
+Smart Matching: Our Two-Tier Match Engine filters by hard dealbreakers (pay expectations, work authorization) and semantic alignment (daily working hours overlap) to ensure we only surface relevant roles.`,
     sortOrder: 1,
   },
   {

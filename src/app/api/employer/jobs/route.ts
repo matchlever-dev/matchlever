@@ -48,7 +48,7 @@ export async function GET() {
   const { data: jobs, error } = await supabase
     .from("job_postings")
     .select(
-      "id, title, status, location_modes, global_city, min_salary, accepted_match_count, match_bundle_purchased_at, updated_at"
+      "id, title, status, location_modes, global_city, pay_type, min_salary, accepted_match_count, match_bundle_purchased_at, updated_at"
     )
     .eq("employer_profile_id", auth.employer!.id)
     .order("updated_at", { ascending: false });

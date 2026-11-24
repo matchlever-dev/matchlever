@@ -231,6 +231,7 @@ export async function sendMatchIncognitoEmail(args: {
     locationLine: string;
     timezoneLabel: string;
     locationModes: string[];
+    payType?: "annual" | "hourly" | null;
     minSalary: number | null;
     visaStatus: string | null;
     workHours: string | null;
@@ -290,7 +291,7 @@ export async function sendMatchIncognitoEmail(args: {
             <tr><td style="padding:6px 0;color:#5B616B">Timezone</td><td style="padding:6px 0;text-align:right">${escapeHtml(p.timezoneLabel)}</td></tr>
             ${modes ? `<tr><td style="padding:6px 0;color:#5B616B">Work modes</td><td style="padding:6px 0;text-align:right">${escapeHtml(modes)}</td></tr>` : ""}
             ${p.yearsExperience != null ? `<tr><td style="padding:6px 0;color:#5B616B">Experience</td><td style="padding:6px 0;text-align:right">${p.yearsExperience} years</td></tr>` : ""}
-            ${p.minSalary != null ? `<tr><td style="padding:6px 0;color:#5B616B">Min salary</td><td style="padding:6px 0;text-align:right">$${p.minSalary.toLocaleString("en-US")}</td></tr>` : ""}
+            ${p.minSalary != null ? `<tr><td style="padding:6px 0;color:#5B616B">Pay</td><td style="padding:6px 0;text-align:right">$${p.minSalary.toLocaleString("en-US")}${p.payType === "hourly" ? "/hr" : "/yr"}</td></tr>` : ""}
             ${p.workHours ? `<tr><td style="padding:6px 0;color:#5B616B">Work hours</td><td style="padding:6px 0;text-align:right">${escapeHtml(p.workHours)}</td></tr>` : ""}
             ${p.visaStatus ? `<tr><td style="padding:6px 0;color:#5B616B">Work auth</td><td style="padding:6px 0;text-align:right">${escapeHtml(p.visaStatus)}</td></tr>` : ""}
           </table>

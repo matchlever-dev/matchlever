@@ -75,6 +75,7 @@ export type Database = {
           location_modes: string[];
           max_commute_miles: number | null;
           open_to_relocation: boolean | null;
+          pay_type: string;
           min_salary: number | null;
           visa_status: string | null;
           years_experience: number | null;
@@ -104,6 +105,7 @@ export type Database = {
           location_modes?: string[];
           max_commute_miles?: number | null;
           open_to_relocation?: boolean | null;
+          pay_type?: string;
           min_salary?: number | null;
           visa_status?: string | null;
           years_experience?: number | null;
@@ -133,6 +135,7 @@ export type Database = {
           location_modes?: string[];
           max_commute_miles?: number | null;
           open_to_relocation?: boolean | null;
+          pay_type?: string;
           min_salary?: number | null;
           visa_status?: string | null;
           years_experience?: number | null;
@@ -331,6 +334,7 @@ export type Database = {
           timezone: string | null;
           work_hours_start: string | null;
           work_hours_end: string | null;
+          pay_type: string;
           min_salary: number | null;
           visa_statuses: string[];
           accepted_match_count: number;
@@ -358,6 +362,7 @@ export type Database = {
           timezone?: string | null;
           work_hours_start?: string | null;
           work_hours_end?: string | null;
+          pay_type?: string;
           min_salary?: number | null;
           visa_statuses?: string[];
           accepted_match_count?: number;
@@ -385,6 +390,7 @@ export type Database = {
           timezone?: string | null;
           work_hours_start?: string | null;
           work_hours_end?: string | null;
+          pay_type?: string;
           min_salary?: number | null;
           visa_statuses?: string[];
           accepted_match_count?: number;
