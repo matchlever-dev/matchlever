@@ -6,6 +6,8 @@ import type {
   ActiveTalentOption,
   ActiveJobPosting,
 } from "@/lib/admin/demo";
+import { SUPERUSER_LINKS } from "@/lib/admin/superuser-nav";
+import { talentStatusLabel } from "@/lib/matching/eligibility";
 import { PortalShell } from "@/components/admin/portal-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,11 +20,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-
-const SUPER_LINKS = [
-  { href: "/superuser/talent", label: "Talent" },
-  { href: "/superuser/manual-match", label: "Manual Match" },
-];
 
 export function SuperuserManualMatchPage() {
   const [talent, setTalent] = useState<ActiveTalentOption[]>([]);
@@ -106,7 +103,7 @@ export function SuperuserManualMatchPage() {
   }
 
   return (
-    <PortalShell title="Superuser Portal" links={SUPER_LINKS} accent="superuser">
+    <PortalShell title="Superuser Portal" links={SUPERUSER_LINKS} accent="superuser">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="font-display text-[11px] font-semibold tracking-[0.22em] text-[#E87A5D] uppercase">
@@ -116,8 +113,10 @@ export function SuperuserManualMatchPage() {
             Manual match
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-[#5B616B]">
-            Select any active talent and push them into an active job
-            posting Kanban as a Concierge Match (`is_manual_match = true`).
+            Select Active or On Hold talent (not Incomplete) and push them into
+            a job opening. Prefer the Job Openings detail page for full match
+            history, billing marks, and employer email. This quick tool still
+            creates a Concierge Match.
           </p>
         </div>
         {demo && (
@@ -131,7 +130,7 @@ export function SuperuserManualMatchPage() {
         <p className="text-sm text-[#5B616B]">Loading match tools…</p>
       ) : (
         <div className="grid max-w-2xl gap-5 border border-[#2B5B84]/15 bg-white p-5 sm:p-6">
-          <Field label="Active talent">
+          <Field label="Active or On Hold talent">
             <Select
               value={talentId}
               onValueChange={(value) => setTalentId(value ?? "")}
@@ -143,6 +142,7 @@ export function SuperuserManualMatchPage() {
                 {talent.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {(c.full_name || c.headline || c.id) +
+                      ` · ${talentStatusLabel(c.status)}` +
                       (c.headline ? ` — ${c.headline}` : "")}
                   </SelectItem>
                 ))}

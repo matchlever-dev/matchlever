@@ -6,6 +6,8 @@ import {
   DEMO_ACTIVE_TALENT,
   DEMO_ACTIVE_JOBS,
 } from "@/lib/admin/demo";
+import { createManualMatch } from "@/lib/matching/create-match";
+import { isMatchableTalentStatus } from "@/lib/matching/eligibility";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
 
@@ -34,14 +36,14 @@ export async function GET() {
     supabase
       .from("talent_profiles")
       .select("id, headline, status, user_id")
-      .eq("status", "actively_looking")
+      .in("status", ["actively_looking", "on_hold"])
       .order("updated_at", { ascending: false }),
     supabase
       .from("job_postings")
       .select(
         "id, title, company_name, status, kanban_columns, employer_profile_id"
       )
-      .eq("status", "active")
+      .in("status", ["active", "paused"]) // hired/closed/draft excluded — matching stopped
       .order("updated_at", { ascending: false }),
   ]);
 
@@ -81,16 +83,18 @@ export async function GET() {
 
   return NextResponse.json({
     demo: false,
-    talent: (talent ?? []).map((c) => {
-      const user = userMap.get(c.user_id);
-      return {
-        id: c.id,
-        headline: c.headline,
-        email: user?.email ?? null,
-        full_name: user?.full_name ?? null,
-        status: c.status,
-      };
-    }),
+    talent: (talent ?? [])
+      .filter((c) => isMatchableTalentStatus(c.status))
+      .map((c) => {
+        const user = userMap.get(c.user_id);
+        return {
+          id: c.id,
+          headline: c.headline,
+          email: user?.email ?? null,
+          full_name: user?.full_name ?? null,
+          status: c.status,
+        };
+      }),
     jobs: (jobs ?? []).map((j) => {
       const employer = employerMap.get(j.employer_profile_id);
       const employerUser = employer
@@ -133,70 +137,30 @@ export async function POST(request: Request) {
         id: `demo-hs-${Date.now()}`,
         ...parsed.data,
         is_manual_match: true,
+        billing_status: "free",
+        match_index: 1,
       },
     });
   }
 
   const supabase = await createClient();
+  const result = await createManualMatch({
+    supabase,
+    jobPostingId: parsed.data.jobPostingId,
+    talentProfileId: parsed.data.talentProfileId,
+    matchedBy: auth.actor.userId,
+    kanbanColumn: parsed.data.kanbanColumn,
+    notes: parsed.data.notes,
+  });
 
-  const [{ data: talent }, { data: job }] = await Promise.all([
-    supabase
-      .from("talent_profiles")
-      .select("id, status")
-      .eq("id", parsed.data.talentProfileId)
-      .maybeSingle(),
-    supabase
-      .from("job_postings")
-      .select("id, status, kanban_columns")
-      .eq("id", parsed.data.jobPostingId)
-      .maybeSingle(),
-  ]);
-
-  if (!talent || talent.status !== "actively_looking") {
-    return NextResponse.json(
-      { error: "Talent must be actively looking" },
-      { status: 400 }
-    );
-  }
-  if (!job || job.status !== "active") {
-    return NextResponse.json(
-      { error: "Job posting must be active" },
-      { status: 400 }
-    );
-  }
-
-  const columns = columnsFromJson(job.kanban_columns);
-  const column = columns.includes(parsed.data.kanbanColumn)
-    ? parsed.data.kanbanColumn
-    : columns[0] || "sourced";
-
-  const { data: handshake, error } = await supabase
-    .from("match_handshakes")
-    .upsert(
-      {
-        job_posting_id: parsed.data.jobPostingId,
-        talent_profile_id: parsed.data.talentProfileId,
-        kanban_column: column,
-        is_manual_match: true,
-        matched_by: auth.actor.userId,
-        notes: parsed.data.notes ?? "Concierge Match",
-      },
-      { onConflict: "job_posting_id,talent_profile_id" }
-    )
-    .select("id, job_posting_id, talent_profile_id, kanban_column, is_manual_match")
-    .maybeSingle();
-
-  if (error) {
-    console.error("[manual match]", error.message);
-    return NextResponse.json(
-      { error: "Unable to create concierge match" },
-      { status: 500 }
-    );
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.status });
   }
 
   return NextResponse.json({
     ok: true,
     is_manual_match: true,
-    handshake,
+    handshake: result.match,
+    match: result.match,
   });
 }

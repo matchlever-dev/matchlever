@@ -4,6 +4,7 @@ export const ADMIN_LINKS = [
   { href: "/admin/users", label: "Users" },
   { href: "/admin/talent", label: "Talent" },
   { href: "/admin/employers", label: "Employers" },
+  { href: "/admin/job-openings", label: "Job Openings" },
   { href: "/admin/contact", label: "Contact" },
   { href: "/admin/site-copy", label: "Site copy" },
   { href: "/admin/faq", label: "FAQ" },

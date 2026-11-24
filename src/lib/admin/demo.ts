@@ -183,6 +183,45 @@ export type ActiveTalentOption = {
   status: string;
 };
 
+export type AdminJobOpeningRow = {
+  id: string;
+  title: string;
+  status: string;
+  company_name: string | null;
+  employer_name: string | null;
+  employer_email: string | null;
+  match_count: number;
+  accepted_count: number;
+  passed_count: number;
+  free_match_count: number;
+  invoiced_match_count: number;
+  location_modes: string[];
+  global_city: string | null;
+  min_salary: number | null;
+  updated_at: string;
+};
+
+export type AdminJobMatchRow = {
+  id: string;
+  talent_profile_id: string;
+  talent_headline: string | null;
+  talent_name: string | null;
+  talent_status: string;
+  match_source: "manual" | "ai";
+  match_index: number;
+  billing_status: "free" | "invoiced";
+  invoice_cycle: number;
+  employer_response: "pending" | "accepted" | "passed";
+  accepted: boolean;
+  accepted_at: string | null;
+  passed_at: string | null;
+  employer_notified_at: string | null;
+  linkedin_sent_at: string | null;
+  kanban_column: string;
+  notes: string | null;
+  created_at: string;
+};
+
 export const LOW_TRUST_AUTHENTICITY_THRESHOLD = 55;
 
 export function isLowTrustScore(
@@ -498,15 +537,78 @@ export const DEMO_ADMIN_EMPLOYERS: AdminEmployerRow[] = [
 ];
 
 export const DEMO_ACTIVE_TALENT: ActiveTalentOption[] =
-  DEMO_ADMIN_TALENT.filter((c) => c.status === "actively_looking").map(
-    (c) => ({
-      id: c.id,
-      headline: c.headline,
-      email: c.email,
-      full_name: c.full_name,
-      status: c.status,
-    })
-  );
+  DEMO_ADMIN_TALENT.filter(
+    (c) => c.status === "actively_looking" || c.status === "on_hold"
+  ).map((c) => ({
+    id: c.id,
+    headline: c.headline,
+    email: c.email,
+    full_name: c.full_name,
+    status: c.status,
+  }));
+
+export const DEMO_ADMIN_JOB_OPENINGS: AdminJobOpeningRow[] = [
+  {
+    id: "job-1",
+    title: "Staff Platform Engineer",
+    status: "active",
+    company_name: "Acme Systems",
+    employer_name: "Jordan Lee",
+    employer_email: "jordan.employer@acme.io",
+    match_count: 1,
+    accepted_count: 0,
+    passed_count: 0,
+    free_match_count: 1,
+    invoiced_match_count: 0,
+    location_modes: ["remote", "hybrid"],
+    global_city: "Austin",
+    min_salary: 180000,
+    updated_at: "2026-07-18T12:00:00.000Z",
+  },
+  {
+    id: "job-2",
+    title: "Senior Backend Engineer",
+    status: "active",
+    company_name: "Northwind",
+    employer_name: "Priya Shah",
+    employer_email: "priya@northwind.dev",
+    match_count: 0,
+    accepted_count: 0,
+    passed_count: 0,
+    free_match_count: 0,
+    invoiced_match_count: 0,
+    location_modes: ["remote"],
+    global_city: null,
+    min_salary: 160000,
+    updated_at: "2026-07-12T09:30:00.000Z",
+  },
+];
+
+export const DEMO_ADMIN_JOB_MATCHES: Record<string, AdminJobMatchRow[]> = {
+  "job-1": [
+    {
+      id: "hs-1",
+      talent_profile_id: "cand-1",
+      talent_headline: "Staff Platform Engineer",
+      talent_name: "Sam Patel",
+      talent_status: "actively_looking",
+      match_source: "manual",
+      match_index: 1,
+      billing_status: "free",
+      invoice_cycle: 1,
+      employer_response: "pending",
+      accepted: false,
+      accepted_at: null,
+      passed_at: null,
+      employer_notified_at: "2026-07-18T12:05:00.000Z",
+      linkedin_sent_at: null,
+      kanban_column: "sourced",
+      notes: "Manual match",
+      created_at: "2026-07-18T12:05:00.000Z",
+    },
+  ],
+  "job-2": [],
+};
 
 export type DemoContactRequest = {
   id: string;

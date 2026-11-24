@@ -65,6 +65,8 @@ export function JobOpeningDetailPage({ jobId }: { jobId: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [statusBusy, setStatusBusy] = useState(false);
   const [editing, setEditing] = useState(false);
   const [formValues, setFormValues] = useState<Partial<JobOpeningFormValues> | null>(
     null
@@ -111,6 +113,36 @@ export function JobOpeningDetailPage({ jobId }: { jobId: string }) {
     void load();
   }, [load]);
 
+  async function updateStatus(status: "active" | "paused" | "hired" | "closed") {
+    if (!job) return;
+    setStatusBusy(true);
+    setStatusMessage(null);
+    setError(null);
+    try {
+      const res = await fetch(`/api/employer/jobs/${job.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Unable to update status");
+      setJob({ ...job, status: json.status || status });
+      setStatusMessage(
+        status === "hired"
+          ? "Marked Hired. Matching is stopped for this opening."
+          : status === "paused"
+            ? "Opening paused. Matching can still continue until you mark Hired."
+            : status === "closed"
+              ? "Opening closed. Matching is stopped."
+              : "Opening set back to Active."
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to update status");
+    } finally {
+      setStatusBusy(false);
+    }
+  }
+
   if (loading) {
     return (
       <Shell title="Job opening">
@@ -119,7 +151,7 @@ export function JobOpeningDetailPage({ jobId }: { jobId: string }) {
     );
   }
 
-  if (error || !job || !formValues) {
+  if (error && !job) {
     return (
       <Shell title="Job opening">
         <p className="text-sm text-destructive">{error || "Job not found"}</p>
@@ -131,6 +163,14 @@ export function JobOpeningDetailPage({ jobId }: { jobId: string }) {
         >
           Back to dashboard
         </Button>
+      </Shell>
+    );
+  }
+
+  if (!job || !formValues) {
+    return (
+      <Shell title="Job opening">
+        <p className="text-sm text-destructive">Job not found</p>
       </Shell>
     );
   }
@@ -151,6 +191,10 @@ export function JobOpeningDetailPage({ jobId }: { jobId: string }) {
     );
   }
 
+  const isHired = job.status === "hired";
+  const isClosed = job.status === "closed";
+  const matchingStopped = isHired || isClosed;
+
   return (
     <Shell title={job.title}>
       <section className="border border-[#2B5B84]/15 bg-white p-5 sm:p-6">
@@ -167,6 +211,9 @@ export function JobOpeningDetailPage({ jobId }: { jobId: string }) {
           </div>
           <Badge
             variant={job.status === "active" ? "default" : "secondary"}
+            className={
+              isHired ? "bg-[#E87A5D]/15 text-[#E87A5D]" : undefined
+            }
           >
             {jobOpeningStatusLabel(job.status)}
           </Badge>
@@ -180,6 +227,49 @@ export function JobOpeningDetailPage({ jobId }: { jobId: string }) {
           >
             Edit job opening
           </Button>
+          {job.status !== "active" && !isHired && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={statusBusy}
+              className="h-10 border-[#2B5B84]/25 text-[#2B5B84]"
+              onClick={() => void updateStatus("active")}
+            >
+              Set Active
+            </Button>
+          )}
+          {job.status === "active" && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={statusBusy}
+              className="h-10 border-[#2B5B84]/25 text-[#2B5B84]"
+              onClick={() => void updateStatus("paused")}
+            >
+              Pause
+            </Button>
+          )}
+          {!isHired && (
+            <Button
+              type="button"
+              disabled={statusBusy}
+              className="h-10 bg-[#E87A5D] text-white hover:bg-[#d96b4f]"
+              onClick={() => void updateStatus("hired")}
+            >
+              {statusBusy ? "Updating…" : "Mark as Hired"}
+            </Button>
+          )}
+          {!isClosed && !isHired && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={statusBusy}
+              className="h-10 border-[#5B616B]/30 text-[#5B616B]"
+              onClick={() => void updateStatus("closed")}
+            >
+              Close opening
+            </Button>
+          )}
           <Button
             type="button"
             variant="outline"
@@ -190,11 +280,17 @@ export function JobOpeningDetailPage({ jobId }: { jobId: string }) {
           </Button>
         </div>
 
+        {statusMessage && (
+          <p className="mt-4 text-sm text-[#2B5B84]">{statusMessage}</p>
+        )}
+        {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
+
         <p className="mt-6 text-sm text-[#5B616B]">
-          Candidate matches and Accept Match billing will appear here as the
-          matching pipeline is connected. Accept Match charges $600 (or $0 with
-          the 2026 founder promo) and unlocks contact details for up to 5
-          accepts on this role.
+          {matchingStopped
+            ? isHired
+              ? "This opening is marked Hired. MatchLever will not assign new candidates here."
+              : "This opening is closed. Matching is stopped."
+            : "Edit the role details anytime. When you fill the seat, mark the opening Hired to stop matching. Employers Accept or Pass each match from email; charge and hire-completion tracking come later."}
         </p>
       </section>
     </Shell>

@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -5,6 +6,7 @@ import {
   MATCH_BUNDLE_LIMIT,
   quoteAcceptMatch,
 } from "@/lib/employer/billing";
+import { markMatchBilling } from "@/lib/matching/billing";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
@@ -150,23 +152,65 @@ export async function POST(request: Request) {
     }
   }
 
-  const { data: handshake, error: handshakeError } = await supabase
+  const now = new Date().toISOString();
+  const notes = charged
+    ? `Accepted match · charged $${quote.chargeUsd}`
+    : `Accepted match · ${quote.reason}`;
+
+  const { data: existing } = await supabase
     .from("match_handshakes")
-    .insert({
-      job_posting_id: job.id,
-      talent_profile_id: parsed.data.talentProfileId,
-      kanban_column: "screening",
-      is_manual_match: false,
-      matched_by: user.id,
-      notes: charged
-        ? `Accepted match · charged $${quote.chargeUsd}`
-        : `Accepted match · ${quote.reason}`,
-    })
-    .select("id")
+    .select("id, accepted_at")
+    .eq("job_posting_id", job.id)
+    .eq("talent_profile_id", parsed.data.talentProfileId)
     .maybeSingle();
 
-  if (handshakeError) {
-    console.error("[accept match handshake]", handshakeError.message);
+  let handshakeId: string | null = existing?.id ?? null;
+
+  if (existing) {
+    const { error: handshakeError } = await supabase
+      .from("match_handshakes")
+      .update({
+        employer_response: "accepted",
+        accepted_at: existing.accepted_at ?? now,
+        passed_at: null,
+        kanban_column: "screening",
+        notes,
+      })
+      .eq("id", existing.id);
+    if (handshakeError) {
+      console.error("[accept match handshake]", handshakeError.message);
+    }
+  } else {
+    const { count } = await supabase
+      .from("match_handshakes")
+      .select("id", { count: "exact", head: true })
+      .eq("job_posting_id", job.id);
+    const billing = markMatchBilling((count ?? 0) + 1);
+    const { data: handshake, error: handshakeError } = await supabase
+      .from("match_handshakes")
+      .insert({
+        job_posting_id: job.id,
+        talent_profile_id: parsed.data.talentProfileId,
+        kanban_column: "screening",
+        is_manual_match: false,
+        match_source: "manual",
+        matched_by: user.id,
+        notes,
+        match_index: billing.matchIndex,
+        billing_status: billing.billingStatus,
+        invoice_cycle: billing.invoiceCycle,
+        accept_token: randomBytes(24).toString("hex"),
+        employer_response: "accepted",
+        accepted_at: now,
+        passed_at: null,
+      })
+      .select("id")
+      .maybeSingle();
+
+    if (handshakeError) {
+      console.error("[accept match handshake]", handshakeError.message);
+    }
+    handshakeId = handshake?.id ?? null;
   }
 
   return NextResponse.json({
@@ -176,6 +220,6 @@ export async function POST(request: Request) {
     chargedUsd: quote.chargeUsd,
     toast: quote.message,
     contactUnlocked: true,
-    handshakeId: handshake?.id ?? null,
+    handshakeId,
   });
 }

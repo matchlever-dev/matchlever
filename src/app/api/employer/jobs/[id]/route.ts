@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { DEMO_EMPLOYER_JOBS } from "@/lib/dashboard/employer";
-import { jobOpeningFormSchema } from "@/lib/employer/job-opening-schema";
+import {
+  JOB_OPENING_STATUSES,
+  jobOpeningFormSchema,
+} from "@/lib/employer/job-opening-schema";
 import {
   jobOpeningPayloadToRow,
   jobRowToFormValues,
@@ -11,7 +14,10 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
-const statusSchema = z.enum(["draft", "active", "paused", "closed"]);
+const statusSchema = z.enum(JOB_OPENING_STATUSES);
+const statusOnlySchema = z.object({
+  status: statusSchema,
+});
 
 const JOB_SELECT =
   "id, title, status, company_name, description, verified_skills, years_experience, suggested_taglines, endorsed_skills, location_modes, max_commute_miles, open_to_relocation, global_city, global_country, timezone, work_hours_start, work_hours_end, min_salary, visa_statuses, accepted_match_count, match_bundle_purchased_at, updated_at, employer_profile_id";
@@ -113,6 +119,49 @@ export async function PATCH(
 ) {
   const { id } = await context.params;
   const json = await request.json();
+
+  // Status-only updates (e.g. Mark as Hired) without re-submitting the full form.
+  const statusOnly = statusOnlySchema.safeParse(json);
+  const isStatusOnly =
+    statusOnly.success &&
+    Object.keys(json ?? {}).every((key) => key === "status");
+
+  if (isStatusOnly) {
+    if (!isSupabaseConfigured()) {
+      return NextResponse.json({
+        ok: true,
+        demo: true,
+        id,
+        status: statusOnly.data.status,
+      });
+    }
+
+    const supabase = await createClient();
+    const auth = await requireOwnedJob(supabase, id);
+    if ("error" in auth && auth.error) return auth.error;
+
+    const { data: updated, error } = await supabase
+      .from("job_postings")
+      .update({ status: statusOnly.data.status })
+      .eq("id", id)
+      .select("id, status")
+      .single();
+
+    if (error || !updated) {
+      console.error("[employer jobs status]", error?.message);
+      return NextResponse.json(
+        { error: "Unable to update job opening status" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      ok: true,
+      id: updated.id,
+      status: updated.status,
+    });
+  }
+
   const parsed = jobOpeningFormSchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json(
@@ -120,16 +169,15 @@ export async function PATCH(
       { status: 400 }
     );
   }
-  const nextStatus = statusSchema
-    .optional()
-    .parse(json?.status);
+  const nextStatus = statusSchema.optional().safeParse(json?.status);
+  const resolvedStatus = nextStatus.success ? nextStatus.data : undefined;
 
   if (!isSupabaseConfigured()) {
     return NextResponse.json({
       ok: true,
       demo: true,
       id,
-      status: nextStatus ?? "draft",
+      status: resolvedStatus ?? "draft",
     });
   }
 
@@ -138,7 +186,8 @@ export async function PATCH(
   if ("error" in auth && auth.error) return auth.error;
 
   const publishStatus =
-    nextStatus === "active" || (!nextStatus && auth.job!.status === "active")
+    resolvedStatus === "active" ||
+    (!resolvedStatus && auth.job!.status === "active")
       ? "active"
       : "draft";
   const row = jobOpeningPayloadToRow(parsed.data, publishStatus);
@@ -147,7 +196,7 @@ export async function PATCH(
     .from("job_postings")
     .update({
       ...row,
-      status: nextStatus ?? row.status,
+      status: resolvedStatus ?? row.status,
     })
     .eq("id", id)
     .select("id, status")

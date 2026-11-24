@@ -139,7 +139,24 @@ export function resolveJobOpeningCity(data: JobOpeningFormValues): string | null
   return data.globalCity?.trim() || null;
 }
 
-export type JobOpeningStatus = "draft" | "active" | "paused" | "closed";
+export const JOB_OPENING_STATUSES = [
+  "draft",
+  "active",
+  "paused",
+  "closed",
+  "hired",
+] as const;
+
+export type JobOpeningStatus = (typeof JOB_OPENING_STATUSES)[number];
+
+/** Statuses that still accept new matches. */
+export const MATCHABLE_JOB_STATUSES: JobOpeningStatus[] = ["active", "paused"];
+
+export function isMatchableJobStatus(
+  status: string | null | undefined
+): boolean {
+  return status === "active" || status === "paused";
+}
 
 export function jobOpeningStatusLabel(status: string): string {
   switch (status) {
@@ -151,6 +168,8 @@ export function jobOpeningStatusLabel(status: string): string {
       return "Paused";
     case "closed":
       return "Closed";
+    case "hired":
+      return "Hired";
     default:
       return status;
   }
