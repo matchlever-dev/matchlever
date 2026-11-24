@@ -37,6 +37,6 @@ export async function proposeAiMatches(
     candidates: [],
     engine: "stub",
     message:
-      "AI matching is not implemented yet. Use manual match to assign Active or On Hold talent.",
+      "AI matching is not implemented yet. Assign Active or On Hold talent from the Job Opening detail page.",
   };
 }

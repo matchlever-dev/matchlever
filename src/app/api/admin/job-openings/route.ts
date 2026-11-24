@@ -19,14 +19,24 @@ export async function GET() {
   try {
     const supabase = await createClient();
     const jobs = await listJobOpeningsForAdmin(supabase);
-    return NextResponse.json({ demo: false, jobs });
+    return NextResponse.json({
+      demo: false,
+      jobs,
+      emptyReason:
+        jobs.length === 0
+          ? "no_job_postings"
+          : undefined,
+    });
   } catch (err) {
     console.error(
       "[admin job openings]",
       err instanceof Error ? err.message : err
     );
     return NextResponse.json(
-      { error: "Unable to load job openings" },
+      {
+        error: "Unable to load job openings",
+        detail: err instanceof Error ? err.message : undefined,
+      },
       { status: 500 }
     );
   }

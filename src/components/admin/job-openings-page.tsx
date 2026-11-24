@@ -11,7 +11,7 @@ import {
 import {
   AdminListControls,
   matchesKeyword,
-  type AdminSortMode,
+  type AdminListSortOption,
 } from "@/components/admin/admin-list-controls";
 import { AdminPortalShell } from "@/components/admin/admin-portal-shell";
 import { PortalShell } from "@/components/admin/portal-shell";
@@ -24,6 +24,14 @@ const STATUS_OPTIONS = [
   { value: "draft", label: "Draft" },
   { value: "hired", label: "Hired" },
   { value: "closed", label: "Closed" },
+];
+
+type JobOpeningsSortMode = "most_recent" | "job_title" | "employer";
+
+const SORT_OPTIONS: ReadonlyArray<AdminListSortOption<JobOpeningsSortMode>> = [
+  { value: "most_recent", label: "Most Recent" },
+  { value: "job_title", label: "Job Title" },
+  { value: "employer", label: "Employer" },
 ];
 
 export function AdminJobOpeningsPage() {
@@ -62,7 +70,7 @@ function JobOpeningsListPage({
   const [demo, setDemo] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sort, setSort] = useState<AdminSortMode>("recent");
+  const [sort, setSort] = useState<JobOpeningsSortMode>("most_recent");
   const [statusFilter, setStatusFilter] = useState("all");
   const [keyword, setKeyword] = useState("");
 
@@ -98,12 +106,25 @@ function JobOpeningsListPage({
       ]);
     });
     return [...list].sort((a, b) => {
-      if (sort === "score") {
-        // Higher match volume first when "Score" is selected.
-        const delta = b.match_count - a.match_count;
-        if (delta !== 0) return delta;
-        return a.title.localeCompare(b.title);
+      if (sort === "job_title") {
+        return a.title.localeCompare(b.title, undefined, {
+          sensitivity: "base",
+        });
       }
+      if (sort === "employer") {
+        const employerA =
+          a.company_name || a.employer_name || a.employer_email || "";
+        const employerB =
+          b.company_name || b.employer_name || b.employer_email || "";
+        const byEmployer = employerA.localeCompare(employerB, undefined, {
+          sensitivity: "base",
+        });
+        if (byEmployer !== 0) return byEmployer;
+        return a.title.localeCompare(b.title, undefined, {
+          sensitivity: "base",
+        });
+      }
+      // Most Recent
       return b.updated_at.localeCompare(a.updated_at);
     });
   }, [jobs, keyword, sort, statusFilter]);
@@ -137,6 +158,7 @@ function JobOpeningsListPage({
       <AdminListControls
         sort={sort}
         onSortChange={setSort}
+        sortOptions={SORT_OPTIONS}
         status={statusFilter}
         onStatusChange={setStatusFilter}
         statusOptions={STATUS_OPTIONS}
@@ -150,7 +172,24 @@ function JobOpeningsListPage({
       {loading ? (
         <p className="text-sm text-[#5B616B]">Loading job openings…</p>
       ) : filtered.length === 0 ? (
-        <p className="text-sm text-[#5B616B]">No job openings found.</p>
+        <div className="max-w-xl border border-dashed border-[#2B5B84]/25 bg-white px-5 py-6">
+          <p className="font-display text-base font-semibold text-[#2B5B84]">
+            {jobs.length === 0
+              ? "No job openings yet"
+              : "No openings match these filters"}
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-[#5B616B]">
+            {jobs.length === 0
+              ? "This admin/superuser view lists openings employers have posted. There is no create button here — an employer creates one from the Employer Portal (Post a job opening /dashboard/employer/jobs/new). Once posted, it appears here for matching."
+              : "Try clearing the status or keyword filters above."}
+          </p>
+          {jobs.length === 0 && (
+            <p className="mt-3 text-xs text-[#8A9099]">
+              Tip: without Supabase configured, this page uses demo openings.
+              Connected environments only show real `job_postings` rows.
+            </p>
+          )}
+        </div>
       ) : (
         <div className="grid gap-3">
           {filtered.map((job) => (

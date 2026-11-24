@@ -32,31 +32,75 @@ export async function listJobOpeningsForAdmin(
   ];
   const jobIds = (jobs ?? []).map((j) => j.id);
 
-  const [{ data: employers }, { data: handshakes }] = await Promise.all([
-    employerIds.length
-      ? supabase
-          .from("employer_profiles")
-          .select("id, user_id, company_name")
-          .in("id", employerIds)
-      : Promise.resolve({ data: [] as { id: string; user_id: string; company_name: string }[] }),
-    jobIds.length
-      ? supabase
-          .from("match_handshakes")
-          .select(
-            "id, job_posting_id, billing_status, employer_response, accepted_at, passed_at"
-          )
-          .in("job_posting_id", jobIds)
-      : Promise.resolve({
-          data: [] as {
-            id: string;
-            job_posting_id: string;
-            billing_status: string;
-            employer_response: string;
-            accepted_at: string | null;
-            passed_at: string | null;
-          }[],
-        }),
-  ]);
+  type HandshakeStatRow = {
+    id: string;
+    job_posting_id: string;
+    billing_status: string | null;
+    employer_response: string | null;
+    accepted_at: string | null;
+    passed_at: string | null;
+  };
+
+  const employersPromise = employerIds.length
+    ? supabase
+        .from("employer_profiles")
+        .select("id, user_id, company_name")
+        .in("id", employerIds)
+    : Promise.resolve({
+        data: [] as { id: string; user_id: string; company_name: string }[],
+        error: null,
+      });
+
+  // Prefer full match columns; fall back if Pass/billing migrations are not applied yet.
+  let handshakes: HandshakeStatRow[] = [];
+  if (jobIds.length) {
+    const full = await supabase
+      .from("match_handshakes")
+      .select(
+        "id, job_posting_id, billing_status, employer_response, accepted_at, passed_at"
+      )
+      .in("job_posting_id", jobIds);
+    if (full.error) {
+      console.warn(
+        "[admin job openings handshakes]",
+        full.error.message,
+        "— falling back without employer_response/passed_at"
+      );
+      const legacy = await supabase
+        .from("match_handshakes")
+        .select("id, job_posting_id, accepted_at")
+        .in("job_posting_id", jobIds);
+      if (legacy.error) {
+        console.warn(
+          "[admin job openings handshakes legacy]",
+          legacy.error.message
+        );
+      } else {
+        handshakes = (legacy.data ?? []).map((row) => ({
+          id: row.id,
+          job_posting_id: row.job_posting_id,
+          billing_status: null,
+          employer_response: row.accepted_at ? "accepted" : "pending",
+          accepted_at: row.accepted_at,
+          passed_at: null,
+        }));
+      }
+    } else {
+      handshakes = (full.data ?? []).map((row) => ({
+        id: row.id,
+        job_posting_id: row.job_posting_id,
+        billing_status: row.billing_status,
+        employer_response: row.employer_response,
+        accepted_at: row.accepted_at,
+        passed_at: row.passed_at,
+      }));
+    }
+  }
+
+  const { data: employers, error: employersError } = await employersPromise;
+  if (employersError) {
+    console.warn("[admin job openings employers]", employersError.message);
+  }
 
   const employerUserIds = [...new Set((employers ?? []).map((e) => e.user_id))];
   const { data: users } = employerUserIds.length
@@ -80,7 +124,7 @@ export async function listJobOpeningsForAdmin(
     }
   >();
 
-  for (const hs of handshakes ?? []) {
+  for (const hs of handshakes) {
     const current = stats.get(hs.job_posting_id) ?? {
       match_count: 0,
       accepted_count: 0,
@@ -183,16 +227,82 @@ export async function getJobOpeningDetailForAdmin(
         .maybeSingle()
     : { data: null };
 
-  const { data: handshakes } = await supabase
+  type DetailHandshake = {
+    id: string;
+    talent_profile_id: string;
+    match_source: string | null;
+    match_index: number | null;
+    billing_status: string | null;
+    invoice_cycle: number | null;
+    employer_response: string | null;
+    accepted_at: string | null;
+    passed_at: string | null;
+    employer_notified_at: string | null;
+    linkedin_sent_at: string | null;
+    kanban_column: string;
+    notes: string | null;
+    created_at: string;
+  };
+
+  let handshakes: DetailHandshake[] = [];
+  const fullHandshakes = await supabase
     .from("match_handshakes")
     .select(
       "id, talent_profile_id, match_source, match_index, billing_status, invoice_cycle, employer_response, accepted_at, passed_at, employer_notified_at, linkedin_sent_at, kanban_column, notes, created_at"
     )
     .eq("job_posting_id", jobId)
     .order("match_index", { ascending: true });
+  if (fullHandshakes.error) {
+    console.warn(
+      "[admin job opening detail handshakes]",
+      fullHandshakes.error.message
+    );
+    const legacy = await supabase
+      .from("match_handshakes")
+      .select(
+        "id, talent_profile_id, is_manual_match, accepted_at, kanban_column, notes, created_at"
+      )
+      .eq("job_posting_id", jobId)
+      .order("created_at", { ascending: true });
+    if (!legacy.error) {
+      handshakes = (legacy.data ?? []).map((row, index) => ({
+        id: row.id,
+        talent_profile_id: row.talent_profile_id,
+        match_source: row.is_manual_match ? "manual" : "manual",
+        match_index: index + 1,
+        billing_status: index === 0 ? "free" : "invoiced",
+        invoice_cycle: 1,
+        employer_response: row.accepted_at ? "accepted" : "pending",
+        accepted_at: row.accepted_at,
+        passed_at: null,
+        employer_notified_at: null,
+        linkedin_sent_at: null,
+        kanban_column: row.kanban_column,
+        notes: row.notes,
+        created_at: row.created_at,
+      }));
+    }
+  } else {
+    handshakes = (fullHandshakes.data ?? []).map((row) => ({
+      id: row.id,
+      talent_profile_id: row.talent_profile_id,
+      match_source: row.match_source,
+      match_index: row.match_index,
+      billing_status: row.billing_status,
+      invoice_cycle: row.invoice_cycle,
+      employer_response: row.employer_response,
+      accepted_at: row.accepted_at,
+      passed_at: row.passed_at,
+      employer_notified_at: row.employer_notified_at,
+      linkedin_sent_at: row.linkedin_sent_at,
+      kanban_column: row.kanban_column,
+      notes: row.notes,
+      created_at: row.created_at,
+    }));
+  }
 
   const talentIds = [
-    ...new Set((handshakes ?? []).map((h) => h.talent_profile_id)),
+    ...new Set(handshakes.map((h) => h.talent_profile_id)),
   ];
 
   const { data: matchedTalent } = talentIds.length
@@ -213,7 +323,7 @@ export async function getJobOpeningDetailForAdmin(
   const talentMap = new Map((matchedTalent ?? []).map((t) => [t.id, t]));
   const userMap = new Map((matchedUsers ?? []).map((u) => [u.id, u]));
 
-  const matches: AdminJobMatchRow[] = (handshakes ?? []).map((h) => {
+  const matches: AdminJobMatchRow[] = handshakes.map((h, index) => {
     const talent = talentMap.get(h.talent_profile_id);
     const user = talent ? userMap.get(talent.user_id) : null;
     const employerResponse =
@@ -233,11 +343,11 @@ export async function getJobOpeningDetailForAdmin(
       match_source: (h.match_source === "ai" ? "ai" : "manual") as
         | "manual"
         | "ai",
-      match_index: h.match_index,
+      match_index: h.match_index ?? index + 1,
       billing_status: (h.billing_status === "invoiced" ? "invoiced" : "free") as
         | "free"
         | "invoiced",
-      invoice_cycle: h.invoice_cycle,
+      invoice_cycle: h.invoice_cycle ?? 1,
       employer_response: employerResponse,
       accepted: employerResponse === "accepted",
       accepted_at: h.accepted_at,
