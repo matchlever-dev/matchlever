@@ -42,14 +42,18 @@ export async function listJobOpeningsForAdmin(
     jobIds.length
       ? supabase
           .from("match_handshakes")
-          .select("id, job_posting_id, billing_status, accepted_at")
+          .select(
+            "id, job_posting_id, billing_status, employer_response, accepted_at, passed_at"
+          )
           .in("job_posting_id", jobIds)
       : Promise.resolve({
           data: [] as {
             id: string;
             job_posting_id: string;
             billing_status: string;
+            employer_response: string;
             accepted_at: string | null;
+            passed_at: string | null;
           }[],
         }),
   ]);
@@ -70,6 +74,7 @@ export async function listJobOpeningsForAdmin(
     {
       match_count: number;
       accepted_count: number;
+      passed_count: number;
       free_match_count: number;
       invoiced_match_count: number;
     }
@@ -79,11 +84,21 @@ export async function listJobOpeningsForAdmin(
     const current = stats.get(hs.job_posting_id) ?? {
       match_count: 0,
       accepted_count: 0,
+      passed_count: 0,
       free_match_count: 0,
       invoiced_match_count: 0,
     };
     current.match_count += 1;
-    if (hs.accepted_at) current.accepted_count += 1;
+    const response =
+      hs.employer_response === "accepted" || hs.employer_response === "passed"
+        ? hs.employer_response
+        : hs.accepted_at
+          ? "accepted"
+          : hs.passed_at
+            ? "passed"
+            : "pending";
+    if (response === "accepted") current.accepted_count += 1;
+    if (response === "passed") current.passed_count += 1;
     if (hs.billing_status === "free") current.free_match_count += 1;
     if (hs.billing_status === "invoiced") current.invoiced_match_count += 1;
     stats.set(hs.job_posting_id, current);
@@ -95,6 +110,7 @@ export async function listJobOpeningsForAdmin(
     const s = stats.get(job.id) ?? {
       match_count: 0,
       accepted_count: 0,
+      passed_count: 0,
       free_match_count: 0,
       invoiced_match_count: 0,
     };
@@ -107,6 +123,7 @@ export async function listJobOpeningsForAdmin(
       employer_email: user?.email ?? null,
       match_count: s.match_count,
       accepted_count: s.accepted_count,
+      passed_count: s.passed_count,
       free_match_count: s.free_match_count,
       invoiced_match_count: s.invoiced_match_count,
       location_modes: job.location_modes ?? [],
@@ -169,7 +186,7 @@ export async function getJobOpeningDetailForAdmin(
   const { data: handshakes } = await supabase
     .from("match_handshakes")
     .select(
-      "id, talent_profile_id, match_source, match_index, billing_status, invoice_cycle, accepted_at, employer_notified_at, linkedin_sent_at, kanban_column, notes, created_at"
+      "id, talent_profile_id, match_source, match_index, billing_status, invoice_cycle, employer_response, accepted_at, passed_at, employer_notified_at, linkedin_sent_at, kanban_column, notes, created_at"
     )
     .eq("job_posting_id", jobId)
     .order("match_index", { ascending: true });
@@ -199,6 +216,14 @@ export async function getJobOpeningDetailForAdmin(
   const matches: AdminJobMatchRow[] = (handshakes ?? []).map((h) => {
     const talent = talentMap.get(h.talent_profile_id);
     const user = talent ? userMap.get(talent.user_id) : null;
+    const employerResponse =
+      h.employer_response === "accepted" || h.employer_response === "passed"
+        ? h.employer_response
+        : h.accepted_at
+          ? "accepted"
+          : h.passed_at
+            ? "passed"
+            : "pending";
     return {
       id: h.id,
       talent_profile_id: h.talent_profile_id,
@@ -213,8 +238,10 @@ export async function getJobOpeningDetailForAdmin(
         | "free"
         | "invoiced",
       invoice_cycle: h.invoice_cycle,
-      accepted: Boolean(h.accepted_at),
+      employer_response: employerResponse,
+      accepted: employerResponse === "accepted",
       accepted_at: h.accepted_at,
+      passed_at: h.passed_at,
       employer_notified_at: h.employer_notified_at,
       linkedin_sent_at: h.linkedin_sent_at,
       kanban_column: h.kanban_column,
@@ -225,6 +252,12 @@ export async function getJobOpeningDetailForAdmin(
 
   const free = matches.filter((m) => m.billing_status === "free").length;
   const invoiced = matches.filter((m) => m.billing_status === "invoiced").length;
+  const acceptedCount = matches.filter(
+    (m) => m.employer_response === "accepted"
+  ).length;
+  const passedCount = matches.filter(
+    (m) => m.employer_response === "passed"
+  ).length;
 
   const { data: matchable } = await supabase
     .from("talent_profiles")
@@ -262,7 +295,8 @@ export async function getJobOpeningDetailForAdmin(
       employer_name: employerUser?.full_name ?? null,
       employer_email: employerUser?.email ?? null,
       match_count: matches.length,
-      accepted_count: matches.filter((m) => m.accepted).length,
+      accepted_count: acceptedCount,
+      passed_count: passedCount,
       free_match_count: free,
       invoiced_match_count: invoiced,
       location_modes: job.location_modes ?? [],

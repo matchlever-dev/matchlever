@@ -22,6 +22,7 @@ const STATUS_OPTIONS = [
   { value: "active", label: "Active" },
   { value: "paused", label: "Paused" },
   { value: "draft", label: "Draft" },
+  { value: "hired", label: "Hired" },
   { value: "closed", label: "Closed" },
 ];
 
@@ -190,6 +191,12 @@ function JobOpeningsListPage({
                   Accepted:{" "}
                   <strong className="text-[#2A2D34]">
                     {job.accepted_count}
+                  </strong>
+                </span>
+                <span>
+                  Passed:{" "}
+                  <strong className="text-[#2A2D34]">
+                    {job.passed_count}
                   </strong>
                 </span>
                 <span>

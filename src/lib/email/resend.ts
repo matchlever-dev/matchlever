@@ -197,8 +197,23 @@ export async function sendReferenceInviteEmail(args: {
   return { ...delivered, inviteUrl };
 }
 
+export function getMatchRespondUrl(
+  token: string,
+  decision: "accept" | "pass"
+) {
+  const params = new URLSearchParams({
+    token,
+    decision,
+  });
+  return `${getAppBaseUrl()}/matches/respond?${params.toString()}`;
+}
+
 export function getMatchAcceptUrl(token: string) {
-  return `${getAppBaseUrl()}/matches/accept?token=${encodeURIComponent(token)}`;
+  return getMatchRespondUrl(token, "accept");
+}
+
+export function getMatchPassUrl(token: string) {
+  return getMatchRespondUrl(token, "pass");
 }
 
 export async function sendMatchIncognitoEmail(args: {
@@ -230,6 +245,7 @@ export async function sendMatchIncognitoEmail(args: {
   const jobTitle = escapeHtml(oneLine(args.jobTitle));
   const company = oneLine(args.companyName || "");
   const acceptUrl = getMatchAcceptUrl(args.acceptToken);
+  const passUrl = getMatchPassUrl(args.acceptToken);
   const p = args.profile;
   const skillsHtml = p.verifiedSkills.length
     ? p.verifiedSkills
@@ -254,7 +270,8 @@ export async function sendMatchIncognitoEmail(args: {
         <p>${greeting}</p>
         <p>MatchLever matched an anonymous candidate to
           <strong>${jobTitle}</strong>${company ? ` at ${escapeHtml(company)}` : ""}.
-          Review the incognito profile below. Identity stays hidden until you Accept.</p>
+          Review the incognito profile below. Identity stays hidden until you Accept.
+          You can also Pass if this candidate is not a fit.</p>
 
         <div style="border:1px solid #D6DDE6;border-radius:8px;padding:20px;margin:20px 0;background:#fff">
           <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#5B616B;font-weight:700">Incognito profile</p>
@@ -279,13 +296,17 @@ export async function sendMatchIncognitoEmail(args: {
           </table>
         </div>
 
-        <p>
-          <a href="${acceptUrl}" style="background:#E87A5D;color:#fff;padding:12px 18px;text-decoration:none;border-radius:6px;display:inline-block;font-weight:600">
-            Accept match
+        <p style="margin:24px 0 12px">
+          <a href="${acceptUrl}" style="background:#E87A5D;color:#fff;padding:12px 18px;text-decoration:none;border-radius:6px;display:inline-block;font-weight:600;margin-right:10px">
+            Accept
+          </a>
+          <a href="${passUrl}" style="background:#fff;color:#2B5B84;padding:12px 18px;text-decoration:none;border-radius:6px;display:inline-block;font-weight:600;border:1px solid #2B5B84">
+            Pass
           </a>
         </p>
-        <p style="font-size:12px;color:#5B616B">Accepting sends this candidate’s LinkedIn profile to you so you can start the conversation.</p>
-        <p style="font-size:12px;color:#5B616B">Or paste this URL:<br/>${acceptUrl}</p>
+        <p style="font-size:12px;color:#5B616B">Accept sends this candidate’s LinkedIn profile to you so you can start the conversation. Pass keeps identity hidden and records that this candidate is not a fit.</p>
+        <p style="font-size:12px;color:#5B616B">Accept link:<br/>${acceptUrl}</p>
+        <p style="font-size:12px;color:#5B616B">Pass link:<br/>${passUrl}</p>
         <p style="font-size:11px;color:#8A9099">${escapeHtml(billingNote)}</p>
     `,
   });

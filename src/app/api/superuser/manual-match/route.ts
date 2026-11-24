@@ -43,7 +43,7 @@ export async function GET() {
       .select(
         "id, title, company_name, status, kanban_columns, employer_profile_id"
       )
-      .in("status", ["active", "paused"])
+      .in("status", ["active", "paused"]) // hired/closed/draft excluded — matching stopped
       .order("updated_at", { ascending: false }),
   ]);
 

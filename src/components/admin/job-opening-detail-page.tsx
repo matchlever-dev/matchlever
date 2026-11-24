@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { AdminJobMatchRow, ActiveTalentOption } from "@/lib/admin/demo";
 import { matchBillingLabel } from "@/lib/matching/billing";
 import { talentStatusLabel } from "@/lib/matching/eligibility";
+import { employerResponseLabel } from "@/lib/matching/employer-response";
 import {
   formatJobLocationLine,
   jobOpeningStatusLabel,
@@ -45,6 +46,7 @@ type JobDetail = {
   kanban_columns: string[];
   match_count: number;
   accepted_count: number;
+  passed_count: number;
   free_match_count: number;
   invoiced_match_count: number;
 };
@@ -167,8 +169,10 @@ function JobOpeningDetail({
           match_index: created.matchIndex,
           billing_status: created.billingStatus,
           invoice_cycle: created.invoiceCycle,
+          employer_response: "pending",
           accepted: false,
           accepted_at: null,
+          passed_at: null,
           employer_notified_at: new Date().toISOString(),
           linkedin_sent_at: null,
           kanban_column: created.kanbanColumn,
@@ -325,6 +329,10 @@ function JobOpeningDetail({
                 <strong className="text-[#2A2D34]">{job.accepted_count}</strong>
               </span>
               <span>
+                Passed:{" "}
+                <strong className="text-[#2A2D34]">{job.passed_count}</strong>
+              </span>
+              <span>
                 Free:{" "}
                 <strong className="text-[#2A2D34]">
                   {job.free_match_count}
@@ -348,6 +356,11 @@ function JobOpeningDetail({
                 <p className="mt-1 text-sm text-[#5B616B]">
                   Manual assign from Active or On Hold talent. Incomplete
                   profiles are excluded.
+                  {job.status === "hired"
+                    ? " This opening is Hired — new matches are blocked."
+                    : job.status === "closed"
+                      ? " This opening is Closed — new matches are blocked."
+                      : " Matching may continue until the employer marks Hired."}
                 </p>
               </div>
             </div>
@@ -390,7 +403,13 @@ function JobOpeningDetail({
               </div>
               <Button
                 type="button"
-                disabled={busy || !talentId}
+                disabled={
+                  busy ||
+                  !talentId ||
+                  job.status === "hired" ||
+                  job.status === "closed" ||
+                  job.status === "draft"
+                }
                 className="h-11 bg-[#E87A5D] text-white hover:bg-[#d96b4f]"
                 onClick={() => void assignMatch()}
               >
@@ -437,12 +456,14 @@ function JobOpeningDetail({
                         <Badge
                           variant="secondary"
                           className={
-                            m.accepted
+                            m.employer_response === "accepted"
                               ? "bg-[#2B5B84]/15 text-[#2B5B84]"
-                              : "bg-[#5B616B]/10 text-[#5B616B]"
+                              : m.employer_response === "passed"
+                                ? "bg-[#E87A5D]/15 text-[#E87A5D]"
+                                : "bg-[#5B616B]/10 text-[#5B616B]"
                           }
                         >
-                          {m.accepted ? "Accepted" : "Pending accept"}
+                          {employerResponseLabel(m.employer_response)}
                         </Badge>
                       </div>
                     </div>

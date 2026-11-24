@@ -413,7 +413,9 @@ export type Database = {
           match_index: number;
           billing_status: string;
           invoice_cycle: number;
+          employer_response: string;
           accepted_at: string | null;
+          passed_at: string | null;
           accept_token: string;
           employer_notified_at: string | null;
           linkedin_sent_at: string | null;
@@ -432,7 +434,9 @@ export type Database = {
           match_index: number;
           billing_status: string;
           invoice_cycle: number;
+          employer_response?: string;
           accepted_at?: string | null;
+          passed_at?: string | null;
           accept_token: string;
           employer_notified_at?: string | null;
           linkedin_sent_at?: string | null;
@@ -451,7 +455,9 @@ export type Database = {
           match_index?: number;
           billing_status?: string;
           invoice_cycle?: number;
+          employer_response?: string;
           accepted_at?: string | null;
+          passed_at?: string | null;
           accept_token?: string;
           employer_notified_at?: string | null;
           linkedin_sent_at?: string | null;

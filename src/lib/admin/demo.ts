@@ -192,6 +192,7 @@ export type AdminJobOpeningRow = {
   employer_email: string | null;
   match_count: number;
   accepted_count: number;
+  passed_count: number;
   free_match_count: number;
   invoiced_match_count: number;
   location_modes: string[];
@@ -210,8 +211,10 @@ export type AdminJobMatchRow = {
   match_index: number;
   billing_status: "free" | "invoiced";
   invoice_cycle: number;
+  employer_response: "pending" | "accepted" | "passed";
   accepted: boolean;
   accepted_at: string | null;
+  passed_at: string | null;
   employer_notified_at: string | null;
   linkedin_sent_at: string | null;
   kanban_column: string;
@@ -554,6 +557,7 @@ export const DEMO_ADMIN_JOB_OPENINGS: AdminJobOpeningRow[] = [
     employer_email: "jordan.employer@acme.io",
     match_count: 1,
     accepted_count: 0,
+    passed_count: 0,
     free_match_count: 1,
     invoiced_match_count: 0,
     location_modes: ["remote", "hybrid"],
@@ -570,6 +574,7 @@ export const DEMO_ADMIN_JOB_OPENINGS: AdminJobOpeningRow[] = [
     employer_email: "priya@northwind.dev",
     match_count: 0,
     accepted_count: 0,
+    passed_count: 0,
     free_match_count: 0,
     invoiced_match_count: 0,
     location_modes: ["remote"],
@@ -591,8 +596,10 @@ export const DEMO_ADMIN_JOB_MATCHES: Record<string, AdminJobMatchRow[]> = {
       match_index: 1,
       billing_status: "free",
       invoice_cycle: 1,
+      employer_response: "pending",
       accepted: false,
       accepted_at: null,
+      passed_at: null,
       employer_notified_at: "2026-07-18T12:05:00.000Z",
       linkedin_sent_at: null,
       kanban_column: "sourced",

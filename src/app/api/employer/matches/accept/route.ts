@@ -170,7 +170,9 @@ export async function POST(request: Request) {
     const { error: handshakeError } = await supabase
       .from("match_handshakes")
       .update({
+        employer_response: "accepted",
         accepted_at: existing.accepted_at ?? now,
+        passed_at: null,
         kanban_column: "screening",
         notes,
       })
@@ -198,7 +200,9 @@ export async function POST(request: Request) {
         billing_status: billing.billingStatus,
         invoice_cycle: billing.invoiceCycle,
         accept_token: randomBytes(24).toString("hex"),
+        employer_response: "accepted",
         accepted_at: now,
+        passed_at: null,
       })
       .select("id")
       .maybeSingle();

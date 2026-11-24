@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { acceptMatchByToken } from "@/lib/matching/create-match";
+import { respondToMatchByToken } from "@/lib/matching/create-match";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+
+/** Legacy Accept-only endpoint — prefer /api/matches/respond. */
 
 const bodySchema = z.object({
   token: z.string().min(16),
@@ -32,6 +34,9 @@ async function accept(token: string) {
       ok: true,
       demo: true,
       alreadyAccepted: false,
+      alreadyDecided: false,
+      decision: "accept",
+      employerResponse: "accepted",
       jobTitle: "Staff Platform Engineer",
       companyName: "Acme Systems",
       talentHeadline: "Staff Platform Engineer",
@@ -52,15 +57,22 @@ async function accept(token: string) {
     );
   }
 
-  const result = await acceptMatchByToken({ supabase: admin, token });
+  const result = await respondToMatchByToken({
+    supabase: admin,
+    token,
+    decision: "accept",
+  });
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
 
   return NextResponse.json({
-    ok: true as const,
+    ok: true,
     demo: false,
-    alreadyAccepted: result.alreadyAccepted,
+    alreadyAccepted: result.alreadyDecided,
+    alreadyDecided: result.alreadyDecided,
+    decision: result.decision,
+    employerResponse: result.employerResponse,
     jobTitle: result.jobTitle,
     companyName: result.companyName,
     talentHeadline: result.talentHeadline,
