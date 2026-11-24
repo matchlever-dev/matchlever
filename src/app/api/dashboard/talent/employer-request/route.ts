@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { companyNameFromAuthMetadata } from "@/lib/employer/company-name";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
@@ -55,11 +56,14 @@ export async function POST() {
     );
   }
 
+  const companyName =
+    companyNameFromAuthMetadata(user) || "Pending intake";
+
   const { data: employer, error } = await supabase
     .from("employer_profiles")
     .insert({
       user_id: user.id,
-      company_name: "Pending intake",
+      company_name: companyName,
       status: "active",
       first_match_free_claimed: true,
     })

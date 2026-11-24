@@ -6,6 +6,7 @@ import {
   splitNameFromAuthUser,
 } from "@/lib/auth/display-name";
 import { captureTalentLinkedInUrl } from "@/lib/auth/linkedin-url";
+import { companyNameFromAuthMetadata } from "@/lib/employer/company-name";
 import { employerIntakeSchema } from "@/lib/employer/intake-schema";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
@@ -13,17 +14,6 @@ import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-function companyFromMetadata(user: {
-  user_metadata?: Record<string, unknown> | null;
-}): string | null {
-  const metadata = user.user_metadata ?? {};
-  for (const key of ["company", "organization", "org"]) {
-    const value = metadata[key];
-    if (typeof value === "string" && value.trim()) return value.trim();
-  }
-  return null;
-}
 
 function titleFromMetadata(user: {
   user_metadata?: Record<string, unknown> | null;
@@ -102,7 +92,7 @@ export async function GET() {
       email: profile?.email || user.email || null,
       jobTitle: titleFromMetadata(user),
       linkedinUrl: linkedInUrl,
-      companyName: companyFromMetadata(user),
+      companyName: companyNameFromAuthMetadata(user),
     },
   });
 }
@@ -156,7 +146,7 @@ export async function POST(request: Request) {
     }));
 
   const companyName =
-    companyFromMetadata(user) ||
+    companyNameFromAuthMetadata(user) ||
     z.string().min(1).safeParse(json.companyName).data ||
     "Pending verification";
 
