@@ -166,15 +166,6 @@ export type DirectoryPerson = {
   avg_authenticity_score: number | null;
 };
 
-export type ActiveJobPosting = {
-  id: string;
-  title: string;
-  company_name: string | null;
-  status: string;
-  kanban_columns: string[];
-  employer_name: string | null;
-};
-
 export type ActiveTalentOption = {
   id: string;
   headline: string | null;
@@ -471,25 +462,6 @@ export const DEMO_DIRECTORY: DirectoryPerson[] = [
     status: "active",
     created_at: "2026-07-02T14:00:00.000Z",
     avg_authenticity_score: null,
-  },
-];
-
-export const DEMO_ACTIVE_JOBS: ActiveJobPosting[] = [
-  {
-    id: "job-1",
-    title: "Staff Platform Engineer",
-    company_name: "Acme Systems",
-    status: "active",
-    kanban_columns: ["sourced", "screening", "interview", "offer", "hired"],
-    employer_name: "Jordan Lee",
-  },
-  {
-    id: "job-2",
-    title: "Senior Backend Engineer",
-    company_name: "Northwind",
-    status: "active",
-    kanban_columns: ["sourced", "screening", "interview", "offer", "hired"],
-    employer_name: "Priya Shah",
   },
 ];
 

@@ -110,8 +110,9 @@ Routes:
 
 - `/admin/users` — toggle `is_admin` / `is_superuser` switches
 - `/admin/talent` — resume vs sanitized tabs, location/hours, reference authenticity audit, status override / delete
+- `/admin/job-openings` — job opening details + matched candidates (manual assign)
 - `/superuser/directory` — searchable Talent + Employers directory
-- `/superuser/manual-match` — Concierge Match into a job Kanban (`match_handshakes.is_manual_match = true`)
+- `/superuser/job-openings` — same Job Openings match surface for superusers
 
 Apply `supabase/migrations/20260723030000_admin_superuser_portals.sql` for employers, jobs, handshakes, and resume audit fields. Without Supabase, portals run in demo mode.
 
