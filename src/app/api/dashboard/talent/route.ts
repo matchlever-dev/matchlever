@@ -61,14 +61,18 @@ export async function GET() {
     };
 
     let profile: TalentDashRow | null = null;
-    let { data: profileData, error } = await supabase
-      .from("talent_profiles")
-      .select(
-        "id, headline, selected_tagline, suggested_taglines, verified_skills, global_city, global_country, timezone, timezone_offset, status, raw_resume_text, pay_type, min_salary, pay_annual_min, pay_annual_max, pay_hourly_min, pay_hourly_max"
-      )
-      .eq("user_id", user.id)
-      .maybeSingle();
-    profile = (profileData as TalentDashRow | null) ?? null;
+    let error: { message: string } | null = null;
+    {
+      const initial = await supabase
+        .from("talent_profiles")
+        .select(
+          "id, headline, selected_tagline, suggested_taglines, verified_skills, global_city, global_country, timezone, timezone_offset, status, raw_resume_text, pay_type, min_salary, pay_annual_min, pay_annual_max, pay_hourly_min, pay_hourly_max"
+        )
+        .eq("user_id", user.id)
+        .maybeSingle();
+      profile = (initial.data as TalentDashRow | null) ?? null;
+      error = initial.error;
+    }
 
     if (error?.message?.includes("pay_annual")) {
       const fallback = await supabase
