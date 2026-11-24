@@ -94,6 +94,7 @@ function JobOpeningDetail({
   const [matches, setMatches] = useState<AdminJobMatchRow[]>([]);
   const [talent, setTalent] = useState<ActiveTalentOption[]>([]);
   const [aiMessage, setAiMessage] = useState<string | null>(null);
+  const [aiEngine, setAiEngine] = useState<string | null>(null);
   const [demo, setDemo] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -119,6 +120,7 @@ function JobOpeningDetail({
           : nextTalent[0]?.id || ""
       );
       setAiMessage(json.aiMatch?.message ?? null);
+      setAiEngine(json.aiMatch?.engine ?? null);
       setDemo(Boolean(json.demo));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load");
@@ -380,18 +382,35 @@ function JobOpeningDetail({
                       <SelectValue placeholder="Select talent" />
                     </SelectTrigger>
                     <SelectContent>
-                      {talent.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>
-                          {(t.full_name || t.headline || t.id) +
-                            ` · ${talentStatusLabel(t.status)}` +
-                            (t.headline ? ` — ${t.headline}` : "")}
-                        </SelectItem>
-                      ))}
+                      {talent.map((t) => {
+                        const why =
+                          t.matchReasons && t.matchReasons.length > 0
+                            ? ` · ${t.matchReasons.join(" · ")}`
+                            : "";
+                        const rank =
+                          typeof t.matchRank === "number"
+                            ? `#${t.matchRank} `
+                            : "";
+                        return (
+                          <SelectItem key={t.id} value={t.id}>
+                            {rank +
+                              (t.full_name || t.headline || t.id) +
+                              ` · ${talentStatusLabel(t.status)}` +
+                              (t.headline ? ` — ${t.headline}` : "") +
+                              why}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
-                  {talent.length === 0 && (
+                  {talent.length === 0 ? (
                     <p className="text-xs text-[#5B616B]">
                       No matchable talent left for this opening.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-[#5B616B]">
+                      Ranked on load by hard fit (location, pay, timezone, hours,
+                      visa), then skills + superpowers. Tiebreak: profile score.
                     </p>
                   )}
                 </div>
@@ -422,7 +441,8 @@ function JobOpeningDetail({
 
             {aiMessage && (
               <p className="mb-4 border border-dashed border-[#2B5B84]/25 bg-[#2B5B84]/[0.04] px-4 py-3 text-xs text-[#5B616B]">
-                AI matching stub: {aiMessage}
+                {aiEngine === "rules-v1" ? "AI ranking: " : "AI matching: "}
+                {aiMessage}
               </p>
             )}
 

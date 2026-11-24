@@ -1,8 +1,11 @@
-import type {
-  AdminJobMatchRow,
-  AdminJobOpeningRow,
+import {
+  averageAuthenticityScore,
+  type ActiveTalentOption,
+  type AdminJobMatchRow,
+  type AdminJobOpeningRow,
 } from "@/lib/admin/demo";
 import { isMatchableTalentStatus } from "@/lib/matching/eligibility";
+import type { ScoreTalentInput } from "@/lib/matching/score-candidate";
 import type { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
 
@@ -11,6 +14,22 @@ type Supabase = Awaited<ReturnType<typeof createClient>>;
 function asStringArray(value: Json): string[] {
   if (!Array.isArray(value)) return [];
   return value.map(String).filter(Boolean);
+}
+
+function superpowerIdsFromJson(value: Json): string[] {
+  if (!Array.isArray(value)) return [];
+  const ids: string[] = [];
+  for (const item of value) {
+    if (typeof item === "string" && item.trim()) {
+      ids.push(item.trim());
+      continue;
+    }
+    if (item && typeof item === "object" && "id" in item) {
+      const id = String((item as { id: unknown }).id ?? "").trim();
+      if (id) ids.push(id);
+    }
+  }
+  return ids;
 }
 
 export async function listJobOpeningsForAdmin(
@@ -196,13 +215,9 @@ export async function getJobOpeningDetailForAdmin(
     kanban_columns: string[];
   };
   matches: AdminJobMatchRow[];
-  matchableTalent: {
-    id: string;
-    headline: string | null;
-    full_name: string | null;
-    email: string | null;
-    status: string;
-  }[];
+  matchableTalent: ActiveTalentOption[];
+  /** Full snapshots for AI ranking on detail load. */
+  matchableTalentForScoring: ScoreTalentInput[];
 } | null> {
   const { data: job } = await supabase
     .from("job_postings")
@@ -370,32 +385,134 @@ export async function getJobOpeningDetailForAdmin(
     (m) => m.employer_response === "passed"
   ).length;
 
+  type MatchableTalentRow = {
+    id: string;
+    user_id: string;
+    headline: string | null;
+    status: string;
+    location_modes: string[] | null;
+    global_city: string | null;
+    global_country: string | null;
+    pay_type: string | null;
+    min_salary: number | null;
+    timezone: string | null;
+    timezone_offset: number | null;
+    work_hours_start: string | null;
+    work_hours_end: string | null;
+    visa_status: string | null;
+    verified_skills: Json;
+    verified_superpowers: Json;
+    selected_tagline: string | null;
+    raw_resume_text: string | null;
+    sanitized_summary: string | null;
+    updated_at: string;
+  };
+
   const { data: matchable } = await supabase
     .from("talent_profiles")
-    .select("id, user_id, headline, status")
+    .select(
+      "id, user_id, headline, status, location_modes, global_city, global_country, pay_type, min_salary, timezone, timezone_offset, work_hours_start, work_hours_end, visa_status, verified_skills, verified_superpowers, selected_tagline, raw_resume_text, sanitized_summary, updated_at"
+    )
     .in("status", ["actively_looking", "on_hold"])
     .order("updated_at", { ascending: false });
 
   const alreadyMatched = new Set(matches.map((m) => m.talent_profile_id));
-  const available = (matchable ?? []).filter(
+  const available = ((matchable ?? []) as MatchableTalentRow[]).filter(
     (t) => isMatchableTalentStatus(t.status) && !alreadyMatched.has(t.id)
   );
   const availableUserIds = [...new Set(available.map((t) => t.user_id))];
-  const { data: availableUsers } = availableUserIds.length
-    ? await supabase
-        .from("user_profiles")
-        .select("id, email, full_name")
-        .in("id", availableUserIds)
-    : {
-        data: [] as {
-          id: string;
-          email: string | null;
-          full_name: string | null;
-        }[],
-      };
+  const availableIds = available.map((t) => t.id);
+
+  const [{ data: availableUsers }, { data: refRows }] = await Promise.all([
+    availableUserIds.length
+      ? supabase
+          .from("user_profiles")
+          .select("id, email, full_name")
+          .in("id", availableUserIds)
+      : Promise.resolve({
+          data: [] as {
+            id: string;
+            email: string | null;
+            full_name: string | null;
+          }[],
+        }),
+    availableIds.length
+      ? supabase
+          .from("talent_references")
+          .select("talent_profile_id, authenticity_score, status")
+          .in("talent_profile_id", availableIds)
+      : Promise.resolve({
+          data: [] as {
+            talent_profile_id: string;
+            authenticity_score: number | null;
+            status: string;
+          }[],
+        }),
+  ]);
+
   const availableUserMap = new Map(
     (availableUsers ?? []).map((u) => [u.id, u])
   );
+
+  const refsByTalent = new Map<
+    string,
+    { authenticity_score: number | null; status: string }[]
+  >();
+  for (const ref of refRows ?? []) {
+    const list = refsByTalent.get(ref.talent_profile_id) ?? [];
+    list.push({
+      authenticity_score:
+        ref.authenticity_score === null
+          ? null
+          : Number(ref.authenticity_score),
+      status: ref.status,
+    });
+    refsByTalent.set(ref.talent_profile_id, list);
+  }
+
+  const matchableTalent: ActiveTalentOption[] = available.map((t) => {
+    const user = availableUserMap.get(t.user_id);
+    return {
+      id: t.id,
+      headline: t.headline,
+      full_name: user?.full_name ?? null,
+      email: user?.email ?? null,
+      status: t.status,
+    };
+  });
+
+  const matchableTalentForScoring: ScoreTalentInput[] = available.map((t) => {
+    const refs = refsByTalent.get(t.id) ?? [];
+    const verifiedRefs = refs.filter((r) => r.status === "verified");
+    return {
+      id: t.id,
+      locationModes: t.location_modes ?? [],
+      globalCity: t.global_city,
+      globalCountry: t.global_country,
+      payType: t.pay_type ?? "annual",
+      minSalary: t.min_salary,
+      timezone: t.timezone,
+      timezoneOffset: t.timezone_offset,
+      workHoursStart: t.work_hours_start,
+      workHoursEnd: t.work_hours_end,
+      visaStatus: t.visa_status,
+      verifiedSkills: asStringArray(t.verified_skills),
+      verifiedSuperpowers: superpowerIdsFromJson(t.verified_superpowers),
+      selectedTagline: t.selected_tagline,
+      hasResume: Boolean(
+        t.raw_resume_text?.trim() || t.sanitized_summary?.trim()
+      ),
+      hasProfileBasics: Boolean(
+        t.headline?.trim() &&
+          t.global_city?.trim() &&
+          t.global_country?.trim() &&
+          t.work_hours_start &&
+          t.work_hours_end
+      ),
+      verifiedReferenceCount: verifiedRefs.length,
+      avgAuthenticityScore: averageAuthenticityScore(verifiedRefs),
+    };
+  });
 
   return {
     job: {
@@ -427,15 +544,7 @@ export async function getJobOpeningDetailForAdmin(
       kanban_columns: asStringArray(job.kanban_columns),
     },
     matches,
-    matchableTalent: available.map((t) => {
-      const user = availableUserMap.get(t.user_id);
-      return {
-        id: t.id,
-        headline: t.headline,
-        full_name: user?.full_name ?? null,
-        email: user?.email ?? null,
-        status: t.status,
-      };
-    }),
+    matchableTalent,
+    matchableTalentForScoring,
   };
 }
